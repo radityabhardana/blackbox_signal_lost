@@ -1,0 +1,156 @@
+@import "tailwindcss";
+
+/*
+ * BLACKBOX design tokens.
+ *
+ * Source of truth for the visual identity defined in docs/06_ART_DIRECTION.md.
+ * Semantic tokens live in :root; Tailwind v4 aliases in @theme generate
+ * utilities (bg-bbx-surface-1, text-bbx-accent-signal, z-bbx-taskbar, ...).
+ * Never introduce arbitrary colors in components.
+ */
+:root {
+  --bbx-bg-0: #0b0f16;
+  --bbx-bg-1: #121a26;
+  --bbx-surface-1: #1b2433;
+  --bbx-surface-2: #222d40;
+  --bbx-text-1: #e6ecf4;
+  --bbx-text-2: #8d99ad;
+  --bbx-accent-civic: #57c0c2;
+  --bbx-accent-signal: #e0a33e;
+  --bbx-danger: #c75454;
+  --bbx-suppressed: #a86bb4;
+  --bbx-success: #6fa87d;
+}
+
+@theme {
+  --color-bbx-bg-0: var(--bbx-bg-0);
+  --color-bbx-bg-1: var(--bbx-bg-1);
+  --color-bbx-surface-1: var(--bbx-surface-1);
+  --color-bbx-surface-2: var(--bbx-surface-2);
+  --color-bbx-text-1: var(--bbx-text-1);
+  --color-bbx-text-2: var(--bbx-text-2);
+  --color-bbx-accent-civic: var(--bbx-accent-civic);
+  --color-bbx-accent-signal: var(--bbx-accent-signal);
+  --color-bbx-danger: var(--bbx-danger);
+  --color-bbx-suppressed: var(--bbx-suppressed);
+  --color-bbx-success: var(--bbx-success);
+
+  --font-sans:
+    "IBM Plex Sans", "Inter", ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+  --font-mono:
+    "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+  /* 8-point spacing grid (docs/06, "Layout language"). */
+  --spacing: 8px;
+
+  /* Centralized z-index scale. */
+  --z-bbx-base: 0;
+  --z-bbx-window: 10;
+  --z-bbx-taskbar: 30;
+  --z-bbx-modal: 40;
+  --z-bbx-notification: 50;
+}
+
+@layer base {
+  html {
+    height: 100%;
+  }
+
+  body {
+    height: 100%;
+    background-color: var(--bbx-bg-0);
+    color: var(--bbx-text-1);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--bbx-accent-civic);
+    outline-offset: 2px;
+  }
+}
+
+/*
+ * Reduced-motion foundation.
+ * The game respects prefers-reduced-motion everywhere; the following override
+ * neutralizes motion at the platform level. Interactive reduced-motion
+ * alternatives that cannot be expressed this way gate on the
+ * `data-reduced-motion` attribute on <html>.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Skip link: visually hidden until focused. */
+.bbx-skip-link {
+  position: fixed;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: var(--z-bbx-notification);
+  transform: translateY(-200%);
+  padding: 0.5rem 0.75rem;
+  background-color: var(--bbx-surface-2);
+  color: var(--bbx-text-1);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  transition:
+    transform 120ms ease-out,
+    background-color 120ms ease-out;
+}
+
+.bbx-skip-link:focus {
+  transform: translateY(0);
+  outline: 2px solid var(--bbx-accent-civic);
+  outline-offset: 2px;
+}
+
+/* Buttons. */
+.bbx-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--bbx-surface-2);
+  background-color: var(--bbx-surface-1);
+  color: var(--bbx-text-1);
+  padding: 0.5rem 1rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition:
+    background-color 120ms ease-out,
+    border-color 120ms ease-out;
+}
+
+.bbx-btn:hover:not(:disabled) {
+  border-color: var(--bbx-accent-civic);
+}
+
+.bbx-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.bbx-btn-primary {
+  border-color: var(--bbx-accent-civic);
+  background-color: color-mix(in srgb, var(--bbx-accent-civic) 15%, var(--bbx-surface-1));
+}
+
+/* Workspace background grid. */
+.bbx-grid {
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--bbx-text-2) 7%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--bbx-text-2) 7%, transparent) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
