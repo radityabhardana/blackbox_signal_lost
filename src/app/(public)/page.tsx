@@ -20,10 +20,18 @@ export default function LandingPage() {
         <Link href="/game" className="bbx-btn bbx-btn-primary">
           Start investigation
         </Link>
-        <Link href="/game" className="bbx-btn">
+        <button
+          type="button"
+          disabled
+          aria-describedby="continue-status"
+          className="bbx-btn"
+        >
           Continue
-        </Link>
+        </button>
       </section>
+      <p id="continue-status" className="max-w-2xl text-sm leading-relaxed text-bbx-text-2">
+        No saved investigation was found. Continue is available once a case is in progress.
+      </p>
 
       <section aria-label="Before you play" className="max-w-2xl">
         <h2 className="font-mono text-xs uppercase tracking-widest text-bbx-text-2">

@@ -1,22 +1,13 @@
 /**
  * Content validation entry point.
  *
- * BBX-001 foundation has no content packs yet. Schema validation for case
- * manifests arrives with BBX-020; this script exists so `pnpm validate:content`
- * is runnable from the first milestone and fails loudly when packs exist
- * without validators.
+ * `pnpm validate:content` is part of the documented script contract
+ * (docs/10_PROJECT_SETUP.md §5). Content validation itself is deferred to
+ * BBX-020, when Zod schemas and valid/invalid fixtures land. Until then this
+ * command is an explicit no-op: it performs no checks and must not be
+ * mistaken for real validation. TODO(BBX-020): replace with a validator that
+ * fails loudly on invalid content packs.
  */
-const PACKS = new Set<string>([]);
-
-function main(): void {
-  if (PACKS.size === 0) {
-    console.log("[validate:content] No content packs registered yet (BBX-001 foundation).");
-    return;
-  }
-  for (const pack of PACKS) {
-    void pack;
-    console.log(`[validate:content] No validator registered for "${pack}".`);
-  }
-}
-
-main();
+console.log(
+  "[validate:content] No checks performed — content validation is deferred to BBX-020.",
+);
