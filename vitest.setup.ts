@@ -14,3 +14,18 @@ if (typeof window !== "undefined" && typeof window.PointerEvent === "undefined")
 
   Object.defineProperty(window, "PointerEvent", { value: PointerEventMock, writable: true });
 }
+
+if (typeof window !== "undefined" && typeof window.localStorage === "undefined") {
+  const entries = new Map<string, string>();
+  const memoryStorage: Storage = {
+    get length() {
+      return entries.size;
+    },
+    clear: () => entries.clear(),
+    getItem: (key) => entries.get(key) ?? null,
+    key: (index) => Array.from(entries.keys())[index] ?? null,
+    removeItem: (key) => entries.delete(key),
+    setItem: (key, value) => entries.set(key, String(value)),
+  };
+  Object.defineProperty(window, "localStorage", { value: memoryStorage, configurable: true });
+}

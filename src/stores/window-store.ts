@@ -3,6 +3,7 @@ import {
   closeWindow,
   createDesktop,
   focusWindow,
+  hydrateLayout,
   minimizeWindow,
   moveWindow,
   openWindow,
@@ -11,7 +12,7 @@ import {
   resizeWindow,
   toggleMaximize,
 } from "@/domain/windows";
-import type { WorkspaceSize, WindowManagerState } from "@/domain/windows";
+import type { PersistedWindowLayout, WorkspaceSize, WindowManagerState } from "@/domain/windows";
 import { APP_CATALOG } from "@/lib/apps";
 
 export interface WindowStore {
@@ -27,6 +28,7 @@ export interface WindowStore {
   move: (id: string, x: number, y: number) => void;
   resize: (id: string, width: number, height: number) => void;
   resetWorkspace: () => void;
+  hydrateLayout: (layout: PersistedWindowLayout) => void;
 }
 
 export const useWindowStore = create<WindowStore>()((set) => ({
@@ -45,6 +47,8 @@ export const useWindowStore = create<WindowStore>()((set) => ({
   resize: (id, width, height) =>
     set((state) => ({ manager: resizeWindow(state.manager, id, width, height, state.workspace) })),
   resetWorkspace: () => set((state) => ({ manager: resetLayout(state.manager, state.workspace) })),
+  hydrateLayout: (layout) =>
+    set((state) => ({ manager: hydrateLayout(state.manager, layout, state.workspace) })),
 }));
 
 export function resetWindowStoreForTests(workspace: WorkspaceSize = { width: 1920, height: 1080 }) {

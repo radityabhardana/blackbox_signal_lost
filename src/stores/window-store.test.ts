@@ -115,4 +115,33 @@ describe("window store", () => {
     useWindowStore.getState().setWorkspace({ width: 800, height: 600 });
     expect(useWindowStore.getState().workspace).toEqual({ width: 800, height: 600 });
   });
+
+  it("hydrates a persisted layout into the current workspace", () => {
+    const store = useWindowStore.getState();
+    store.open("app_mail");
+    store.move("win_0", 120, 90);
+    const manager = useWindowStore.getState().manager;
+    const snapshot = {
+      openWindows: manager.openWindows,
+      focusedWindowId: manager.focusedWindowId,
+      nextSequence: manager.nextSequence,
+    };
+
+    resetWindowStoreForTests();
+    useWindowStore.getState().hydrateLayout(snapshot);
+    const state = useWindowStore.getState();
+    expect(state.manager.openWindows).toHaveLength(1);
+    expect(state.manager.openWindows[0]?.bounds).toEqual({ x: 120, y: 90, width: 800, height: 600 });
+    expect(state.manager.focusedWindowId).toBe("win_0");
+  });
+
+  it("is a no-op when hydrating into a non-empty desktop", () => {
+    const store = useWindowStore.getState();
+    store.open("app_mail");
+    const before = useWindowStore.getState().manager;
+    useWindowStore
+      .getState()
+      .hydrateLayout({ openWindows: [], focusedWindowId: null, nextSequence: 0 });
+    expect(useWindowStore.getState().manager).toBe(before);
+  });
 });

@@ -1,5 +1,6 @@
 import { WorkspaceShell } from "@/components/desktop/workspace-shell";
 import { Taskbar } from "@/components/desktop/taskbar";
+import { LayoutPersistence } from "@/components/desktop/layout-persistence";
 
 export default function GamePage() {
   return (
@@ -8,6 +9,7 @@ export default function GamePage() {
         <WorkspaceShell />
       </main>
       <Taskbar />
+      <LayoutPersistence />
     </div>
   );
 }
