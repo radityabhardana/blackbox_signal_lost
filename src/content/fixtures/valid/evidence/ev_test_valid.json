@@ -1,0 +1,16 @@
+{
+  "id": "ev_test",
+  "caseId": "case_test",
+  "title": "Test evidence",
+  "type": "document",
+  "summary": "Test evidence summary.",
+  "source": { "system": "test" },
+  "tags": ["test"],
+  "relatedEntityIds": [],
+  "assetIds": [],
+  "discoveryRule": { "always": true },
+  "optional": false,
+  "contested": false,
+  "redHerring": false,
+  "reportClaimsSupported": []
+}

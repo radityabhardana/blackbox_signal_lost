@@ -1,0 +1,7 @@
+{
+  "id": "trigger_test",
+  "once": true,
+  "priority": 1,
+  "rule": { "always": true },
+  "effects": []
+}

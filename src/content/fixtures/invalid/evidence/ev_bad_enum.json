@@ -1,0 +1,16 @@
+{
+  "id": "ev_test_bad_enum",
+  "caseId": "case_test",
+  "title": "Broken type",
+  "type": "spreadsheet",
+  "summary": "invalid evidence type",
+  "source": { "system": "test" },
+  "tags": [],
+  "relatedEntityIds": [],
+  "assetIds": [],
+  "discoveryRule": { "always": true },
+  "optional": false,
+  "contested": false,
+  "redHerring": false,
+  "reportClaimsSupported": []
+}

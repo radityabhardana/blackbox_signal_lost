@@ -1,0 +1,16 @@
+{
+  "id": "Bad ID!",
+  "caseId": "case_test",
+  "title": "Broken id",
+  "type": "document",
+  "summary": "invalid id",
+  "source": { "system": "test" },
+  "tags": [],
+  "relatedEntityIds": [],
+  "assetIds": [],
+  "discoveryRule": { "always": true },
+  "optional": false,
+  "contested": false,
+  "redHerring": false,
+  "reportClaimsSupported": []
+}

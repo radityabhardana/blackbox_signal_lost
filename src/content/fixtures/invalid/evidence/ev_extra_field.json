@@ -1,0 +1,17 @@
+{
+  "id": "ev_test_extra",
+  "caseId": "case_test",
+  "title": "Extra field",
+  "type": "document",
+  "summary": "should be rejected",
+  "source": { "system": "test" },
+  "tags": [],
+  "relatedEntityIds": [],
+  "assetIds": [],
+  "discoveryRule": { "always": true },
+  "optional": false,
+  "contested": false,
+  "redHerring": false,
+  "reportClaimsSupported": [],
+  "unexpectedField": "not documented"
+}

@@ -1,0 +1,13 @@
+{
+  "saveSchemaVersion": 1,
+  "contentVersion": "1.0.0",
+  "applicationVersion": "1.0.0",
+  "slotId": "test_slot",
+  "updatedAt": "2041-11-18T22:00:00Z",
+  "currentCaseId": "case_test",
+  "gameEvents": [],
+  "sessionSnapshot": {},
+  "uiSnapshot": {},
+  "settings": {},
+  "checksum": "test_checksum"
+}

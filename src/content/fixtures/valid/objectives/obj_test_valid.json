@@ -1,0 +1,10 @@
+{
+  "id": "obj_test",
+  "title": "Test objective",
+  "description": "A test objective.",
+  "optional": false,
+  "startRule": { "always": true },
+  "completionRule": { "always": true },
+  "hintIds": [],
+  "nextObjectiveIds": []
+}

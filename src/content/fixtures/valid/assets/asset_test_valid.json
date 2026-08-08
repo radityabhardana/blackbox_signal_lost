@@ -1,0 +1,11 @@
+{
+  "id": "asset_test",
+  "type": "image",
+  "sourcePath": "assets/test/src.png",
+  "optimizedPath": "assets/test/opt.webp",
+  "license": "test",
+  "creator": "test",
+  "provenanceNote": "test",
+  "caseIds": ["case_test"],
+  "preload": "none"
+}

@@ -1,0 +1,8 @@
+{
+  "id": "msg_test",
+  "channelId": "chan_test",
+  "speakerId": "char_test",
+  "text": "Test message",
+  "enterRule": { "always": true },
+  "choices": []
+}

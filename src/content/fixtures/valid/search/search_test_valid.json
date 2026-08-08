@@ -1,0 +1,11 @@
+{
+  "entityId": "record_test",
+  "entityType": "record",
+  "title": "Test record",
+  "exactTerms": ["test"],
+  "aliases": [],
+  "partialTerms": [],
+  "unavailableBehavior": "hidden",
+  "availabilityRule": { "always": true },
+  "authoredRank": 1
+}

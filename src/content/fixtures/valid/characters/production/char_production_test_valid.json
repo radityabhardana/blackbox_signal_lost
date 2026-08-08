@@ -1,0 +1,11 @@
+{
+  "id": "char_test",
+  "displayName": "Test Character",
+  "aliases": [],
+  "role": "test",
+  "organizationIds": [],
+  "publicProfile": {},
+  "portraitAssetId": "img_test_neutral",
+  "searchTerms": [],
+  "knownEvidenceIds": []
+}

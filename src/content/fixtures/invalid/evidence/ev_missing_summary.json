@@ -1,0 +1,14 @@
+{
+  "id": "ev_missing_summary",
+  "caseId": "case_test",
+  "title": "Broken evidence",
+  "type": "document",
+  "tags": ["broken"],
+  "relatedEntityIds": [],
+  "assetIds": [],
+  "discoveryRule": { "always": true },
+  "optional": false,
+  "contested": false,
+  "redHerring": false,
+  "reportClaimsSupported": []
+}

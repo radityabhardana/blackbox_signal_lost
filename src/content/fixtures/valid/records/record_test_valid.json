@@ -1,0 +1,14 @@
+{
+  "id": "record_test",
+  "caseId": "case_test",
+  "recordType": "test",
+  "title": "Test record",
+  "body": {},
+  "source": { "system": "test" },
+  "createdAt": "2041-11-18T22:00:00Z",
+  "relatedEntityIds": [],
+  "searchTerms": ["test"],
+  "aliases": [],
+  "availabilityRule": { "always": true },
+  "metadata": {}
+}
