@@ -154,3 +154,177 @@
     linear-gradient(to bottom, color-mix(in srgb, var(--bbx-text-2) 7%, transparent) 1px, transparent 1px);
   background-size: 32px 32px;
 }
+
+/* Windows. */
+@keyframes bbx-window-in {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.bbx-window {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--bbx-surface-2);
+  background-color: var(--bbx-bg-1);
+  animation: bbx-window-in 160ms ease-out;
+}
+
+.bbx-window:focus {
+  outline: none;
+}
+
+.bbx-window-focused {
+  border-color: var(--bbx-accent-civic);
+}
+
+.bbx-window-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.25rem 0.375rem 0.25rem 0.5rem;
+  background-color: var(--bbx-surface-2);
+  cursor: default;
+  user-select: none;
+  touch-action: none;
+}
+
+.bbx-window-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--bbx-text-1);
+}
+
+.bbx-window-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.bbx-window-control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 1px solid transparent;
+  background-color: transparent;
+  color: var(--bbx-text-2);
+  font-size: 0.875rem;
+  line-height: 1;
+  touch-action: none;
+}
+
+.bbx-window-control:hover {
+  border-color: var(--bbx-surface-1);
+  color: var(--bbx-text-1);
+}
+
+.bbx-window-control:focus-visible {
+  outline: 2px solid var(--bbx-accent-civic);
+  outline-offset: 1px;
+}
+
+.bbx-window-control:active {
+  border-color: var(--bbx-accent-civic);
+}
+
+.bbx-window-control-close:hover {
+  border-color: var(--bbx-danger);
+  color: var(--bbx-danger);
+}
+
+/* Pointer + keyboard resize handle (southeast corner). */
+.bbx-resize-handle {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 1rem;
+  height: 1rem;
+  cursor: nwse-resize;
+  touch-action: none;
+  background: repeating-linear-gradient(
+    135deg,
+    transparent 0 2px,
+    color-mix(in srgb, var(--bbx-text-2) 45%, transparent) 2px 3px
+  );
+}
+
+.bbx-resize-handle:focus-visible {
+  outline: 2px solid var(--bbx-accent-civic);
+  outline-offset: -2px;
+}
+
+/* Taskbar open-window indicators. */
+.bbx-taskbar-item {
+  display: inline-flex;
+  align-items: center;
+  max-width: 10rem;
+  height: 2rem;
+  padding: 0 0.5rem;
+  border: 1px solid var(--bbx-surface-2);
+  background-color: var(--bbx-surface-1);
+  color: var(--bbx-text-2);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.05em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-transform: uppercase;
+}
+
+.bbx-taskbar-item:hover:not(:disabled) {
+  border-color: var(--bbx-accent-civic);
+  color: var(--bbx-text-1);
+}
+
+.bbx-taskbar-item:focus-visible {
+  outline: 2px solid var(--bbx-accent-civic);
+  outline-offset: 1px;
+}
+
+.bbx-taskbar-item-focused {
+  border-color: var(--bbx-accent-civic);
+  color: var(--bbx-text-1);
+}
+
+.bbx-taskbar-item-minimized {
+  opacity: 0.55;
+}
+
+/* Launcher and switcher menu items. */
+.bbx-menu-item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  padding: 0.375rem 0.625rem;
+  border: 1px solid transparent;
+  background-color: transparent;
+  color: var(--bbx-text-1);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: left;
+}
+
+.bbx-menu-item:hover,
+.bbx-menu-item:focus-visible {
+  background-color: var(--bbx-surface-1);
+  border-color: var(--bbx-surface-2);
+}
