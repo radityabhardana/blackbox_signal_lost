@@ -174,6 +174,54 @@ This log records durable decisions. New entries should use the same format.
 
 ---
 
+## ADR-012 — BBX-012 satisfied by BBX-011 Session 3
+
+**Status:** Accepted
+
+**Decision:** Close BBX-012 (taskbar and launcher keyboard/pointer support) as a documentation-only task. No new implementation is required because BBX-011 Session 3 already delivered the taskbar, launcher, accessible window switcher, and their keyboard/pointer behaviour.
+
+**Context:** The BBX-012 backlog item requested "keyboard and pointer support" for the taskbar and launcher. The AI execution playbook assigned these components to Session 3 (BBX-011) to enable the open, minimize, restore, and reset Playwright flow. An audit of the BBX-011 implementation confirmed all BBX-012 acceptance criteria are satisfied.
+
+**Rationale:**
+
+- Avoids reimplementing functionality that already exists.
+- The custom accessible window switcher satisfies the documented "Alt+Tab or custom accessible switcher" requirement without OS-reserved shortcuts.
+- Keeps work focused on the vertical-slice critical path.
+
+**Consequences:**
+
+- Taskbar and launcher keyboard/pointer support are considered complete.
+- The notification center and settings shortcut remain listed as taskbar contents in `docs/07_UI_UX_SPEC.md` but are NOT completed by this closure; they stay assigned to the notification center backlog item (BBX-043) and the Settings milestone.
+
+---
+
+## ADR-013 — BBX-024 static content validation boundary
+
+**Status:** Accepted
+
+**Decision:** BBX-024 validates static content integrity only: global duplicate IDs for documented readable IDs, resolution of VALIDATE-class references, caseId relationships, objective/hint ownership, per-objective hint presence, and the required audio-transcript invariant. The validator is error-only, deterministic, and purely static. It does not evaluate RuleExpressions, execute GameEffects, simulate triggers/events, or prove runtime reachability.
+
+**Context:** docs/09 §16 and docs/13 §3 list automated checks, but several of them (unreachable required records, impossible objectives, trigger cycles, outcome conflicts, every-ending-reachable) require rule/event semantics that only exist at runtime. docs/13 §3 explicitly assigns event-path traversal to a development simulation script, and docs/12 maps it to BBX-105 / BBX-100 Session 10.
+
+**Options considered:**
+
+- Implement full event-path reachability in BBX-024 (rejected: requires a RuleExpression evaluator, which belongs to the engine, and no documented static roots exist for the objective/dialogue/ending graphs).
+- Add a warning severity (rejected: docs describe a failing build, not warnings; nothing consumes warnings).
+
+**Rationale:**
+
+- Reference IDs cannot be resolved yet for several documented fields because their target collections are intentionally opaque or undefined (CaseStage, ClaimSlot, Ending content, Application, Notification, Organization, Location, Channel, AssetBundle). Those are deferred, not guessed.
+- "Missing hints" is enforced as at-least-one-hint per objective because docs/09 §9 requires only a complete ladder "before release"; four-tier completeness is BBX-104/105 content work, not a schema invariant.
+- The reachability term in the backlog is honored, not redefined: BBX-024 implements static reference resolvability/integrity; the docs explicitly name a separate simulation script for runtime reachability.
+
+**Consequences:**
+
+- BBX-024 additions are all static and pure; the validator returns sorted error-only issues.
+- Runtime/event-path reachability remains BBX-021/022, BBX-105, and BBX-100 Session 10.
+- Future target collections added by BBX-080/100 must each add their own reference checks.
+
+---
+
 ## Proposed-decision template
 
 ```text

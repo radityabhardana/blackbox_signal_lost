@@ -1,0 +1,48 @@
+{
+  "case": {
+    "id": "case_test",
+    "version": "1.0.0",
+    "title": "Test Case",
+    "estimatedMinutes": 30,
+    "entryStageId": "stage_test",
+    "stages": [],
+    "entities": [],
+    "assetBundleId": "bundle_test",
+    "objectives": [],
+    "triggers": [
+      {
+        "id": "trigger_test",
+        "once": true,
+        "priority": 1,
+        "rule": { "always": true },
+        "effects": [{ "type": "unlock_record", "recordId": "evidence_test" }]
+      }
+    ],
+    "outcomes": [],
+    "searchableIndex": []
+  },
+  "characters": [],
+  "records": [],
+  "evidence": [
+    {
+      "id": "evidence_test",
+      "caseId": "case_test",
+      "title": "Test evidence",
+      "type": "document",
+      "summary": "Test evidence summary.",
+      "source": { "system": "test" },
+      "tags": [],
+      "relatedEntityIds": [],
+      "assetIds": [],
+      "discoveryRule": { "always": true },
+      "optional": false,
+      "contested": false,
+      "redHerring": false,
+      "reportClaimsSupported": []
+    }
+  ],
+  "hints": [],
+  "dialogue": [],
+  "conclusions": [],
+  "assets": []
+}

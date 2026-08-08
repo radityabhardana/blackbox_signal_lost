@@ -1,0 +1,191 @@
+{
+  "case": {
+    "id": "case_test",
+    "version": "1.0.0",
+    "title": "Test Case",
+    "estimatedMinutes": 30,
+    "entryStageId": "stage_test",
+    "stages": [],
+    "entities": [],
+    "assetBundleId": "bundle_test",
+    "objectives": [
+      {
+        "id": "objective_test",
+        "title": "Test objective",
+        "description": "A test objective.",
+        "optional": false,
+        "startRule": { "always": true },
+        "completionRule": { "objectiveCompleted": "objective_final" },
+        "hintIds": ["hint_test"],
+        "nextObjectiveIds": ["objective_final"]
+      },
+      {
+        "id": "objective_final",
+        "title": "Final objective",
+        "description": "Final test objective.",
+        "optional": false,
+        "startRule": { "always": true },
+        "completionRule": { "always": true },
+        "hintIds": ["hint_test_final"],
+        "nextObjectiveIds": []
+      }
+    ],
+    "triggers": [
+      {
+        "id": "trigger_test",
+        "once": true,
+        "priority": 1,
+        "rule": { "choiceSelected": "choice_test" },
+        "effects": [
+          { "type": "unlock_record", "recordId": "record_test" },
+          { "type": "queue_dialogue", "nodeId": "dialogue_test" },
+          { "type": "discover_evidence", "evidenceId": "evidence_test" }
+        ]
+      }
+    ],
+    "outcomes": [
+      {
+        "id": "outcome_test",
+        "title": "Test outcome",
+        "priority": 1,
+        "endingContentId": "ending_test",
+        "evaluationRule": { "always": true },
+        "effects": [{ "type": "play_audio_cue", "assetId": "asset_test_audio" }]
+      }
+    ],
+    "searchableIndex": [
+      {
+        "entityId": "record_test",
+        "entityType": "record",
+        "title": "Test record",
+        "exactTerms": ["test"],
+        "aliases": [],
+        "partialTerms": [],
+        "unavailableBehavior": "hidden",
+        "availabilityRule": { "always": true },
+        "authoredRank": 1
+      },
+      {
+        "entityId": "character_test",
+        "entityType": "character",
+        "title": "Test character",
+        "exactTerms": ["test"],
+        "aliases": [],
+        "partialTerms": [],
+        "unavailableBehavior": "hidden",
+        "availabilityRule": { "always": true },
+        "authoredRank": 2
+      }
+    ]
+  },
+  "characters": [
+    {
+      "id": "character_test",
+      "displayName": "Test Character",
+      "aliases": [],
+      "role": "test",
+      "organizationIds": [],
+      "publicProfile": {},
+      "portraitAssetId": "asset_test",
+      "searchTerms": ["test"],
+      "knownEvidenceIds": ["evidence_test"]
+    }
+  ],
+  "records": [
+    {
+      "id": "record_test",
+      "caseId": "case_test",
+      "recordType": "test",
+      "title": "Test record",
+      "body": {},
+      "source": { "system": "test" },
+      "createdAt": "2041-11-18T22:00:00Z",
+      "relatedEntityIds": [],
+      "searchTerms": ["test"],
+      "aliases": [],
+      "availabilityRule": { "always": true },
+      "evidenceId": "evidence_test",
+      "metadata": {}
+    }
+  ],
+  "evidence": [
+    {
+      "id": "evidence_test",
+      "caseId": "case_test",
+      "title": "Test evidence",
+      "type": "document",
+      "summary": "Test evidence summary.",
+      "source": { "system": "test" },
+      "tags": ["test"],
+      "relatedEntityIds": [],
+      "assetIds": ["asset_test"],
+      "discoveryRule": { "always": true },
+      "optional": false,
+      "contested": false,
+      "redHerring": false,
+      "reportClaimsSupported": []
+    }
+  ],
+  "hints": [
+    { "id": "hint_test", "objectiveId": "objective_test", "tier": 1, "text": "Test hint" },
+    { "id": "hint_test_final", "objectiveId": "objective_final", "tier": 1, "text": "Final hint" }
+  ],
+  "dialogue": [
+    {
+      "id": "dialogue_test",
+      "channelId": "channel_test",
+      "speakerId": "character_test",
+      "text": "First test message.",
+      "enterRule": { "always": true },
+      "choices": [
+        {
+          "id": "choice_test",
+          "label": "Continue",
+          "consequences": [],
+          "nextNodeId": "dialogue_test_next"
+        }
+      ]
+    },
+    {
+      "id": "dialogue_test_next",
+      "channelId": "channel_test",
+      "speakerId": "character_test",
+      "text": "Second test message.",
+      "enterRule": { "always": true }
+    }
+  ],
+  "conclusions": [
+    {
+      "id": "conclusion_test",
+      "caseId": "case_test",
+      "claimSlots": [],
+      "evidenceSlotCount": 3,
+      "disclosureChoices": []
+    }
+  ],
+  "assets": [
+    {
+      "id": "asset_test",
+      "type": "image",
+      "sourcePath": "assets/test/src.png",
+      "optimizedPath": "assets/test/opt.webp",
+      "license": "test",
+      "creator": "test",
+      "provenanceNote": "test",
+      "caseIds": ["case_test"],
+      "preload": "none"
+    },
+    {
+      "id": "asset_test_audio",
+      "type": "audio",
+      "sourcePath": "assets/test/loop.mp3",
+      "optimizedPath": "assets/test/loop.ogg",
+      "transcriptPath": "assets/test/loop-transcript.vtt",
+      "license": "test",
+      "creator": "test",
+      "provenanceNote": "test",
+      "caseIds": ["case_test"],
+      "preload": "stage"
+    }
+  ]
+}

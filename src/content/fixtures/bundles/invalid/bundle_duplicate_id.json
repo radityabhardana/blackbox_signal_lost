@@ -1,0 +1,47 @@
+{
+  "case": {
+    "id": "case_test",
+    "version": "1.0.0",
+    "title": "Test Case",
+    "estimatedMinutes": 30,
+    "entryStageId": "stage_test",
+    "stages": [],
+    "entities": [],
+    "assetBundleId": "bundle_test",
+    "objectives": [],
+    "triggers": [],
+    "outcomes": [],
+    "searchableIndex": []
+  },
+  "characters": [
+    {
+      "id": "case_test",
+      "displayName": "Duplicate Case Id Character",
+      "aliases": [],
+      "role": "test",
+      "organizationIds": [],
+      "publicProfile": {},
+      "portraitAssetId": "asset_test",
+      "searchTerms": [],
+      "knownEvidenceIds": []
+    }
+  ],
+  "records": [],
+  "evidence": [],
+  "hints": [],
+  "dialogue": [],
+  "conclusions": [],
+  "assets": [
+    {
+      "id": "asset_test",
+      "type": "image",
+      "sourcePath": "assets/test/src.png",
+      "optimizedPath": "assets/test/opt.webp",
+      "license": "test",
+      "creator": "test",
+      "provenanceNote": "test",
+      "caseIds": [],
+      "preload": "none"
+    }
+  ]
+}

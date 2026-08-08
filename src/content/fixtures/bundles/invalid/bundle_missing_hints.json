@@ -1,0 +1,34 @@
+{
+  "case": {
+    "id": "case_test",
+    "version": "1.0.0",
+    "title": "Test Case",
+    "estimatedMinutes": 30,
+    "entryStageId": "stage_test",
+    "stages": [],
+    "entities": [],
+    "assetBundleId": "bundle_test",
+    "objectives": [
+      {
+        "id": "objective_test",
+        "title": "Test objective",
+        "description": "A test objective.",
+        "optional": false,
+        "startRule": { "always": true },
+        "completionRule": { "always": true },
+        "hintIds": [],
+        "nextObjectiveIds": []
+      }
+    ],
+    "triggers": [],
+    "outcomes": [],
+    "searchableIndex": []
+  },
+  "characters": [],
+  "records": [],
+  "evidence": [],
+  "hints": [],
+  "dialogue": [],
+  "conclusions": [],
+  "assets": []
+}

@@ -1,0 +1,35 @@
+{
+  "case": {
+    "id": "case_test",
+    "version": "1.0.0",
+    "title": "Test Case",
+    "estimatedMinutes": 30,
+    "entryStageId": "stage_test",
+    "stages": [],
+    "entities": [],
+    "assetBundleId": "bundle_test",
+    "objectives": [],
+    "triggers": [],
+    "outcomes": [],
+    "searchableIndex": []
+  },
+  "characters": [],
+  "records": [],
+  "evidence": [],
+  "hints": [],
+  "dialogue": [],
+  "conclusions": [],
+  "assets": [
+    {
+      "id": "asset_test",
+      "type": "audio",
+      "sourcePath": "assets/test/loop.mp3",
+      "optimizedPath": "assets/test/loop.ogg",
+      "license": "test",
+      "creator": "test",
+      "provenanceNote": "test",
+      "caseIds": [],
+      "preload": "stage"
+    }
+  ]
+}
