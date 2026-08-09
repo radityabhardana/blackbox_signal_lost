@@ -343,6 +343,35 @@ This log records durable decisions. New entries should use the same format.
 
 ---
 
+## ADR-018 — Autosave coordinator (BBX-031)
+
+**Status:** Accepted
+
+**Decision:** Introduce a small application/persistence coordinator bound to a single caller-supplied slot. `requestSave(reason)` marks new work and resets one trailing 800 ms debounce timer; the timer is trailing-only, re-armed on every request, and there is no maxWait/periodic guard. The snapshot is captured only at write-start via `getSnapshot()` so the newest caller state wins; multiple requests coalesce into the newest ready generation. At most one `repository.save` runs at a time; work arriving during a write receives another trailing window and never starts a concurrent save. A failed generation is marked blocked and never background-retried until a later `requestSave` (new generation) or an explicit `flush()`. `flush()` cancels the debounce, marks dirty work ready, drains generations immediately with fresh snapshots, and propagates the repository's exact rejection, without changing state. `dispose()` is synchronous, clears the timer, discards pending work, is a no-op for later calls, and neither cancels nor spawns writes.
+
+**Context:** docs/02 requires locally autosaved progress without blocking interaction and preserving the previous valid save; docs/03 §5.11 lists autosave triggers (evidence discovery, objective completion, message choice, puzzle completion, report submission) plus "periodic idle debounce"; docs/12 lists BBX-031 as "Debounced and resilient". BBX-030 is authoritative for repository semantics (checksum, versions, known-good, storage).
+
+**Options considered:**
+
+- A fixed `maxWait`/periodic event (rejected: no normative interval; "idle debounce" does not require a starvation guard).
+- Reason-dependent scheduling or accumulated reason history (rejected: `reason` is an explicit type-constrained signal only; timings are identical).
+- A synchronous/blocking flush or browser lifecycle listeners (rejected: lifecycle wiring stays with the shell).
+- Storing snapshots at request time (rejected: state can change during debounce and latest-state wins; capture-at-write removes stale writes).
+
+**Rationale:**
+
+- 800 ms is a project convention aligned with the existing BBX-013 layout hook; choosing it keeps behavior coherent without inventing a number.
+- Generation tracking (requested/persisted/ready/blocked) makes single-flight, latest-state coalescing, and no-retry-after-failure provable with simple inequalities.
+- The same repository promise is awaited by both background and flush paths, with a single settlement function mutating coordinator state (no double-settle, no unhandled rejections).
+
+**Consequences:**
+
+- No engine/rules imports, no checksum logic, no `Date.now`, no browser listeners, no localStorage/BBX-013, no UI.
+- Slot switching is owned by the shell (new coordinator per slot). Restart-current-case is not part of BBX-031.
+- A continuously streaming requester can keep `flush()` alive (documented barrier semantics, not a bug).
+
+---
+
 ## Proposed-decision template
 
 ```text
