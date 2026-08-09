@@ -222,6 +222,35 @@ This log records durable decisions. New entries should use the same format.
 
 ---
 
+## ADR-014 — RuleExpression evaluation semantics
+
+**Status:** Accepted
+
+**Decision:** BBX-021 evaluates RuleExpression conditions against a minimal pure runtime context. Boolean composition uses conventional semantics: `all` is logical AND with `all([])` true, `any` is logical OR with `any([])` false, `not` inverts its single child. `flagEquals` uses strict equality with no coercion and missing flags evaluate false. `eventOccurred` matches any historical event by type, and by entityId only when the expression provides one. `countAtLeast` counts events by type only (no entity filter). Missing runtime state (flags, entities, objectives, choices, events) always evaluates false. No artificial recursion limit is imposed; content is BBX-020-validated and trusted.
+
+**Context:** docs/09 §11 defines the operator set structurally but does not fully specify runtime semantics (empty-array behavior, equality rules, missing-state behavior). docs/08 §6's rule example writes `eventOccurred` in a string form (`{ "eventOccurred": "evidence_discovered", "entityId": "..." }`) that conflicts with the object form in docs/09 §11 (`{ eventOccurred: { type, entityId? } }`).
+
+**Options considered:**
+
+- Empty `all`/`any` as errors (rejected: nothing consumes a third state; conventional boolean semantics are deterministic and testable).
+- Coercive flag comparison (rejected: docs define flags as string | number | boolean; strict equality prevents content from masking type mistakes).
+- Re-running Zod validation inside the evaluator (rejected: BBX-020 already validates structure; the evaluator assumes validated input and surfaces impossible shapes via `RuleEvaluatorError`).
+
+**Rationale:**
+
+- Conventional boolean semantics are deterministic, side-effect-free, and match the declared closed operator set.
+- docs/09 is the authoritative content schema (already shipped in BBX-020); its `eventOccurred` shape governs the evaluator.
+- Returning false for missing runtime data keeps the evaluator total without inventing state.
+
+**Consequences:**
+
+- The evaluator never fabricates entities, never executes effects, and never mutates context; it is pure and deterministic.
+- Malformed (non-validated) expression shapes throw `RuleEvaluatorError` instead of silently returning false.
+- BBX-022 consumes `evaluateRule` for trigger conditions but owns scheduling, ordering, effects, and state mutation.
+- The docs/08 eventOccurred example remains documentation debt to reconcile later.
+
+---
+
 ## Proposed-decision template
 
 ```text
