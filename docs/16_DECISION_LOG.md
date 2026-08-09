@@ -313,6 +313,36 @@ This log records durable decisions. New entries should use the same format.
 
 ---
 
+## ADR-017 — IndexedDB save repository (BBX-030)
+
+**Status:** Accepted
+
+**Decision:** Persist game saves in IndexedDB through Dexie, behind the docs/08 §8 `SaveRepository` interface kept verbatim (`load/save/delete/list`). Each slot stores `{ current, previous? }` snapshots written in one transaction; `previous` is the last valid persisted snapshot (not a load history). Checksums are FNV-1a 32-bit over the UTF-8 bytes of the exact stored JSON payload — the checksum field itself is excluded from the checksummed payload and caller checksums are never authoritative. `SAVE_SCHEMA_VERSION = 1` is established by this BBX-030 convention; BBX-032 owns migrations.
+
+**Context:** docs/08 §8 defines persistence (IndexedDB through Dexie) and save strategy (transactional write, checksum, versioned snapshots, previous known-good). docs/09 §14 leaves SaveGame's inner payloads (`sessionSnapshot`/`uiSnapshot`/`settings`/`gameEvents`) opaque; the envelope only verifies their structural shape, so the write boundary must independently guarantee JSON-safety.
+
+**Options considered:**
+
+- Replace the documented result shape with a `{ ok }` union (rejected: docs/08 §8 interface is preserved).
+- Structured-clone the SaveGame object directly (rejected: storing `payloadJson` guarantees the stored form is JSON-only and cannot leak Set/Map/Date/class into IndexedDB).
+- General "canonical JSON" canonicalization (rejected: a single exact `payloadJson` string owned by one codec is smaller and deterministic).
+- Relying on BBX-013 layout/localStorage (rejected: layout authority stays with BBX-013; saves live in their own DB).
+
+**Rationale:**
+
+- Verifying the checksum before parsing keeps corrupted bytes untrusted until proven intact.
+- Previous-known-good uses only validated persisted snapshots, so an interrupted or torn write can never be promoted to known-good.
+- The JSON-safe write boundary runs before Zod re-validation so opaque records cannot hide non-JSON values that a parser would drop or coerce.
+- `list()` uses the same effective-snapshot resolution as `load()` so a recoverable slot never silently disappears; summaries are ordered by `slotId` for determinism.
+
+**Consequences:**
+
+- BBX-030 is storage-only: no autosave coordinator (BBX-031), no migrations (BBX-032), no engine hydration/projection (later integration), no UI.
+- Both adapters share one codec module to prevent semantic drift; an in-memory adapter exists for tests/dev with full parity.
+- Dexie + fake-indexeddb are new runtime/dev dependencies; no other dependencies.
+
+---
+
 ## Proposed-decision template
 
 ```text

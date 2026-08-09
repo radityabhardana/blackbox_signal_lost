@@ -15,6 +15,7 @@
     "validate:content": "tsx scripts/validate-content.ts"
   },
   "dependencies": {
+    "dexie": "^4.4.4",
     "next": "16.3.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
@@ -34,6 +35,7 @@
     "eslint": "^9.17.0",
     "eslint-config-next": "16.3.0",
     "eslint-config-prettier": "^9.1.0",
+    "fake-indexeddb": "^6.2.5",
     "jsdom": "^25.0.1",
     "tailwindcss": "^4.0.0",
     "tsx": "^4.19.2",
