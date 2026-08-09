@@ -251,6 +251,39 @@ This log records durable decisions. New entries should use the same format.
 
 ---
 
+## ADR-015 — Deterministic case-engine design (BBX-022)
+
+**Status:** Accepted
+
+**Decision:** BBX-022 processes one engine input per `stepCaseEngine` call into a fresh JSON-serializable state plus an ordered effect trace. Trigger priority uses **higher numeric value first** (consistent with the documented "highest priority wins" for outcomes in docs/09 §13, the only documented priority direction) with declaration-order ties; every eligible matching trigger fires; `once` triggers fire exactly once. There is no fixed-point re-evaluation loop — effects never re-trigger rules within the same step.
+
+**Context:** docs/09 defines `priority: number` but not whether higher or lower means first; docs/11 Session 5 says "priority order" without a direction. docs/09 leaves GameEvent opaque and docs/08 §5's event union is a non-normative sketch. docs/13 requires the dialogue-choice-unlocks-record integration and notes trigger loops as a risk.
+
+**Options considered:**
+
+- Priority ascending (rejected: contradicts the documented outcome-priority direction).
+- A fixed-point/re-evaluating loop (rejected: nothing requires it; sequential single-pass is deterministic and eliminates trigger loops by construction).
+- Storing Sets/Maps in engine state (rejected: Session 5 requires directly serializable state; arrays + plain records are JSON.stringify-compatible).
+- Reusing docs/08 §5's GameEvent union as the engine contract (rejected: non-normative and wide; BBX-022's smaller EngineInput is sufficient).
+
+**Rationale:**
+
+- `CaseEngineState` uses only plain records and strings/arrays — no Set/Map — so it round-trips through `JSON.stringify` with no serializer. Sets are built temporarily inside a step for BBX-021 rule evaluation and never returned.
+- `EngineInput` (`game_event` / `evidence_discovered` / `dialogue_choice_selected`) is the engine's own typed input contract, not the persisted GameEvent taxonomy; each input projects to exactly one `RuleEvent`.
+- Choice consequences execute before trigger evaluation so a choice that unlocks a record applies before any trigger that reads the resulting state.
+- Objective lifecycle is mutually exclusive: `complete_objective` removes the id from `activeObjectives` before adding to `completedObjectives`; `start_objective` is a no-op on a completed objective.
+- Queue effects (dialogue/audio/notification) append and allow duplicates; set/flag effects are idempotent. `appliedEffects` is the full ordered execution trace, including idempotent no-op repeats.
+- Runtime existence checks are limited to targets resolvable in ContentBundle (record, dialogue node, objective, evidence, asset, dialogue choice). `applicationId`/`notificationId` are still applied but cannot yet be existence-checked because ContentBundle has no Application/Notification collection.
+
+**Consequences:**
+
+- The engine is pure, deterministic, mutation-free, and JSON-safe.
+- BBX-021 remains authoritative for rule truth; BBX-020 remains authoritative for effect shapes.
+- Later persistence (BBX-030), search (BBX-023), reachability (BBX-105), and content (BBX-100) consume this engine without changing its contract.
+- References whose target collections do not yet exist remain documented deferrals, not dropped effects.
+
+---
+
 ## Proposed-decision template
 
 ```text
