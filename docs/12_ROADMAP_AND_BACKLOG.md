@@ -182,7 +182,7 @@ Do not assume continuation before evidence.
 |---|---:|---|---|
 | BBX-030 | P0 | IndexedDB save repository | Transactional versioned saves |
 | BBX-031 | P0 | Autosave coordinator | Debounced and resilient |
-| BBX-032 | P1 | Save migration | Tests across schema versions |
+| BBX-032 | P1 | Save migration | Tests across schema versions — BLOCKED: awaiting first real SaveGame schema transition |
 | BBX-033 | P1 | Debug export | Non-sensitive diagnostics |
 | BBX-034 | P3 | Cloud-save adapter | Deferred |
 

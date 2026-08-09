@@ -372,6 +372,25 @@ This log records durable decisions. New entries should use the same format.
 
 ---
 
+## ADR-019 — Save migration blocked pending real schema transition (BBX-032)
+
+**Status:** Accepted — Documented Blocked
+
+**Decision:** BBX-032 (Save migration) is BLOCKED. `SAVE_SCHEMA_VERSION = 1` is the only real SaveGame schema version; no v0, legacy-v1, or v2 format exists in the repository, docs, fixtures, or tests. No fake historical format may be invented to satisfy migration tests. Migration is keyed only by `saveSchemaVersion`; `contentVersion` and `applicationVersion` are preserved metadata, never migration keys. There is no v1→v1 identity migration step; real migration steps correspond only to actual transitions (e.g., 1→2, 2→3). `save-codec.ts` is unchanged today.
+
+**Context:** docs/12 assigns BBX-032 "P1 | Tests across schema versions". docs/13 §6 states: "Never ship a migration without fixtures from the previous supported version." BBX-030's validator (`verifyStoredSnapshot`) rejects non-v1 snapshots at `src/infrastructure/persistence/save-codec.ts:159-169` before selection — a v-old payload cannot currently reach a migration hook.
+
+**Rationale (documented future behavior):**
+
+- **Future candidate read pipeline** (per snapshot): checksum verification → `JSON.parse` into unknown → minimally extract/validate `saveSchemaVersion` → if current version: no migration → if older with a complete registered path: validate against that version's own historical schema, then migrate sequentially through real steps → validate the final output with the **current** `saveGameSchema` → return trusted current SaveGame. An old save must NOT be required to pass the current SaveGame schema before migration.
+- **Previous-known-good with future migration:** candidates are tried in order `current`, then `previous`, and each runs the full pipeline independently (checksum → parse-unknown → version discovery → supported migration → current-schema validation). A candidate becomes usable only when that entire chain passes.
+- **Version taxonomy:** `CURRENT` (`version === SAVE_SCHEMA_VERSION`) → no migration; `OLDER` with a complete real path → sequential migration; `OLDER` without a path → `unsupported_version`; `FUTURE` > current → `unsupported_version`; missing/malformed discriminator → `corrupt`. Version 0 is syntactically possible but not a historical format and stays unsupported unless a real v0 contract ever exists.
+- **Migration step model (conceptual only, not code):** `SaveMigrationStep<From, To> { fromVersion; toVersion; migrate(payload: From): To }`. Zero real migration steps exist today.
+
+**Unblock condition:** BBX-032 becomes implementable only when ALL of these hold: (1) a new real SaveGame schema version is introduced; (2) `SAVE_SCHEMA_VERSION` is bumped accordingly; (3) the previous supported schema shape is frozen/documented as a contract; (4) real previous-version fixtures exist; (5) a field-level migration specification exists (added/removed/renamed/reshaped fields, defaults, preservation rules).
+
+---
+
 ## Proposed-decision template
 
 ```text
