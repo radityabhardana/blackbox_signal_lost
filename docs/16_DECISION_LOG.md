@@ -284,6 +284,35 @@ This log records durable decisions. New entries should use the same format.
 
 ---
 
+## ADR-016 — Authored search semantics (BBX-023)
+
+**Status:** Accepted
+
+**Decision:** BBX-023 searches only the authored `CaseManifest.searchableIndex` using one deterministic normalization policy: trim → `String.prototype.toLowerCase()` (no locale sensitivity) → replace runs of non-Unicode-letter/non-Unicode-number characters with a single space (`/[^\p{L}\p{N}]+/gu`) → collapse whitespace → trim. No diacritic folding, no stemming, no fuzzy matching. Each entry produces at most one candidate: tiers are compared as an ordered set (`exact_title > exact_term > alias > partial`), the first matching authored term wins inside a tier, and partial matching means the normalized authored `partialTerm` contains the normalized query. Ranking uses tier, then `authoredRank` descending, then declaration order. `availabilityRule` gates are evaluated by BBX-021 `evaluateRule` against the shared `RuleEvaluationContext`; `hidden` removes a gated candidate while `classified_placeholder` keeps its ranked position but is emitted as a sanitized `available:false` result exposing only `entityId`/`entityType`. Term collisions are allowed and never error.
+
+**Context:** docs/08 §7 and docs/03 §5.3 define a deterministic authored pipeline (normalize, resolve aliases, match, check availability, rank exact-title/term/alias/partial) but leave numeric rank direction, exact normalization depth, partial-match direction, and gate-vs-`unavailableBehavior` behavior unspecified. docs/02 FR-006 requires results from authored metadata and progression rules.
+
+**Options considered:**
+
+- Diacritic folding / stemming / fuzzy or AI search (rejected: docs require deterministic authored search, no external engine).
+- Partial direction reversed (authored term contained in query; rejected: query-contained-in-authored-term matches how users type prefixes and is recorded as the convention).
+- Separate gate context interface (rejected: `RuleEvaluationContext` already is the minimal rule context; duplicating it would risk drift).
+- Public numeric tier scores (rejected: tier precedence is compared as an ordered enum internally; public results expose no magic scores).
+
+**Rationale:**
+
+- Reusing `RuleEvaluationContext` and `evaluateRule` keeps BBX-021 authoritative for gates and avoids a second rule-context contract.
+- A single candidate per entry plus one public `SearchResult` keeps results deterministic and matches the "one result per indexed entry" authoring model.
+- `classified_placeholder` sanitization (no title/rank/term/tier) prevents authored-search metadata leaks through the public result, while retaining its internal sorted position.
+
+**Consequences:**
+
+- BBX-023 is a pure total function over validated `searchableIndex`; empty/no-match/hidden/classified paths return or omit without throwing.
+- Organization/location entries are returned by authored id without dereferencing; BBX-024 still owns their reference integrity.
+- Records/Mail UI, suggestion/correction (BBX-101), and search-event emission remain separate tasks.
+
+---
+
 ## Proposed-decision template
 
 ```text
