@@ -409,7 +409,7 @@ This log records durable decisions. New entries should use the same format.
 **Rationale:**
 
 - A fixed report shape and explicit two-field capability object make the whole surface enumerable and testable; nothing opaque or fingerprintable enters.
-- Calling `JSON.stringify` produces stable output only because the builder constructs the fields in one declared order.
+- Calling `JSON.stringify` produces stable output only because the serializer explicitly re-projects the six approved fields (and the fixed `{indexedDB, serviceWorker}` capability object) from the report — the serializer is itself a privacy choke point, so runtime extras on an externally-forged/cast report are discarded, never stringified.
 - Sensitivenegative tests target only the filtered input paths; allowed opaque version metadata is intentionally passed through.
 
 **Consequences:**

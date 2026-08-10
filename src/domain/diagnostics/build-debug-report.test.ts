@@ -5,6 +5,7 @@ import { SAVE_SCHEMA_VERSION } from "../saves";
 
 const FORBIDDEN_EVENT_SENTINEL = "DO_NOT_EXPORT_EVENT_PAYLOAD";
 const FORBIDDEN_CAPABILITY_SENTINEL = "DO_NOT_EXPORT_CAPABILITY_KEY";
+const FORBIDDEN_PLAYER_TEXT = "DO_NOT_EXPORT_PLAYER_TEXT";
 
 function baseInput(overrides: Partial<DebugExportInput> = {}): DebugExportInput {
   return {
@@ -178,6 +179,40 @@ describe("sensitive-leak separation", () => {
 });
 
 describe("determinism and immutability", () => {
+  it("serialized output matches a forged runtime object only via re-projection", () => {
+    const valid = buildDebugReport(baseInput({ recentEventTypes: ["ok"] }));
+    // Externally cast/forged: six valid fields plus runtime extras.
+    const forged = {
+      ...valid,
+      playerText: FORBIDDEN_PLAYER_TEXT,
+      browserCapabilities: {
+        indexedDB: valid.browserCapabilities.indexedDB,
+        serviceWorker: valid.browserCapabilities.serviceWorker,
+        [FORBIDDEN_CAPABILITY_SENTINEL]: true,
+      },
+    } as DebugReport;
+
+    const serialized = serializeDebugReport(forged);
+    expect(serialized).not.toContain("playerText");
+    expect(serialized).not.toContain(FORBIDDEN_PLAYER_TEXT);
+    expect(serialized).not.toContain(FORBIDDEN_CAPABILITY_SENTINEL);
+
+    const parsed = JSON.parse(serialized) as DebugReport;
+    expect(Object.keys(parsed).sort()).toEqual([
+      "applicationVersion",
+      "browserCapabilities",
+      "contentVersion",
+      "errorCodes",
+      "recentEventTypes",
+      "saveSchemaVersion",
+    ]);
+    expect(parsed.browserCapabilities).toEqual({
+      indexedDB: valid.browserCapabilities.indexedDB,
+      serviceWorker: valid.browserCapabilities.serviceWorker,
+    });
+    expect(parsed.recentEventTypes).toEqual(["ok"]);
+  });
+
   it("same input -> deep-equal report repeatedly", () => {
     const input = baseInput({
       contentVersion: "1.0.0",

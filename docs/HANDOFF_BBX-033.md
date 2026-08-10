@@ -58,7 +58,7 @@ interface DebugReport {
 
 ## Serialization
 
-- `serializeDebugReport = JSON.stringify(report)`; fixed field order comes from the builder's declared object shape. No pretty printing, no Blob/File/clipboard/browser APIs. A download/share UI is a later task.
+- `serializeDebugReport(report)` explicitly re-projects the six approved fields into a fresh plain object before `JSON.stringify` — including rebuilding `{indexedDB, serviceWorker}` explicitly — so the serializer itself is a privacy choke point and runtime extras on an externally cast/forged report are discarded. Field ordering is fixed by construction. No pretty printing; no Blob/File/clipboard/browser APIs. Download/share UI is a later task.
 
 ## Privacy
 
