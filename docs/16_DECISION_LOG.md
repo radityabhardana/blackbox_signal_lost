@@ -391,6 +391,35 @@ This log records durable decisions. New entries should use the same format.
 
 ---
 
+## ADR-020 — Non-sensitive debug export (BBX-033)
+
+**Status:** Accepted
+
+**Decision:** BBX-033 provides a pure domain debug report containing exactly the six documented diagnostic categories from docs/08 §13: application version, save schema version, content version, recent domain event-type codes, browser capability summary (`indexedDB` + `serviceWorker`, fixed fields, never an arbitrary map), and error codes. `saveSchemaVersion` is imported from `SAVE_SCHEMA_VERSION`; `contentVersion`/`applicationVersion` are preserved exactly as supplied by the caller; events are caller-supplied type-code strings filtered to the shape `^[a-z0-9_-]{1,64}$`, in chronological order, duplicates kept, last 16 valid entries retained. `errorCodes` is typed `SaveRepositoryErrorCode[]` reused directly. There is no raw-error ingestion, no payload data, no timestamp, no UI/download, no analytics, no persistence access.
+
+**Context:** docs/12 BBX-033 ("Non-sensitive diagnostics"); docs/08 §12 logs "a non-sensitive diagnostic code" only; docs/08 §13 lists the six exportable data points; docs/15 requires guest mode to store only local data with no unnecessary personal data and no analytics by default. BBX-032 is blocked (no migration), so no migration status is exported.
+
+**Options considered:**
+
+- Arbitrary capability/string maps (rejected: keys themselves leak data; fixed fields prevent it).
+- Accepting whole `Error` instances or `Error.message` (rejected: uncontrolled content; the owning boundary maps to the documented code instead).
+- Deduplicating recent events (rejected: duplicates are meaningful: occurrence frequency is a real diagnostic signal).
+- Max-count/length caps (chosen as BBX-033 export-safety conventions — **16 entries / 64 chars**, docs silent — recorded here on purpose, not engine semantics).
+
+**Rationale:**
+
+- A fixed report shape and explicit two-field capability object make the whole surface enumerable and testable; nothing opaque or fingerprintable enters.
+- Calling `JSON.stringify` produces stable output only because the builder constructs the fields in one declared order.
+- Sensitivenegative tests target only the filtered input paths; allowed opaque version metadata is intentionally passed through.
+
+**Consequences:**
+
+- The module is a pure, total, deterministic builder beside `src/domain/diagnostics`.
+- It never reads stores/engines/repositories and never touches browser APIs, `Date`, or `Math.random`.
+- Download/share UI remains a later integration task; BBX-032 stays blocked and completely decoupled.
+
+---
+
 ## Proposed-decision template
 
 ```text

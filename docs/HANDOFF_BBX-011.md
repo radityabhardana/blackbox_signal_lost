@@ -38,4 +38,6 @@
 
 **Save / schema impact:** None — BBX-011 adds no persistence. `WindowManagerState` remains the future serialization contract for BBX-013.
 
+**Subsequent audit:** BBX-012 (taskbar and launcher keyboard/pointer support) was audited after this milestone and found to be fully satisfied by this implementation; it was closed as a documentation-only task (see `docs/16_DECISION_LOG.md` ADR-012). Notification center and settings shortcut remain deferred to their owning milestones.
+
 **Next recommended task:** BBX-013 — layout persistence (restore/reset safely through the existing BBX-010 domain), then BBX-020 content schemas.

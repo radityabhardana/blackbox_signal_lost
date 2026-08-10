@@ -161,9 +161,11 @@ Do not assume continuation before evidence.
 |---|---:|---|---|
 | BBX-010 | P0 | Window domain model | Pure tested geometry and focus rules |
 | BBX-011 | P0 | Window UI | Move, resize, minimize, restore, maximize |
-| BBX-012 | P1 | Taskbar and launcher | Keyboard and pointer support |
+| BBX-012 | P1 | Taskbar and launcher | COMPLETED — keyboard and pointer support for taskbar, launcher, and window switching was delivered as part of BBX-011 Session 3; no separate implementation required |
 | BBX-013 | P1 | Layout persistence | Restore and reset safely |
 | BBX-014 | P2 | Window snapping | Optional after core stability |
+
+Note: BBX-012 was audited against the BBX-011 implementation and closed as fully satisfied. The notification center and settings shortcut remain part of the taskbar contents in `docs/07_UI_UX_SPEC.md` but stay assigned to their owning milestones (BBX-043 notification center; the Settings milestone) — they are not completed and are not BBX-012 scope.
 
 ### Domain and content
 
