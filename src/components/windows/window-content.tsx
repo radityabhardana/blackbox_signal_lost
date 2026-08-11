@@ -1,8 +1,17 @@
 "use client";
 
 import { getApp } from "@/lib/apps";
+import { MailApp } from "@/components/apps/mail/mail-app";
 
 export function WindowContent({ appId }: { appId: string }) {
+  if (appId === "app_mail") {
+    return (
+      <div className="bbx-window-body">
+        <MailApp />
+      </div>
+    );
+  }
+
   const app = getApp(appId);
 
   return (

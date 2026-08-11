@@ -420,6 +420,42 @@ This log records durable decisions. New entries should use the same format.
 
 ---
 
+## ADR-021 — Secure Mail vertical slice reuses DialogueNode with a session-owned engine boundary (BBX-040)
+
+Status: Accepted
+
+Decision:
+
+BBX-040 reuses the existing BBX-020 DialogueNode as the authored mailbox message vehicle behind a configurable mail channelId.
+
+- No new Mail schema — docs/09 defines none; mailbox metadata (subject, caseLabel, trust) is a documented content-model gap.
+- Inbox rows derive strictly from CaseEngineState.queuedDialogue, filtered by channel, preserving queue order exactly. Messages are never sourced from all authored dialogue.
+- Sender = Character.displayName via speakerId; body = node.text; sentAtNarrativeTime shown only when authored.
+- Read state (selected/read IDs) is Mail-local React state, non-persistent.
+- Attachment presentation uses only real Asset fields (altText, type, transcriptPath is presence-only). No fetching, no dangerouslySetInnerHTML.
+- Evidence association uses the existing reverse relation Evidence.assetIds contains asset.id; 0/1/many deterministic semantics in declaration order; no evidence duplicated on repeat activation.
+- Progress integrates only through CaseSessionProvider -> stepCaseEngine. dispatchTransaction plans against the authoritative closure-held engine state (fresh read, never stale render state), folds inputs sequentially, and commits once — rapid repeat activation cannot duplicate evidence_discovered.
+
+Context:
+
+docs/12 BBX-040 ("Attachments and evidence events"); docs/11 Session 7 requires fixture content, attachments, evidence discovery, keyboard behavior, empty/error states, and tests. BBX-022 owns progression and its queueDialogue + discover semantics; docs/09 defines no mail entity.
+
+Rationale:
+
+- CaseSessionState stays authoritative in the session; Mail never mutates engine state directly.
+- Multiple Evidence entries sharing one asset are all processed sequentially against freshly returned engine state.
+- A Playwright-only harness route (/test/mail) gates on PLAYWRIGHT_TEST=1 and mounts the real desktop shell; production /game never imports test fixtures.
+- DialogueChoice.nextNodeId remains unconsumed by the engine and by Mail; replies only dispatch dialogue_choice_selected.
+- No Mail search surface (BBX-041/BBX-023), no withheld-fake state, no Evidence-Board affordance in BBX-040.
+
+Consequences:
+
+- BBX-040 ships an honest vertical slice; mailbox metadata beyond the schema remains deferred.
+- E2E asserts user-visible discovery state derived from engine state, without data-/window-store/debug seams.
+- Context consumers must receive a fresh session object per committed engine state (React context propagation); dispatch closures stay referentially stable (react-hooks/refs lint rule).
+
+---
+
 ## Proposed-decision template
 
 ```text

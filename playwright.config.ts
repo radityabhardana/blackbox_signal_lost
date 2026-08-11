@@ -15,7 +15,7 @@ export default defineConfig({
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
-    command: "pnpm build && pnpm start",
+    command: "env PLAYWRIGHT_TEST=1 sh -c 'pnpm build && pnpm start'",
     url: "http://localhost:3000",
     reuseExistingServer: !isCI,
     timeout: 120_000,

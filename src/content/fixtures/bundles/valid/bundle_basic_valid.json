@@ -41,6 +41,15 @@
           { "type": "queue_dialogue", "nodeId": "dialogue_test" },
           { "type": "discover_evidence", "evidenceId": "evidence_test" }
         ]
+      },
+      {
+        "id": "trigger_mail_test",
+        "once": true,
+        "priority": 1,
+        "rule": { "eventOccurred": { "type": "mail_test_bootstrap" } },
+        "effects": [
+          { "type": "queue_dialogue", "nodeId": "dialogue_test" }
+        ]
       }
     ],
     "outcomes": [
@@ -144,7 +153,8 @@
           "consequences": [],
           "nextNodeId": "dialogue_test_next"
         }
-      ]
+      ],
+      "attachments": ["asset_test", "asset_test_audio"]
     },
     {
       "id": "dialogue_test_next",
