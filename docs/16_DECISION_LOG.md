@@ -456,6 +456,44 @@ Consequences:
 
 ---
 
+## ADR-022 — Records read-mode is search-first through the BBX-023 search index (BBX-041)
+
+Status: Accepted (v2 supersedes v1)
+
+Decision:
+
+BBX-041 renders authored RecordDefinition content (docs/09 §6) through the BBX-023 searchable index, with no new Records schema. There is no browse list.
+
+- The Records view is search-first: a blank query renders a search prompt, never a list of `unlockedRecords`. `unlockedRecords` is not consulted by the Records model at all.
+- Search runs through the existing `searchContent` over `case.searchableIndex` record entries, gated by the same `toRuleEvaluationContext` the engine uses. BBX-023 availability rules are authoritative; record ordering follows authored tier/rank.
+- `classified_placeholder` results keep their ranked position as generic sanitized rows (no title/type/source/date/metadata/body/evidence) and are never dereferenced into record data. `hidden` results never surface.
+- Opening an available record emits `{ kind: "game_event", event: { type: "record_opened", entityId } }` through the engine. No `search_performed` or `evidence_discovered` events are emitted for read/search actions.
+- Detail uses only schema fields: title, recordType, createdAt/revisedAt, source.system or source.organizationId (fallback "Unknown source"), evidenceId -> evidence.title but only while the evidence id is in `discoveredEntityIds`, relatedEntityIds resolved only against records (fallback: raw id), metadata as ordered key/value rows.
+- The opaque rich-text body is never interpreted or rendered; canonical fixture content is untouched.
+- Synthetic BBX-041 content (gated/classified records, index entries, bootstrap trigger) lives only in the test-only cloned bundle in `src/test/fixtures/records-content.ts`.
+- Selection and search query are component state (non-persistent), mirroring Mail's read state.
+
+Context:
+
+docs/12 BBX-041 ("Search, detail, metadata"); docs/11 Session 7 requires fixture content, keyboard behavior, empty/error states, and tests. docs/09 §12 defines searchableIndex entries with availabilityRule gates; docs/09 §6 defines records but leaves rich text opaque.
+
+Rationale:
+
+- A single public projection (rule-context.ts) feeds both engine trigger evaluation and search gates, so unlock truth and availability truth cannot diverge (BBX-041 refactor of step-case-engine.ts).
+- Search-first keeps results deterministic from authored index semantics; a browse list would privilege engine unlock order over authored availability.
+- Classified placeholders must surface (they are searchable intel) without leaking metadata — sanitization happens before any record dereference.
+- Emitting `record_opened` lets authored rules (e.g. evidence discoveryRule) key on records being read, per docs/08 §5 and the docs/09 example.
+
+Consequences:
+
+- Records availability is authored in the searchable index; authors must keep index availability rules aligned with unlock triggers.
+- Global case search remains a later task.
+- Records UI ships behind the existing app_records catalog entry (already registered); WindowContent routes it.
+
+---
+
+---
+
 ## Proposed-decision template
 
 ```text

@@ -1,4 +1,5 @@
 import { evaluateRule } from "../rules";
+import { toRuleEvaluationContext } from "./rule-context";
 import type { RuleEvent } from "../rules";
 import type { CaseEngineState, EngineInput, EngineResult } from "./types";
 import type { ContentBundle } from "../../content/validator";
@@ -59,7 +60,7 @@ export function stepCaseEngine(
     .filter((trigger) => !(trigger.once && next.firedTriggerIds.includes(trigger.id)));
 
   for (const trigger of eligible) {
-    if (evaluateRule(trigger.rule, buildRuleContext(next))) {
+    if (evaluateRule(trigger.rule, toRuleEvaluationContext(next))) {
       for (const effect of trigger.effects) {
         applyEffect(next, effect, content, applied);
       }
@@ -82,16 +83,6 @@ function toRuleEvent(input: EngineInput): RuleEvent {
     return { type: "evidence_discovered", entityId: input.evidenceId };
   }
   return { type: "dialogue_choice_selected", entityId: input.choiceId };
-}
-
-function buildRuleContext(state: MutableState) {
-  return {
-    flags: state.flags,
-    events: state.eventHistory,
-    discoveredEntities: new Set(state.discoveredEntityIds),
-    completedObjectives: new Set(state.completedObjectives),
-    selectedChoices: new Set(state.selectedChoices),
-  };
 }
 
 function resolveChoice(choiceId: string, content: ContentBundle): DialogueChoice | undefined {
