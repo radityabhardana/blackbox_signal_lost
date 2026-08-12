@@ -3,6 +3,7 @@
 import { getApp } from "@/lib/apps";
 import { MailApp } from "@/components/apps/mail/mail-app";
 import { RecordsApp } from "@/components/apps/records/records-app";
+import { MessengerApp } from "@/components/apps/messenger/messenger-app";
 
 export function WindowContent({ appId }: { appId: string }) {
   if (appId === "app_mail") {
@@ -17,6 +18,14 @@ export function WindowContent({ appId }: { appId: string }) {
     return (
       <div className="bbx-window-body">
         <RecordsApp />
+      </div>
+    );
+  }
+
+  if (appId === "app_messenger") {
+    return (
+      <div className="bbx-window-body">
+        <MessengerApp />
       </div>
     );
   }

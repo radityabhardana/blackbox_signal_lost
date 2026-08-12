@@ -492,6 +492,45 @@ Consequences:
 
 ---
 
+## ADR-023 — Messenger reuses the BBX-022 DialogueNode transport with a session-owned engine boundary (BBX-042)
+
+Status: Accepted
+
+Decision:
+
+BBX-042 renders authored `DialogueNode` content (docs/09 §7) for the session's messenger channel as a single-thread, save-local conversation, mirroring ADR-021's Secure Mail architecture: the BBX-022 engine owns all dialogue progression, and `CaseEngineState.queuedDialogue` is the authoritative message queue.
+
+- `messengerChannelId` is an optional, session-configured channel id on `CaseSessionConfig`. A configured channel projects queued dialogue nodes whose `channelId` matches; an undefined channel renders the honest "No messages" empty state — never a crash and never a fallback channel. Messenger is reachable from existing harnesses (e.g. the mail harness) that configure no messenger channel, which is why the undefined case is tested.
+- Choice buttons are authored `DialogueChoice` entries. Their disabled state is derived solely from `state.selectedChoices.includes(choiceId)` — engine-authoritative, no local UI state. Because BBX-022 re-applies choice consequences on every `dialogue_choice_selected` input (`step-case-engine.ts`), re-clicking an authorable choice would duplicate `queue_dialogue` effects; the disabled button structurally prevents a second emission. Assertions cover the exact `[greeting, reply]` queue result.
+- `dialogue_choice_selected` is the only `EngineInput` Messenger emits. No `evidence_discovered` events originate from Messenger; attachments remain presentation-only and are not rendered in this MVP; there is no read/unread state, no search, no persistence, and no synthetic content in production Case-001.
+- **enterRule has no runtime owner.** `DialogueNode.enterRule` is reference-validated only by BBX-024 (`validate-bundle.ts`); BBX-022 (`stepCaseEngine`) never evaluates it, and Messenger does not assume ownership. Messenger therefore never reads `enterRule`; authored dialogue gating happens exclusively through authored triggers. Runtime ownership of `enterRule` is deferred to a future dialogue milestone and must not be silently redefined as trigger semantics.
+- The augmented test bundle lives only in the cloned fixture `src/test/fixtures/messenger-content.ts`. `bundle_basic_valid.json` was previously modified by BBX-040 (`trigger_mail_test`); the BBX-042 requirement is **zero new modifications** to the canonical bundle.
+- Ordering fact: choice consequences execute before trigger evaluation in BBX-022, so an authored follow-up chain (greeting -> reply through a choice consequence) yields the exact queue order regardless of trigger scheduling.
+- `nextNodeId` remains unconsumed by Messenger and BBX-022 (see ADR-021); duplicate queued ids are preserved in order and keyed occurrence-safely in the UI.
+
+Context:
+
+docs/12 BBX-042 ("Messenger"): authored choices and triggers, P1. docs/10 and the Mail slice (ADR-021) established the session-owned engine boundary; the MessageTransport convention is the shared recollection of Mail's prose: the engine queues, consumers project. docs/11 requires fixture content, keyboard behavior, empty states, and tests.
+
+Options considered:
+
+- A dedicated messenger schema: rejected — Mail already proves DialogueNode transports cross-channel messages without schema changes (ADR-021 rationale).
+- Local UI state for choice selection: rejected — it can diverge from engine truth and does not stop re-dispatch of a second input.
+
+Rationale:
+
+- Queue-order projection keeps delivery deterministic from engine state alone, matching the Mail model contract (`buildMailInbox`) and its duplicate/idempotency behavior.
+- Engine-derived disabled state is the only guard that is true under non-React (direct engine) use.
+- Optional channel id keeps the harness/session API honest: a session may simply have no messenger channel.
+
+Consequences:
+
+- Messenger ships behind the existing `app_messenger` catalog entry (already registered); `WindowContent` routes it.
+- The messenger thread is ephemeral (component-projected from engine state); persistence/hydration is a later milestone.
+- Authors gate messenger content with triggers; `enterRule` on dialogue nodes stays inert until a future owner milestone.
+
+---
+
 ---
 
 ## Proposed-decision template

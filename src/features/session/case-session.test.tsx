@@ -118,3 +118,53 @@ describe("sequential dispatchTransaction", () => {
     expect(working.discoveredEntityIds).toEqual(["evidence_test"]);
   });
 });
+
+describe("CaseSessionProvider channels", () => {
+  function ChannelProbe() {
+    const session = useOptionalCaseSession();
+    return (
+      <output data-testid="channels">
+        {JSON.stringify({
+          mail: session?.mailChannelId ?? null,
+          messenger: session?.messengerChannelId ?? null,
+        })}
+      </output>
+    );
+  }
+
+  it("messengerChannelId stays undefined when the session omits it", () => {
+    const { content, mailChannelId, initialState } = createMailTestSession();
+    render(
+      <CaseSessionProvider content={content} mailChannelId={mailChannelId} initialState={initialState}>
+        <ChannelProbe />
+      </CaseSessionProvider>,
+    );
+
+    const channels = JSON.parse(screen.getByTestId("channels").textContent!) as {
+      mail: string | null;
+      messenger: string | null;
+    };
+    expect(channels.mail).toBe("channel_test");
+    expect(channels.messenger).toBeNull();
+  });
+
+  it("messengerChannelId is carried through when configured", () => {
+    const { content, mailChannelId, initialState } = createMailTestSession();
+    render(
+      <CaseSessionProvider
+        content={content}
+        mailChannelId={mailChannelId}
+        messengerChannelId="channel_messenger"
+        initialState={initialState}
+      >
+        <ChannelProbe />
+      </CaseSessionProvider>,
+    );
+
+    const channels = JSON.parse(screen.getByTestId("channels").textContent!) as {
+      mail: string | null;
+      messenger: string | null;
+    };
+    expect(channels.messenger).toBe("channel_messenger");
+  });
+});

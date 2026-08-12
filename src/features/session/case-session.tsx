@@ -9,6 +9,7 @@ import type { ContentBundle } from "@/content/validator";
 export interface CaseSessionConfig {
   readonly content: ContentBundle;
   readonly mailChannelId: string;
+  readonly messengerChannelId?: string;
   readonly initialState?: CaseEngineState;
 }
 
@@ -66,8 +67,11 @@ export function CaseSessionProvider({ children, ...config }: { children: ReactNo
       dispatchTransaction: actions.dispatchTransaction,
       content: config.content,
       mailChannelId: config.mailChannelId,
+      ...(config.messengerChannelId !== undefined
+        ? { messengerChannelId: config.messengerChannelId }
+        : {}),
     }),
-    [state, actions, config.content, config.mailChannelId],
+    [state, actions, config.content, config.mailChannelId, config.messengerChannelId],
   );
 
   return <CaseSessionContext.Provider value={session}>{children}</CaseSessionContext.Provider>;
