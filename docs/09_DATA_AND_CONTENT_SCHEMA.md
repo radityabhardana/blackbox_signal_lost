@@ -216,7 +216,7 @@ type GameEffect =
   | { type: "set_flag"; key: string; value: string | number | boolean }
   | { type: "discover_evidence"; evidenceId: string }
   | { type: "play_audio_cue"; assetId: string }
-  | { type: "show_notification"; notificationId: string };
+  | { type: "show_notification"; notificationId: string }; // resolves to NotificationDefinition (§19)
 ```
 
 ## 11. Rule expression
@@ -372,3 +372,35 @@ Author content
   "reportClaimsSupported": ["claim_ferry_record_false"]
 }
 ```
+
+## 19. Notification schema
+
+Notification definitions own the authored presentation content of runtime
+notifications. They are referenced by the `show_notification` game effect
+(`notificationId` resolves to a `NotificationDefinition` id; unresolved or
+wrong-kind references fail content validation, see §16).
+
+```ts
+interface NotificationDefinition {
+  id: string;                         // stable lowercase snake_case id
+  text: string;                       // plain text, no markdown/HTML
+  priority:
+    | "informational"
+    | "discovery"
+    | "message"
+    | "urgent"
+    | "system_anomaly";
+}
+```
+
+The priority tier set comes directly from docs/07 §14 (Informational,
+Discovery, Message, Urgent, System anomaly). No other presentation metadata is
+defined: there is no title, sender, icon, timestamp, target/deep-link, read
+state, dismiss state, or sound.
+
+The ContentBundle envelope carries `notifications: NotificationDefinition[]`.
+The collection defaults to an empty array so pre-existing bundles parse
+unchanged; the parsed runtime bundle always exposes a deterministic
+`notifications` array. Runtime identity and history remain BBX-022-owned:
+`CaseEngineState.notifications` is an append-only id queue written by
+`show_notification` (duplicates allowed, engine order preserved).

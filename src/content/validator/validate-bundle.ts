@@ -30,6 +30,7 @@ const KIND_LABELS: Record<EntityKind, string> = {
   outcome: "outcome",
   conclusion: "conclusion",
   asset: "asset",
+  notification: "notification",
 };
 
 /**
@@ -128,6 +129,9 @@ function buildRegistrations(
   for (const asset of bundle.assets) {
     registrations.push({ id: asset.id, kind: "asset", owner: { entityType: "asset", entityId: asset.id } });
   }
+  for (const notification of bundle.notifications) {
+    registrations.push({ id: notification.id, kind: "notification", owner: { entityType: "notification", entityId: notification.id } });
+  }
   return registrations;
 }
 
@@ -209,8 +213,7 @@ function validateRule(
 
 /**
  * The single documented reference carried by a GameEffect, or null for the
- * DEFER/NOT-CONTENT-REFERENCE variants (unlock_application, show_notification,
- * set_flag).
+ * DEFER/NOT-CONTENT-REFERENCE variants (unlock_application, set_flag).
  */
 function effectTarget(effect: GameEffect): { id: string; kind: EntityKind; field: string } | null {
   switch (effect.type) {
@@ -225,6 +228,8 @@ function effectTarget(effect: GameEffect): { id: string; kind: EntityKind; field
       return { kind: "evidence", field: "evidenceId", id: effect.evidenceId };
     case "play_audio_cue":
       return { kind: "asset", field: "assetId", id: effect.assetId };
+    case "show_notification":
+      return { kind: "notification", field: "notificationId", id: effect.notificationId };
     default:
       return null;
   }

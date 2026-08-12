@@ -210,7 +210,7 @@ This log records durable decisions. New entries should use the same format.
 
 **Rationale:**
 
-- Reference IDs cannot be resolved yet for several documented fields because their target collections are intentionally opaque or undefined (CaseStage, ClaimSlot, Ending content, Application, Notification, Organization, Location, Channel, AssetBundle). Those are deferred, not guessed.
+- Reference IDs cannot be resolved yet for several documented fields because their target collections are intentionally opaque or undefined (CaseStage, ClaimSlot, Ending content, Application, Organization, Location, Channel, AssetBundle). Those are deferred, not guessed. (Update post-ADR-024: `Notification` is no longer in this list — `NotificationDefinition` exists and `show_notification` is now a validated reference class.)
 - "Missing hints" is enforced as at-least-one-hint per objective because docs/09 §9 requires only a complete ladder "before release"; four-tier completeness is BBX-104/105 content work, not a schema invariant.
 - The reachability term in the backlog is honored, not redefined: BBX-024 implements static reference resolvability/integrity; the docs explicitly name a separate simulation script for runtime reachability.
 
@@ -273,7 +273,7 @@ This log records durable decisions. New entries should use the same format.
 - Choice consequences execute before trigger evaluation so a choice that unlocks a record applies before any trigger that reads the resulting state.
 - Objective lifecycle is mutually exclusive: `complete_objective` removes the id from `activeObjectives` before adding to `completedObjectives`; `start_objective` is a no-op on a completed objective.
 - Queue effects (dialogue/audio/notification) append and allow duplicates; set/flag effects are idempotent. `appliedEffects` is the full ordered execution trace, including idempotent no-op repeats.
-- Runtime existence checks are limited to targets resolvable in ContentBundle (record, dialogue node, objective, evidence, asset, dialogue choice). `applicationId`/`notificationId` are still applied but cannot yet be existence-checked because ContentBundle has no Application/Notification collection.
+- Runtime existence checks are limited to targets resolvable in ContentBundle (record, dialogue node, objective, evidence, asset, dialogue choice). `applicationId`/`notificationId` are still applied at runtime without engine existence checks; as of ADR-024 the `notificationId` reference is proven statically by BBX-024 against the NotificationDefinition collection (`applicationId` still awaits its defining collection).
 
 **Consequences:**
 
@@ -531,7 +531,40 @@ Consequences:
 
 ---
 
+## ADR-024 — Notification content contract: NotificationDefinition collection with validator-proven references (BBX-043 prerequisite)
+
+Status: Accepted
+
+Decision:
+
+Notification presentation content is owned by a new `NotificationDefinition` content collection. The engine is unchanged.
+
+- `NotificationDefinition` (docs/09 §19) carries exactly `id`, `text`, `priority`. Nothing else: no title, sender, icon, timestamp, target/deep-link, read state, dismiss state, or sound — none are documented.
+- `priority` is the verbatim docs/07 §14 taxonomy: `informational | discovery | message | urgent | system_anomaly`. BBX-043's roadmap acceptance ("Priority and history") requires this as an authored property; no derived scheme (id prefix, event type, trigger priority, source, UI mapping) is permitted.
+- `ContentBundle.notifications` is `z.array(notificationDefinitionSchema).default([])`: existing bundles parse unchanged, the parsed runtime shape always exposes a deterministic array, and per-item validation stays strict.
+- BBX-024 resolves `show_notification.notificationId` against the collection: unresolved ids fail with `reference_unresolved`, wrong-kind references fail with `reference_wrong_kind`, and duplicate notification ids are covered by the existing global readable-ID uniqueness registry (`duplicate_id`).
+- `stepCaseEngine` is not modified: it still appends the opaque `notificationId` to `CaseEngineState.notifications` (append-only, duplicates allowed, engine order preserved). Static validation owns authored reference correctness.
+- Notification Center UI, read/unread, dismissal, deep-links, and toast behavior remain deferred to BBX-043 and later milestones; this ADR decides the content contract only.
+
+Context:
+
+docs/12 BBX-043 acceptance is "Priority and history". The engine already owned `CaseEngineState.notifications` and the `show_notification` effect, but no content collection existed to define authored presentation content or priority (previously recorded as deferred in ADR-013/ADR-015). Without this contract, BBX-043 could not honestly implement the priority requirement.
+
+Options considered:
+
+- Engine-added priority/existence checks: rejected — per the ADR-023 engine-ownership precedent, the engine does not absorb content ownership; static validation proves authors correct before runtime.
+- Required `notifications` key on all bundles: rejected — it would force unrelated canonical-fixture churn with no correctness gain.
+- Optional `notifications?` key: rejected — consumers would see `undefined` and the array would no longer be deterministic.
+
+Consequences:
+
+- The fixture `bundle_basic_valid.json` is unchanged; new notification content is exercised by the dedicated valid bundle fixture `bundle_notifications_valid.json` and code-level cloned fixtures.
+- BBX-043 UI may now project `state.notifications` -> NotificationDefinition lookup -> text + priority, with occurrence-preserving order, without new runtime semantics.
+- `Application` remains the only effect-target collection still deferred for runtime/validator reference purposes.
+
 ---
+
+
 
 ## Proposed-decision template
 

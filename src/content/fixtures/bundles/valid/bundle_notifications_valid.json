@@ -1,0 +1,187 @@
+{
+  "case": {
+    "id": "case_notifications_test",
+    "version": "1.0.0",
+    "title": "Notifications Test Case",
+    "estimatedMinutes": 30,
+    "entryStageId": "stage_notifications_test",
+    "stages": [],
+    "entities": [],
+    "assetBundleId": "bundle_notifications_test",
+    "objectives": [
+      {
+        "id": "objective_notifications_test",
+        "title": "Notifications test objective",
+        "description": "A notifications test objective.",
+        "optional": false,
+        "startRule": { "always": true },
+        "completionRule": { "objectiveCompleted": "objective_notifications_final" },
+        "hintIds": ["hint_notifications_test"],
+        "nextObjectiveIds": ["objective_notifications_final"]
+      },
+      {
+        "id": "objective_notifications_final",
+        "title": "Final notifications objective",
+        "description": "Final notifications test objective.",
+        "optional": false,
+        "startRule": { "always": true },
+        "completionRule": { "always": true },
+        "hintIds": ["hint_notifications_final"],
+        "nextObjectiveIds": []
+      }
+    ],
+    "triggers": [
+      {
+        "id": "trigger_notifications_test",
+        "once": true,
+        "priority": 1,
+        "rule": { "eventOccurred": { "type": "notification_test_bootstrap" } },
+        "effects": [
+          { "type": "show_notification", "notificationId": "notification_test" },
+          { "type": "show_notification", "notificationId": "notification_test_urgent" }
+        ]
+      }
+    ],
+    "outcomes": [
+      {
+        "id": "outcome_notifications_test",
+        "title": "Notifications test outcome",
+        "priority": 1,
+        "endingContentId": "ending_notifications_test",
+        "evaluationRule": { "always": true },
+        "effects": [{ "type": "play_audio_cue", "assetId": "asset_notifications_audio_test" }]
+      }
+    ],
+    "searchableIndex": [
+      {
+        "entityId": "record_notifications_test",
+        "entityType": "record",
+        "title": "Notifications test record",
+        "exactTerms": ["notification"],
+        "aliases": [],
+        "partialTerms": [],
+        "unavailableBehavior": "hidden",
+        "availabilityRule": { "always": true },
+        "authoredRank": 1
+      },
+      {
+        "entityId": "character_notifications_test",
+        "entityType": "character",
+        "title": "Notifications test character",
+        "exactTerms": ["notification"],
+        "aliases": [],
+        "partialTerms": [],
+        "unavailableBehavior": "hidden",
+        "availabilityRule": { "always": true },
+        "authoredRank": 2
+      }
+    ]
+  },
+  "characters": [
+    {
+      "id": "character_notifications_test",
+      "displayName": "Notifications Test Character",
+      "aliases": [],
+      "role": "test",
+      "organizationIds": [],
+      "publicProfile": {},
+      "portraitAssetId": "asset_notifications_test",
+      "searchTerms": ["notification"],
+      "knownEvidenceIds": ["evidence_notifications_test"]
+    }
+  ],
+  "records": [
+    {
+      "id": "record_notifications_test",
+      "caseId": "case_notifications_test",
+      "recordType": "test",
+      "title": "Notifications test record",
+      "body": {},
+      "source": { "system": "test" },
+      "createdAt": "2041-11-18T22:00:00Z",
+      "relatedEntityIds": [],
+      "searchTerms": ["notification"],
+      "aliases": [],
+      "availabilityRule": { "always": true },
+      "evidenceId": "evidence_notifications_test",
+      "metadata": {}
+    }
+  ],
+  "evidence": [
+    {
+      "id": "evidence_notifications_test",
+      "caseId": "case_notifications_test",
+      "title": "Notifications test evidence",
+      "type": "document",
+      "summary": "Notifications test evidence summary.",
+      "source": { "system": "test" },
+      "tags": ["notification"],
+      "relatedEntityIds": [],
+      "assetIds": ["asset_notifications_test"],
+      "discoveryRule": { "always": true },
+      "optional": false,
+      "contested": false,
+      "redHerring": false,
+      "reportClaimsSupported": []
+    }
+  ],
+  "hints": [
+    { "id": "hint_notifications_test", "objectiveId": "objective_notifications_test", "tier": 1, "text": "Notifications test hint" },
+    { "id": "hint_notifications_final", "objectiveId": "objective_notifications_final", "tier": 1, "text": "Final notifications hint" }
+  ],
+  "dialogue": [
+    {
+      "id": "dialogue_notifications_test",
+      "channelId": "channel_notifications_test",
+      "speakerId": "character_notifications_test",
+      "text": "Notifications test message.",
+      "enterRule": { "always": true }
+    }
+  ],
+  "conclusions": [
+    {
+      "id": "conclusion_notifications_test",
+      "caseId": "case_notifications_test",
+      "claimSlots": [],
+      "evidenceSlotCount": 3,
+      "disclosureChoices": []
+    }
+  ],
+  "assets": [
+    {
+      "id": "asset_notifications_test",
+      "type": "image",
+      "sourcePath": "assets/test/src.png",
+      "optimizedPath": "assets/test/opt.webp",
+      "license": "test",
+      "creator": "test",
+      "provenanceNote": "test",
+      "caseIds": ["case_notifications_test"],
+      "preload": "none"
+    },
+    {
+      "id": "asset_notifications_audio_test",
+      "type": "audio",
+      "sourcePath": "assets/test/loop.mp3",
+      "optimizedPath": "assets/test/loop.ogg",
+      "transcriptPath": "assets/test/loop-transcript.vtt",
+      "license": "test",
+      "creator": "test",
+      "provenanceNote": "test",
+      "caseIds": ["case_notifications_test"],
+      "preload": "stage"
+    }
+  ],
+  "notifications": [
+    {
+      "id": "notification_test",
+      "text": "A test notification.",
+      "priority": "informational"
+    },
+    {
+      "id": "notification_test_urgent",
+      "text": "An urgent test notification.",
+      "priority": "urgent"
+    }
+  ]
+}

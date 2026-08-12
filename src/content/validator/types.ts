@@ -7,6 +7,7 @@ import {
   dialogueNodeSchema,
   evidenceDefinitionSchema,
   hintDefinitionSchema,
+  notificationDefinitionSchema,
   recordDefinitionSchema,
 } from "../schemas";
 
@@ -14,6 +15,8 @@ import {
  * BBX-024 bundle: a case manifest plus the external entity collections that
  * reference it. Objectives, triggers, outcomes, and searchableIndex remain
  * embedded in the case manifest and are intentionally not duplicated here.
+ * `notifications` (BBX-043 contract, ADR-024) defaults to `[]` so pre-existing
+ * bundles parse unchanged; authored references are validated, per-item.
  * Schema-first: ContentBundle is inferred from contentBundleSchema.
  */
 export const contentBundleSchema = z.object({
@@ -25,6 +28,10 @@ export const contentBundleSchema = z.object({
   dialogue: z.array(dialogueNodeSchema),
   conclusions: z.array(conclusionDefinitionSchema),
   assets: z.array(assetDefinitionSchema),
+  // BBX-043 prerequisite contract — NotificationDefinition. Defaults to []
+  // so existing bundles parse unchanged while the parsed runtime shape always
+  // exposes a deterministic notifications array.
+  notifications: z.array(notificationDefinitionSchema).default([]),
 });
 
 export type ContentBundle = z.infer<typeof contentBundleSchema>;
@@ -41,7 +48,8 @@ export type EntityKind =
   | "dialogue_choice"
   | "outcome"
   | "conclusion"
-  | "asset";
+  | "asset"
+  | "notification";
 
 export type ValidationIssueCode =
   | "duplicate_id"

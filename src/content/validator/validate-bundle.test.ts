@@ -151,9 +151,52 @@ describe("validateContentBundle", () => {
     bundle.evidence[0]!.reportClaimsSupported = ["claim_missing"];
     bundle.case.outcomes[0]!.endingContentId = "ending_missing";
     bundle.case.triggers[0]!.effects.push({ type: "unlock_application", applicationId: "app_missing" });
-    bundle.case.triggers[0]!.effects.push({ type: "show_notification", notificationId: "notif_missing" });
     bundle.case.triggers[0]!.effects.push({ type: "set_flag", key: "k", value: true });
     bundle.case.triggers[0]!.rule = { eventOccurred: { type: "record_opened" } };
+    expect(validateContentBundle(bundle).success).toBe(true);
+  });
+
+  it("accepts a valid show_notification reference", () => {
+    const bundle = loadValidBundle();
+    bundle.notifications.push({
+      id: "notification_test",
+      text: "Test notification.",
+      priority: "informational",
+    });
+    bundle.case.triggers[0]!.effects.push({ type: "show_notification", notificationId: "notification_test" });
+    expect(validateContentBundle(bundle).success).toBe(true);
+  });
+
+  it("detects an unresolved show_notification reference", () => {
+    const bundle = loadValidBundle();
+    bundle.case.triggers[0]!.effects.push({ type: "show_notification", notificationId: "notification_missing" });
+    expect(codesOf(validateContentBundle(bundle))).toContain("reference_unresolved");
+  });
+
+  it("detects a show_notification reference to the wrong entity kind", () => {
+    const bundle = loadValidBundle();
+    bundle.case.triggers[0]!.effects.push({ type: "show_notification", notificationId: "record_test" });
+    expect(codesOf(validateContentBundle(bundle))).toContain("reference_wrong_kind");
+  });
+
+  it("detects duplicate notification ids", () => {
+    const bundle = loadValidBundle();
+    bundle.notifications.push(
+      { id: "notification_test", text: "First notification.", priority: "informational" },
+      { id: "notification_test", text: "Second notification.", priority: "urgent" },
+    );
+    expect(codesOf(validateContentBundle(bundle))).toContain("duplicate_id");
+  });
+
+  it("keeps notification ids in the global uniqueness registry", () => {
+    const bundle = loadValidBundle();
+    bundle.notifications.push({ id: "record_test", text: "Collision.", priority: "informational" });
+    expect(codesOf(validateContentBundle(bundle))).toContain("duplicate_id");
+  });
+
+  it("defaults notifications to an empty array for bundles without them", () => {
+    const bundle = loadValidBundle();
+    expect(bundle.notifications).toEqual([]);
     expect(validateContentBundle(bundle).success).toBe(true);
   });
 });
@@ -162,6 +205,13 @@ describe("bundle fixtures", () => {
   it("loads the valid bundle fixture through the schema and validator", () => {
     const bundle = loadValidBundle();
     expect(bundle.case.id).toBe("case_test");
+    expect(validateContentBundle(bundle).success).toBe(true);
+  });
+
+  it("loads the notifications bundle fixture through the schema and validator", () => {
+    const raw = JSON.parse(readFileSync(path.join(fixturesRoot, "valid/bundle_notifications_valid.json"), "utf-8"));
+    const bundle = contentBundleSchema.parse(raw);
+    expect(bundle.notifications).not.toEqual([]);
     expect(validateContentBundle(bundle).success).toBe(true);
   });
 

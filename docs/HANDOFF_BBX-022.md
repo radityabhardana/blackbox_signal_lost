@@ -121,4 +121,4 @@ No effect is silently dropped.
 
 Search (BBX-023), persistence (BBX-030), Case 001 content (BBX-100), reachability (BBX-105), outcome engine (BBX-081), dialogue/notification/audio consumers (BBX-040/042/043), full GameEvent taxonomy.
 
-**Known limitations / remaining BBX-022 issues:** none within documented scope. Application/notification existence checks await their defining collections.
+**Known limitations / remaining BBX-022 issues:** none within documented scope. Application existence checks await the Application collection. Notification existence is proven statically by BBX-024 against NotificationDefinition (ADR-024); the engine intentionally performs no runtime notification lookup.

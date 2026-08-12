@@ -41,13 +41,13 @@ Every field below must resolve to an existing entity of the listed kind (else `r
 - Character.knownEvidenceIds[] → Evidence
 - DialogueNode.speakerId → Character; DialogueNode.nextNodeId, DialogueChoice.nextNodeId → DialogueNode
 - Hint.objectiveId → Objective; Objective.hintIds[] → Hint; Objective.nextObjectiveIds[] → Objective
-- GameEffects: unlock_record→Record, queue_dialogue→DialogueNode, start/complete_objective→Objective, discover_evidence→Evidence, play_audio_cue→Asset
+- GameEffects: unlock_record→Record, queue_dialogue→DialogueNode, start/complete_objective→Objective, discover_evidence→Evidence, play_audio_cue→Asset, show_notification→Notification
 - RuleExpression operands: objectiveCompleted→Objective, choiceSelected→DialogueChoice (recursed through all/any/not)
 - SearchIndexEntry.entityId → Record or Character (only when entityType is record/character)
 
 ## Deferred reference relationships (not validated; target collections undefined or opaque)
 
-- GameEffect unlock_application.applicationId, show_notification.notificationId
+- GameEffect unlock_application.applicationId (show_notification.notificationId stopped being deferred in ADR-024: it now validates against NotificationDefinition and is listed under VALIDATE-class references)
 - RuleExpression entityDiscovered, eventOccurred.*, countAtLeast.eventType, set_flag key/value (runtime/engine domain)
 - Evidence.relatedEntityIds[], Record.relatedEntityIds[], Character.organizationIds[], DialogueNode.channelId
 - Evidence.reportClaimsSupported[] (claim slots opaque until BBX-080)
@@ -57,7 +57,7 @@ Every field below must resolve to an existing entity of the listed kind (else `r
 
 Global uniqueness across the whole bundle, per docs/09 §2 ("globally stable, never reused"). Registry members (only id-bearing, documented-readable objects):
 
-- CaseManifest, Character, Record, Evidence, Objective, Trigger, Hint, DialogueNode, DialogueChoice, Outcome, Conclusion, Asset
+- CaseManifest, Character, Record, Evidence, Objective, Trigger, Hint, DialogueNode, DialogueChoice, Outcome, Conclusion, Asset, Notification
 
 Opaque subtypes are never inspected; naming prefixes are not enforced. Duplicates emit `duplicate_id`.
 
@@ -102,7 +102,7 @@ Invalid bundle fixtures are test-only inputs; they never fail the normal command
 
 ## Tests
 
-`src/content/validator/validate-bundle.test.ts` (24 tests) covering: valid bundle success; duplicate within/a cross collection; unresolved reference; wrong-kind; caseId mismatch; objective missing hints; unresolved objective hint; ownership mismatches (both directions); audio transcript; multiple simultaneous issues; deterministic ordering; no input mutation; opaque subtypes ignored; deferred/not-content references ignored; all six invalid fixtures structurally valid + failing with the expected code; `pnpm validate:content` exits 0.
+`src/content/validator/validate-bundle.test.ts` (31 tests) covering: valid bundle success; duplicate within/a cross collection; unresolved reference; wrong-kind; caseId mismatch; objective missing hints; unresolved objective hint; ownership mismatches (both directions); audio transcript; multiple simultaneous issues; deterministic ordering; no input mutation; opaque subtypes ignored; deferred/not-content references ignored; all six invalid fixtures structurally valid + failing with the expected code; `pnpm validate:content` exits 0.
 
 ## Validation evidence
 
@@ -123,6 +123,6 @@ Invalid bundle fixtures are test-only inputs; they never fail the normal command
 
 ## Known limitations / remaining BBX-024 issues
 
-- None within the documented static scope. All meaningful gaps are explicit DEFER cases owned by later milestones (CaseStage/ClaimSlot/Ending/Application/Notification/Organization/Location/Channel collections), not BBX-024 defects.
+- None within the documented static scope. All meaningful gaps are explicit DEFER cases owned by later milestones (CaseStage/ClaimSlot/Ending/Application/Organization/Location/Channel collections), not BBX-024 defects. Notification is no longer a deferred collection: ADR-024 defined NotificationDefinition and the validator resolves show_notification.notificationId.
 
 **Next recommended task:** per scope rules, do not start BBX-021/030/100/105 in this session unless explicitly requested.
