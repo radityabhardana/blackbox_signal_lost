@@ -9,12 +9,13 @@ beforeEach(() => {
 });
 
 describe("Taskbar", () => {
-  it("renders the launcher, switcher, and reset controls", () => {
+  it("renders the launcher, switcher, notification center, and reset controls", () => {
     render(<Taskbar />);
     expect(screen.getByRole("navigation", { name: /application launcher/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Launcher" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Switch window" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Reset workspace" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Notification center" })).toBeEnabled();
     expect(screen.getByText(/case: none/i)).toBeInTheDocument();
   });
 

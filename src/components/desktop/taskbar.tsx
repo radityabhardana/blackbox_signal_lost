@@ -5,6 +5,7 @@ import { SystemTime } from "@/components/desktop/system-time";
 import { Launcher } from "./launcher";
 import { WindowSwitcher } from "./window-switcher";
 import { TaskbarAppItems } from "./taskbar-app-items";
+import { NotificationCenter } from "./notification-center";
 
 export function Taskbar() {
   const resetWorkspace = useWindowStore((state) => state.resetWorkspace);
@@ -22,7 +23,7 @@ export function Taskbar() {
       <span className="font-mono text-xs uppercase tracking-widest text-bbx-text-2">
         Case: none
       </span>
-      <span className="ml-auto flex items-center gap-3">
+      <div className="ml-auto flex items-center gap-3">
         <button
           type="button"
           title="Reset workspace layout"
@@ -34,7 +35,8 @@ export function Taskbar() {
         <span className="font-mono text-xs tabular-nums text-bbx-text-2">
           <SystemTime />
         </span>
-      </span>
+        <NotificationCenter />
+      </div>
     </footer>
   );
 }
