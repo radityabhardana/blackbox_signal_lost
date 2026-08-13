@@ -564,6 +564,27 @@ Consequences:
 
 ---
 
+## ADR-025 — Evidence Board pure domain contract (BBX-050A1)
+
+Status: Accepted
+
+Decision:
+
+- `CaseEngineState.discoveredEntityIds` remains the sole authority for evidence discovery and progression. `EvidenceBoardState` owns only player board edits: evidence-node positions, plain-text private notes, and neutral player-hypothesis links.
+- Evidence node identity is derived as `evidence:<evidenceId>`; authored evidence metadata remains in `ContentBundle` and is never duplicated in board state.
+- `EvidenceBoardSnapshotV1` is a strict, JSON-safe, board-local contract with its own literal version. Board-runtime note and edge IDs begin at sequence zero (`note_0` / `edge_0`) and use canonical lowercase base-36 suffixes; they are not authored content IDs.
+- Notes trim outer whitespace, preserve internal whitespace, require explicit deletion, and never delete or clear a note through a blank edit.
+- BBX-050 links are neutral player hypotheses. Their endpoint pairs are canonical lexical order, unique, and unverified; BBX-051 alone introduces verified authored relationships.
+- Board reconciliation is one-way from authoritative discovered evidence. Structurally invalid snapshots fail parsing; structurally valid but stale evidence nodes and their incident edges are removed during reconciliation.
+- The domain contract has no React Flow dependency.
+
+Consequences:
+
+- SaveGame integration, runtime hydration, autosave, IndexedDB, viewport persistence, and reset are explicitly deferred to a separately reviewed persistence slice. BBX-050 is incomplete until that slice proves save and restore.
+- Fallback placement remains deterministic implementation detail in the pure domain module, not an authored or persistence contract.
+
+---
+
 
 
 ## Proposed-decision template
