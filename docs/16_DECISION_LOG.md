@@ -585,6 +585,18 @@ Consequences:
 
 ---
 
+## ADR-026 — Evidence Board workspace-runtime ownership (BBX-050B)
+
+Status: Accepted
+
+Decision:
+
+- BBX-050B owns committed `EvidenceBoardState` at workspace-runtime scope. It survives Evidence Board window close/reopen while the workspace remains mounted, and multiple Evidence Board windows share the same committed board state.
+- `CaseSession` and `CaseEngineState` remain the sole authority for discovery and progression. React Flow node state is transient presentation and interaction state; A1 state remains authoritative for committed board edits.
+- Reloading the page resets BBX-050B board edits. Durable save and restore remain deferred to A3.
+
+---
+
 
 
 ## Proposed-decision template

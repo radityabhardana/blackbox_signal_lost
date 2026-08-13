@@ -21,6 +21,7 @@ describe("Launcher", () => {
       "Mail",
       "Messenger",
       "Records",
+      "Evidence Board",
       "System Log",
     ]);
   });

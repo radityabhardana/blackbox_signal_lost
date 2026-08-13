@@ -1,4 +1,36 @@
 @import "tailwindcss";
+@import "@xyflow/react/dist/style.css";
+
+.bbx-evidence-board .react-flow__pane {
+  background-color: var(--bbx-bg-0);
+}
+
+.bbx-evidence-board .react-flow__edge-path {
+  stroke: var(--bbx-accent-signal);
+}
+
+.bbx-evidence-node {
+  width: 15rem;
+  border: 1px solid var(--bbx-surface-2);
+  background: var(--bbx-surface-1);
+  color: var(--bbx-text-1);
+  padding: 0.5rem;
+  font-size: 0.75rem;
+}
+
+.bbx-evidence-node strong,
+.bbx-evidence-node small {
+  display: block;
+  font-family: var(--font-mono);
+}
+
+.bbx-evidence-node p {
+  margin-top: 0.25rem;
+}
+
+.bbx-evidence-node-note {
+  border-color: var(--bbx-accent-signal);
+}
 
 /*
  * BLACKBOX design tokens.

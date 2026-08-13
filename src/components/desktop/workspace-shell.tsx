@@ -3,6 +3,7 @@
 import { useWindowStore } from "@/stores/window-store";
 import { useWorkspaceSize } from "@/hooks/use-workspace-size";
 import { WindowLayer } from "@/components/windows/window-layer";
+import { EvidenceBoardProvider } from "@/features/evidence-board/evidence-board-provider";
 
 export function WorkspaceShell() {
   const ref = useWorkspaceSize<HTMLElement>();
@@ -22,7 +23,9 @@ export function WorkspaceShell() {
           </p>
         </div>
       ) : null}
-      <WindowLayer />
+      <EvidenceBoardProvider>
+        <WindowLayer />
+      </EvidenceBoardProvider>
     </section>
   );
 }
