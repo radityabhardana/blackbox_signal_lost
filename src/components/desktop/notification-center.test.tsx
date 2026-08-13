@@ -167,36 +167,51 @@ describe("NotificationCenter with a session", () => {
     const user = userEvent.setup();
     const addListener = vi.spyOn(document, "addEventListener");
     const removeListener = vi.spyOn(document, "removeEventListener");
-    const rendered = renderCenter();
-    const trigger = screen.getByRole("button", { name: "Notification center" });
-
     const pointerAdds = () => addListener.mock.calls.filter(([type]) => type === "pointerdown");
     const pointerRemovals = () => removeListener.mock.calls.filter(([type]) => type === "pointerdown");
-    addListener.mockClear();
-    removeListener.mockClear();
+    const unrelatedListener = vi.fn();
+    document.addEventListener("pointerdown", unrelatedListener);
 
-    expect(pointerAdds()).toHaveLength(0);
-    expect(pointerRemovals()).toHaveLength(0);
+    try {
+      const rendered = renderCenter();
+      const trigger = screen.getByRole("button", { name: "Notification center" });
+      const closedBaseline = pointerAdds();
 
-    await user.click(trigger);
-    expect(pointerAdds()).toHaveLength(1);
-    const firstCallback = pointerAdds()[0]![1];
+      // The known listener supplies document-level noise; closed NotificationCenter adds none.
+      expect(closedBaseline).toHaveLength(1);
+      expect(closedBaseline[0]![1]).toBe(unrelatedListener);
 
-    await user.click(trigger);
-    expect(pointerRemovals()).toHaveLength(1);
-    expect(pointerRemovals()[0]![1]).toBe(firstCallback);
+      const addsBeforeFirstOpen = pointerAdds().length;
+      await user.click(trigger);
+      const firstOpenAdds = pointerAdds().slice(addsBeforeFirstOpen);
+      expect(firstOpenAdds).toHaveLength(1);
+      const firstCallback = firstOpenAdds[0]![1];
+      expect(firstCallback).not.toBe(unrelatedListener);
 
-    await user.click(trigger);
-    expect(pointerAdds()).toHaveLength(2);
-    const activeCallback = pointerAdds()[1]![1];
-    expect(activeCallback).not.toBe(firstCallback);
-    expect(pointerRemovals()).toHaveLength(1);
+      const removalsBeforeFirstClose = pointerRemovals().length;
+      await user.click(trigger);
+      const firstCloseRemovals = pointerRemovals().slice(removalsBeforeFirstClose);
+      expect(firstCloseRemovals).toHaveLength(1);
+      expect(firstCloseRemovals[0]![1]).toBe(firstCallback);
 
-    rendered.unmount();
-    expect(pointerRemovals()).toHaveLength(2);
-    expect(pointerRemovals()[1]![1]).toBe(activeCallback);
-    addListener.mockRestore();
-    removeListener.mockRestore();
+      const addsBeforeReopen = pointerAdds().length;
+      await user.click(trigger);
+      const reopenAdds = pointerAdds().slice(addsBeforeReopen);
+      expect(reopenAdds).toHaveLength(1);
+      const activeCallback = reopenAdds[0]![1];
+      expect(activeCallback).not.toBe(unrelatedListener);
+      expect(activeCallback).not.toBe(firstCallback);
+
+      const removalsBeforeUnmount = pointerRemovals().length;
+      rendered.unmount();
+      const unmountRemovals = pointerRemovals().slice(removalsBeforeUnmount);
+      expect(unmountRemovals).toHaveLength(1);
+      expect(unmountRemovals[0]![1]).toBe(activeCallback);
+    } finally {
+      document.removeEventListener("pointerdown", unrelatedListener);
+      addListener.mockRestore();
+      removeListener.mockRestore();
+    }
   });
 
   it("keeps trigger focus when a real engine event adds a notification", async () => {
