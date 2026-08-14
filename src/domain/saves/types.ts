@@ -1,11 +1,10 @@
-import type { SaveGame } from "../../content/schemas";
+import type { SaveGameV2 } from "./session-save-schema";
 
 /**
- * BBX-030 repository convention (ADR-017): the first implemented save schema
- * version. docs/09 defines only `z.number().int().min(0)`; compatibility is
- * enforced here, not by the schema. BBX-032 owns migrations.
+ * BBX-050A3a SaveGame format transition. The outer content schema remains
+ * structurally compatible; trusted runtime payloads are SaveGameV2.
  */
-export const SAVE_SCHEMA_VERSION = 1;
+export const SAVE_SCHEMA_VERSION = 2;
 
 export type SaveRepositoryErrorCode =
   | "invalid_input"
@@ -46,8 +45,8 @@ export interface SaveSummary {
  * Implementations: IndexedDB (Dexie) and an in-memory adapter for tests/dev.
  */
 export interface SaveRepository {
-  load(slotId: string): Promise<SaveGame | null>;
-  save(slotId: string, value: SaveGame): Promise<void>;
+  load(slotId: string): Promise<SaveGameV2 | null>;
+  save(slotId: string, value: SaveGameV2): Promise<void>;
   delete(slotId: string): Promise<void>;
   list(): Promise<SaveSummary[]>;
 }

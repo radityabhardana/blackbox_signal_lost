@@ -1,5 +1,5 @@
 import type { SaveRepository } from "./types";
-import type { SaveGame } from "../../content/schemas";
+import type { SaveGameV2 } from "./session-save-schema";
 
 /** ADR-018 convention: trailing debounce delay in milliseconds. */
 export const AUTOSAVE_DEBOUNCE_MS = 800;
@@ -21,7 +21,7 @@ export interface AutosaveScheduler {
 
 export interface AutosaveDeps {
   readonly slotId: string;
-  readonly getSnapshot: () => SaveGame;
+  readonly getSnapshot: () => SaveGameV2;
   readonly repository: SaveRepository;
   readonly debounceMs?: number;
   readonly scheduler?: AutosaveScheduler;

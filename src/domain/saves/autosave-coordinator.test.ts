@@ -3,7 +3,7 @@ import { createAutosaveCoordinator } from "./autosave-coordinator";
 import type { AutosaveReason } from "./autosave-coordinator";
 import type { SaveRepository } from "./types";
 import { SaveRepositoryError } from "./types";
-import type { SaveGame } from "../../content/schemas";
+import type { SaveGameV2 } from "./session-save-schema";
 import { makeSave } from "../../infrastructure/persistence/save-repository.contract";
 
 const ALL_REASONS: AutosaveReason[] = [
@@ -16,7 +16,7 @@ const ALL_REASONS: AutosaveReason[] = [
 
 interface DeferredCall {
   slotId: string;
-  value: SaveGame;
+  value: SaveGameV2;
   readonly promise: Promise<void>;
   reject(error: unknown): void;
   resolve(): void;
@@ -36,7 +36,7 @@ function defer(): DeferredCall {
   });
   return {
     slotId: "",
-    value: undefined as unknown as SaveGame,
+    value: undefined as unknown as SaveGameV2,
     promise,
     resolve: () => resolveFn(),
     reject: (error: unknown) => rejectFn(error),
@@ -70,7 +70,7 @@ async function tick(): Promise<void> {
   await Promise.resolve();
 }
 
-function makeSnapshotProvider(initial: SaveGame) {
+function makeSnapshotProvider(initial: SaveGameV2) {
   let current = initial;
   let callCount = 0;
   return {
@@ -78,7 +78,7 @@ function makeSnapshotProvider(initial: SaveGame) {
       callCount += 1;
       return current;
     },
-    setSnapshot: (next: SaveGame) => {
+    setSnapshot: (next: SaveGameV2) => {
       current = next;
     },
     calls: () => callCount,
@@ -97,7 +97,7 @@ afterEach(() => {
 
 function makeCoordinator(options: {
   repo: SaveRepository;
-  getSnapshot: () => SaveGame;
+  getSnapshot: () => SaveGameV2;
   slotId?: string;
   debounceMs?: number;
 }) {

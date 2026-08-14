@@ -78,7 +78,7 @@ interface DebugReport {
 ## Deferred
 
 - Download/share/copy/preview debug-report UI.
-- Analytics, crash reporting, telemetry upload, migration diagnostics (BBX-032 is blocked), and any UI integration.
+- Analytics, crash reporting, telemetry upload, migration diagnostics, and any UI integration.
 - Raw save/event/payload export (never in scope).
 
 ## Known limitations / remaining BBX-033 issues

@@ -1,6 +1,6 @@
-import type { SaveGame } from "../../content/schemas";
 import { SaveRepositoryError } from "../../domain/saves";
 import type { SaveRepository, SaveSummary } from "../../domain/saves";
+import type { SaveGameV2 } from "../../domain/saves";
 import {
   choosePrevious,
   encodeSave,
@@ -27,7 +27,7 @@ export function createInMemorySaveRepository(): InMemorySaveRepository {
   const store = new Map<string, SaveRecord>();
 
   return {
-    async load(slotId: string): Promise<SaveGame | null> {
+    async load(slotId: string): Promise<SaveGameV2 | null> {
       const record = store.get(slotId);
       if (!record) return null;
       const resolved = selectEffectiveSnapshot(record, slotId);
@@ -36,7 +36,7 @@ export function createInMemorySaveRepository(): InMemorySaveRepository {
       throw new SaveRepositoryError(failure.code, failure.message, slotId);
     },
 
-    async save(slotId: string, value: SaveGame): Promise<void> {
+    async save(slotId: string, value: SaveGameV2): Promise<void> {
       if (slotId !== value.slotId) {
         throw new SaveRepositoryError(
           "invalid_input",

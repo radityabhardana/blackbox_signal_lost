@@ -1,7 +1,9 @@
-import { saveGameSchema } from "../../content/schemas";
-import type { SaveGame } from "../../content/schemas";
-import { SAVE_SCHEMA_VERSION, SaveRepositoryError } from "../../domain/saves";
-import type { SaveSummary } from "../../domain/saves";
+import { migrateSaveGameV1ToV2 } from "../../domain/saves/save-migration";
+import { parseTrustedSaveGameV2 } from "../../domain/saves/session-save-schema";
+import type { SaveGameV2 } from "../../domain/saves/session-save-schema";
+import type { SaveRepositoryErrorCode, SaveSummary } from "../../domain/saves/types";
+import { SAVE_SCHEMA_VERSION, SaveRepositoryError } from "../../domain/saves/types";
+import { z } from "zod";
 
 /**
  * Repository-internal storage representation. payloadJson is the exact JSON
@@ -20,7 +22,7 @@ export interface SaveRecord {
 }
 
 /** Checksum-excluded save content. */
-type SavePayload = Omit<SaveGame, "checksum">;
+type SavePayload = Omit<SaveGameV2, "checksum">;
 
 // ---------------------------------------------------------------------------
 // JSON safety (ADR-017). The repository accepts genuine JSON values only;
@@ -75,7 +77,7 @@ export function computeChecksum(payloadJson: string): string {
  * Validate + normalize an incoming SaveGame into the stored form. Throws
  * SaveRepositoryError and mutates nothing on failure.
  */
-export function encodeSave(value: SaveGame): StoredSnapshot {
+export function encodeSave(value: SaveGameV2): StoredSnapshot {
   // 1. Raw JSON-safety BEFORE Zod can coerce/normalize opaque nested values.
   if (!isJsonSafe(value)) {
     throw new SaveRepositoryError(
@@ -86,33 +88,37 @@ export function encodeSave(value: SaveGame): StoredSnapshot {
   }
 
   // 2. Envelope structural validation.
-  const envelope = saveGameSchema.safeParse(value);
-  if (!envelope.success) {
+  if (value.saveSchemaVersion !== SAVE_SCHEMA_VERSION) {
     throw new SaveRepositoryError(
-      "invalid_input",
-      "save does not satisfy the SaveGame schema",
+      "unsupported_version",
+      `saveSchemaVersion ${value.saveSchemaVersion} is not supported`,
       value.slotId,
     );
   }
 
-  // 3. New writes may only target the supported save schema version.
-  if (envelope.data.saveSchemaVersion !== SAVE_SCHEMA_VERSION) {
+  let envelope: SaveGameV2;
+  try {
+    envelope = parseTrustedSaveGameV2(value);
+  } catch {
     throw new SaveRepositoryError(
-      "unsupported_version",
-      `saveSchemaVersion ${envelope.data.saveSchemaVersion} is not supported`,
-      envelope.data.slotId,
+      "invalid_input",
+      "save does not satisfy the SaveGame V2 schema",
+      value.slotId,
     );
   }
-
   // 4. Drop the caller-supplied checksum; the repository owns it.
-  const { checksum: _ignored, ...payloadFields } = envelope.data;
+  const { checksum: _ignored, ...payloadFields } = envelope;
   const payload: SavePayload = payloadFields;
 
   // 5-6. Codec round-trip guarantees the persisted form is lossless JSON.
   const payloadJson = JSON.stringify(payload);
-  const reparsed = JSON.parse(payloadJson) as unknown;
-  const normalized = saveGameSchema.safeParse({ ...(reparsed as SavePayload), checksum: "" });
-  if (!normalized.success) {
+  const reparsed: unknown = JSON.parse(payloadJson);
+  try {
+    if (typeof reparsed !== "object" || reparsed === null || Array.isArray(reparsed)) {
+      throw new Error("encoded save is not an object");
+    }
+    parseTrustedSaveGameV2({ ...reparsed, checksum: "" });
+  } catch {
     throw new SaveRepositoryError(
       "not_serializable",
       "save did not survive the repository JSON codec",
@@ -129,7 +135,7 @@ export function encodeSave(value: SaveGame): StoredSnapshot {
 
 export interface VerifyResultValid {
   ok: true;
-  value: SaveGame;
+  value: SaveGameV2;
 }
 
 export type VerifyFailureCode = "checksum_mismatch" | "corrupt" | "unsupported_version";
@@ -149,27 +155,55 @@ export function verifyStoredSnapshot(snapshot: StoredSnapshot, slotId: string): 
     return { ok: false, code: "checksum_mismatch", message: `checksum mismatch for slot '${slotId}'` };
   }
 
-  let payload: SavePayload;
+  let payload: unknown;
   try {
-    payload = JSON.parse(snapshot.payloadJson) as SavePayload;
+    payload = JSON.parse(snapshot.payloadJson);
   } catch {
     return { ok: false, code: "corrupt", message: `stored payload for slot '${slotId}' is not valid JSON` };
   }
 
-  const reconstructed = saveGameSchema.safeParse({ ...payload, checksum: snapshot.checksum });
-  if (!reconstructed.success) {
-    return { ok: false, code: "corrupt", message: `stored payload for slot '${slotId}' failed SaveGame validation` };
+  const payloadRecord = z.record(z.unknown()).safeParse(payload);
+  if (!payloadRecord.success) {
+    return { ok: false, code: "corrupt", message: `stored payload for slot '${slotId}' is not an object` };
   }
 
-  if (reconstructed.data.saveSchemaVersion !== SAVE_SCHEMA_VERSION) {
+  const reconstructed = { ...payloadRecord.data, checksum: snapshot.checksum };
+  const version = z.object({ saveSchemaVersion: z.number().int().min(0) }).passthrough().safeParse(reconstructed);
+  if (!version.success) {
+    return { ok: false, code: "corrupt", message: `stored payload for slot '${slotId}' has an invalid schema version` };
+  }
+
+  if (version.data.saveSchemaVersion === 1) {
+    try {
+      return { ok: true, value: migrateSaveGameV1ToV2(reconstructed) };
+    } catch (error: unknown) {
+      return migrationFailure(error, slotId);
+    }
+  }
+
+  if (version.data.saveSchemaVersion !== SAVE_SCHEMA_VERSION) {
     return {
       ok: false,
       code: "unsupported_version",
-      message: `saveSchemaVersion ${reconstructed.data.saveSchemaVersion} is not supported`,
+      message: `saveSchemaVersion ${version.data.saveSchemaVersion} is not supported`,
     };
   }
 
-  return { ok: true, value: reconstructed.data };
+  try {
+    return { ok: true, value: parseTrustedSaveGameV2(reconstructed) };
+  } catch {
+    return { ok: false, code: "corrupt", message: `stored payload for slot '${slotId}' failed SaveGame validation` };
+  }
+}
+
+function migrationFailure(error: unknown, slotId: string): VerifyResultInvalid {
+  if (error instanceof SaveRepositoryError) {
+    const code: SaveRepositoryErrorCode = error.code;
+    if (code === "unsupported_version" || code === "corrupt") {
+      return { ok: false, code, message: error.message };
+    }
+  }
+  return { ok: false, code: "corrupt", message: `stored payload for slot '${slotId}' failed migration` };
 }
 
 // ---------------------------------------------------------------------------
@@ -178,7 +212,7 @@ export function verifyStoredSnapshot(snapshot: StoredSnapshot, slotId: string): 
 
 export interface EffectiveSnapshot {
   snapshot: StoredSnapshot;
-  value: SaveGame;
+  value: SaveGameV2;
 }
 
 /** Picks the effective loadable snapshot; prefers current, recovers previous. */
@@ -197,7 +231,7 @@ export function selectEffectiveSnapshot(
   return { failure: currentResult as VerifyResultInvalid };
 }
 
-function toSummary(value: SaveGame): SaveSummary {
+function toSummary(value: SaveGameV2): SaveSummary {
   return {
     slotId: value.slotId,
     currentCaseId: value.currentCaseId,

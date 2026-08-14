@@ -4,6 +4,9 @@ import { SaveDatabase } from "./save-db";
 import { createIndexedDbSaveRepository } from "./save-repository";
 import type { SaveRepository } from "../../domain/saves";
 import { makeSave, runRepositoryContract } from "./save-repository.contract";
+import { computeChecksum } from "./save-codec";
+import emptyV1Fixture from "../../domain/saves/fixtures/save-v1-empty.json";
+import type { SaveRecord } from "./save-codec";
 
 let counter = 0;
 
@@ -49,6 +52,44 @@ describe("IndexedDbSaveRepository", () => {
     const before = await db.saves.get("slot_test");
     await repo.load("slot_test");
     const after = await db.saves.get("slot_test");
+    expect(after).toEqual(before);
+  });
+
+  it("migrates an empty V1 previous snapshot without rewriting storage", async () => {
+    const { checksum: _currentChecksum, ...currentWithoutChecksum } = emptyV1Fixture;
+    const { checksum: _previousChecksum, ...previousWithoutChecksum } = emptyV1Fixture;
+    const currentPayload = JSON.stringify({ ...currentWithoutChecksum, saveSchemaVersion: 3 });
+    const previousPayload = JSON.stringify(previousWithoutChecksum);
+    const record: SaveRecord = {
+      slotId: emptyV1Fixture.slotId,
+      current: { payloadJson: currentPayload, checksum: computeChecksum(currentPayload) },
+      previous: { payloadJson: previousPayload, checksum: computeChecksum(previousPayload) },
+    };
+    await db.saves.put(record);
+    const before = await db.saves.get(record.slotId);
+
+    const loaded = await repo.load(record.slotId);
+    const after = await db.saves.get(record.slotId);
+
+    expect(loaded).toMatchObject({
+      saveSchemaVersion: 2,
+      slotId: emptyV1Fixture.slotId,
+      contentVersion: emptyV1Fixture.contentVersion,
+      applicationVersion: emptyV1Fixture.applicationVersion,
+      currentCaseId: emptyV1Fixture.currentCaseId,
+      sessionSnapshot: {
+        version: 1,
+        caseEngineState: { discoveredEntityIds: [] },
+        evidenceBoard: {
+          version: 1,
+          evidenceNodes: [],
+          noteNodes: [],
+          edges: [],
+          nextNoteSequence: 0,
+          nextEdgeSequence: 0,
+        },
+      },
+    });
     expect(after).toEqual(before);
   });
 });

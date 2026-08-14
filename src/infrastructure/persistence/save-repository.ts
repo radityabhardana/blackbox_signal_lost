@@ -1,6 +1,6 @@
-import type { SaveGame } from "../../content/schemas";
 import { SaveRepositoryError } from "../../domain/saves";
 import type { SaveRepository, SaveSummary } from "../../domain/saves";
+import type { SaveGameV2 } from "../../domain/saves";
 import { SaveDatabase } from "./save-db";
 import {
   choosePrevious,
@@ -25,7 +25,7 @@ function wrapStorageError(slotId: string, error: unknown): SaveRepositoryError {
  */
 export function createIndexedDbSaveRepository(db: SaveDatabase): SaveRepository {
   return {
-    async load(slotId: string): Promise<SaveGame | null> {
+    async load(slotId: string): Promise<SaveGameV2 | null> {
       let record: SaveRecord | undefined;
       try {
         record = await db.saves.get(slotId);
@@ -39,7 +39,7 @@ export function createIndexedDbSaveRepository(db: SaveDatabase): SaveRepository 
       throw new SaveRepositoryError(failure.code, failure.message, slotId);
     },
 
-    async save(slotId: string, value: SaveGame): Promise<void> {
+    async save(slotId: string, value: SaveGameV2): Promise<void> {
       if (slotId !== value.slotId) {
         throw new SaveRepositoryError(
           "invalid_input",

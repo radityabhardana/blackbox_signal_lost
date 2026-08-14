@@ -1,17 +1,22 @@
 import { describe, expect, it } from "vitest";
-import type { SaveRepository } from "../../domain/saves";
-import type { SaveGame } from "../../content/schemas";
+import type { SaveGameV2, SaveRepository } from "../../domain/saves";
+import { createInitialEngineState } from "../../domain/engine";
+import { createInitialEvidenceBoardState, serializeEvidenceBoardSnapshot } from "../../domain/evidence-board";
 
-export function makeSave(slotId = "slot_test", over: Partial<SaveGame> = {}): SaveGame {
+export function makeSave(slotId = "slot_test", over: Partial<SaveGameV2> = {}): SaveGameV2 {
   return {
-    saveSchemaVersion: 1,
+    saveSchemaVersion: 2,
     contentVersion: "1.0.0",
     applicationVersion: "1.0.0",
     slotId,
     updatedAt: "2041-11-18T22:00:00Z",
     currentCaseId: "case_test",
     gameEvents: [],
-    sessionSnapshot: { progress: { step: 7 } },
+    sessionSnapshot: {
+      version: 1,
+      caseEngineState: createInitialEngineState(),
+      evidenceBoard: serializeEvidenceBoardSnapshot(createInitialEvidenceBoardState()),
+    },
     uiSnapshot: { layout: "desktop" },
     settings: { volume: 0.7 },
     checksum: "caller_checksum_ignored",
@@ -42,12 +47,11 @@ export function runRepositoryContract(name: string, createRepo: () => SaveReposi
       await repo.save("slot_test", makeSave());
       const second = makeSave("slot_test", {
         contentVersion: "1.0.1",
-        sessionSnapshot: { progress: { step: 99 } },
       });
       await repo.save("slot_test", second);
       const loaded = await repo.load("slot_test");
       expect(loaded!.contentVersion).toBe("1.0.1");
-      expect((loaded!.sessionSnapshot as Record<string, unknown>).progress).toEqual({ step: 99 });
+      expect(loaded!.sessionSnapshot.caseEngineState).toEqual(makeSave().sessionSnapshot.caseEngineState);
     });
 
     it("delete removes the slot and missing-slot delete is a no-op", async () => {
@@ -68,7 +72,7 @@ export function runRepositoryContract(name: string, createRepo: () => SaveReposi
       expect(list[0]).toEqual({
         slotId: "slot_a",
         currentCaseId: "case_test",
-        saveSchemaVersion: 1,
+        saveSchemaVersion: 2,
         contentVersion: "1.0.0",
         applicationVersion: "1.0.0",
         updatedAt: "2041-01-01",
@@ -104,13 +108,13 @@ export function runRepositoryContract(name: string, createRepo: () => SaveReposi
 
     it("unsupported schema version on write is rejected", async () => {
       const repo = createRepo();
-      await expect(repo.save("slot_test", makeSave("slot_test", { saveSchemaVersion: 2 }))).rejects.toMatchObject({
+      await expect(repo.save("slot_test", { ...makeSave(), saveSchemaVersion: 3 } as unknown as SaveGameV2)).rejects.toMatchObject({
         code: "unsupported_version",
       });
       await expect(repo.load("slot_test")).resolves.toBeNull();
     });
 
-    it("saveSchemaVersion 1 is accepted", async () => {
+    it("saveSchemaVersion 2 is accepted", async () => {
       const repo = createRepo();
       await expect(repo.save("slot_test", makeSave())).resolves.toBeUndefined();
     });
@@ -125,7 +129,7 @@ export function runRepositoryContract(name: string, createRepo: () => SaveReposi
     it("rejects non-serializable opaque values without touching storage", async () => {
       const repo = createRepo();
       const bad = makeSave();
-      (bad.sessionSnapshot as Record<string, unknown>).when = { run: () => 1 };
+      (bad.uiSnapshot as Record<string, unknown>).when = { run: () => 1 };
       await expect(repo.save("slot_test", bad)).rejects.toMatchObject({ code: "not_serializable" });
       await expect(repo.load("slot_test")).resolves.toBeNull();
     });

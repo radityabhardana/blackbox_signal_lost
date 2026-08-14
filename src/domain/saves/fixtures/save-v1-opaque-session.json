@@ -1,0 +1,17 @@
+{
+  "saveSchemaVersion": 1,
+  "contentVersion": "1.0.0",
+  "applicationVersion": "0.1.0",
+  "slotId": "historical_opaque_v1",
+  "updatedAt": "2041-11-18T22:00:00Z",
+  "currentCaseId": "case_test",
+  "gameEvents": [],
+  "sessionSnapshot": {
+    "progress": {
+      "step": 7
+    }
+  },
+  "uiSnapshot": {},
+  "settings": {},
+  "checksum": "historical_fixture_checksum"
+}

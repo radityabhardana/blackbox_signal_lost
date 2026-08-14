@@ -14,7 +14,9 @@ describe("InMemorySaveRepository", () => {
 
   it("recovers previous when current checksum is tampered via raw seam", async () => {
     await repo.save("slot_test", makeSave());
-    const prior = encodeSave({ ...makeSave(), sessionSnapshot: { p: 1 } });
+    const priorSave = makeSave();
+    priorSave.sessionSnapshot.caseEngineState.flags["prior"] = true;
+    const prior = encodeSave(priorSave);
     await repo.delete("slot_test");
     repo.setRawRecordForTests({
       slotId: "slot_test",
@@ -22,7 +24,7 @@ describe("InMemorySaveRepository", () => {
       previous: prior,
     });
     const loaded = await repo.load("slot_test");
-    expect(loaded!.sessionSnapshot).toEqual({ p: 1 });
+    expect(loaded!.sessionSnapshot.caseEngineState.flags).toEqual({ prior: true });
   });
 
   it("throws the current snapshot's failure reason when both are invalid", async () => {
@@ -36,7 +38,7 @@ describe("InMemorySaveRepository", () => {
   });
 
   it("list agrees with recovery when only previous is valid", async () => {
-    const prior = encodeSave({ ...makeSave(), sessionSnapshot: { p: 1 } });
+    const prior = encodeSave(makeSave());
     repo.setRawRecordForTests({
       slotId: "slot_test",
       current: { payloadJson: "{}", checksum: "deadbeef" },
@@ -48,8 +50,8 @@ describe("InMemorySaveRepository", () => {
   });
 
   it("unsupported current falls back to a valid previous", async () => {
-    const prior = encodeSave({ ...makeSave(), sessionSnapshot: { ok: true } });
-    const unsupportedPayload = { ...makeSave(), saveSchemaVersion: 2 };
+    const prior = encodeSave(makeSave());
+    const unsupportedPayload = { ...makeSave(), saveSchemaVersion: 3 };
     delete (unsupportedPayload as { checksum?: string }).checksum;
     const unsupported = {
       payloadJson: JSON.stringify(unsupportedPayload),
@@ -61,6 +63,6 @@ describe("InMemorySaveRepository", () => {
       previous: prior,
     });
     const loaded = await repo.load("slot_test");
-    expect(loaded!.sessionSnapshot).toEqual({ ok: true });
+    expect(loaded!.sessionSnapshot).toEqual(makeSave().sessionSnapshot);
   });
 });

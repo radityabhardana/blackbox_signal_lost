@@ -34,7 +34,7 @@ SaveRecord { slotId; current; previous? }
 1. `slotId === value.slotId` (else `invalid_input`).
 2. Raw JSON-safety check of the opaque payload — `undefined/function/symbol/bigint/Date/Set/Map/class/NaN/±Infinity`/non-plain objects rejected as `not_serializable` before Zod runs.
 3. `saveGameSchema` validation (`invalid_input`).
-4. `saveSchemaVersion === SAVE_SCHEMA_VERSION` (1) (`unsupported_version`).
+4. New writes use the current trusted SaveGame V2 format; historical V1 reads are handled by the later A3a migration boundary.
 5. Drop caller checksum; stringify payload; re-parse; re-validate (`saveGameSchema`) → normalized `{...payload, checksum}`.
 6. One Dexie `rw` transaction: choose `previous` from prior valid current (or existing valid previous, never corrupt), `put` the new row. Any failure aborts and leaves prior row intact.
 
@@ -42,7 +42,7 @@ SaveRecord { slotId; current; previous? }
 
 - Load verifies checksum before parse; current-invalid → verify previous → return it; both invalid/no previous → the **current** failure reason (`checksum_mismatch` > `corrupt` > `unsupported_version`).
 - Nothing is repaired or mutated by load.
-- Version 1 supported; unsupported current falls back to a valid previous else throws; migration is BBX-032's scope.
+- Historical V1 and unsupported future versions fall back to a valid previous snapshot when available; V1→V2 migration is implemented in BBX-050A3a.
 - `contentVersion` is preserved metadata only; never semantically compared by the repository.
 
 ## `list()`
@@ -51,7 +51,7 @@ Summarizes each slot's effective snapshot (current else valid previous) in `slot
 
 ## Files
 
-**Create:** `src/domain/saves/types.ts` (`SaveRepository`, `SaveSummary`, `SaveRepositoryError`, `SAVE_SCHEMA_VERSION = 1`), `index.ts`; `src/infrastructure/persistence/save-codec.ts` (shared pure codec/checksum/verify/select), `save-db.ts` (Dexie `SaveDatabase`), `save-repository.ts` (`createIndexedDbSaveRepository`), `in-memory-save-repository.ts`, `index.ts`, plus tests. **Modify:** `package.json`/lockfile (+`dexie`, +dev `fake-indexeddb`), `docs/16_DECISION_LOG.md` (ADR-017). **Not modified:** `src/content/**`, engine/rules/search/windows, BBX-013 layout persistence, `scripts/validate-content.ts`, UI, `docs/12`/`HANDOFF_BBX-011`.
+**Create:** `src/domain/saves/types.ts` (original `SaveRepository`, `SaveSummary`, `SaveRepositoryError`, and V1 `SAVE_SCHEMA_VERSION` convention), `index.ts`; `src/infrastructure/persistence/save-codec.ts` (shared pure codec/checksum/verify/select), `save-db.ts` (Dexie `SaveDatabase`), `save-repository.ts` (`createIndexedDbSaveRepository`), `in-memory-save-repository.ts`, `index.ts`, plus tests. **Modify:** `package.json`/lockfile (+`dexie`, +dev `fake-indexeddb`), `docs/16_DECISION_LOG.md` (ADR-017). **Not modified:** `src/content/**`, engine/rules/search/windows, BBX-013 layout persistence, `scripts/validate-content.ts`, UI, `docs/12`/`HANDOFF_BBX-011`.
 
 ## Tests
 
@@ -61,12 +61,12 @@ Summarizes each slot's effective snapshot (current else valid previous) in `slot
 
 `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm validate:content`, `pnpm test:e2e`, `pnpm build` all PASS (see final counts in rebuild notes).
 
-## Deferred
+## Deferred from BBX-030
 
-BBX-031 autosave coordinator/debounce, BBX-032 migrations (+ version-table/duplicate-checksum behavior), BBX-033 debug export, BBX-063 hydration/runtime assembly, UI (Continue/indicator/slots), cloud/Supabase/sync, BBX-100 Case 001 content, BBX-105 reachability. Dexie is added per docs; `fake-indexeddb` only for tests.
+BBX-031 autosave coordinator/debounce, BBX-032 migration (later implemented as V1→V2 by BBX-050A3a), BBX-033 debug export, BBX-063 hydration/runtime assembly, UI (Continue/indicator/slots), cloud/Supabase/sync, BBX-100 Case 001 content, BBX-105 reachability. Dexie is added per docs; `fake-indexeddb` only for tests.
 
 ## Known limitations / remaining issues
 
-- Opaque BBX-020 inner payloads (gameEvents/sessionSnapshot/uiSnapshot/settings) remain opaque; their internal contracts belong to later hydration/integration tasks (documented in ADR-017).
+- The outer BBX-020 SaveGame envelope remains structural; A3a now validates the trusted V2 session payload while A3b still owns runtime hydration.
 - No UI/session wiring yet — repository is storage, not a save coordinator (BBX-031).
 - `save_test.json` fixture continues to exist for BBX-020 structural coverage; real save content arrives when a producer task crates envelope values.

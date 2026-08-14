@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { gameEventSchema, playerSettingsSchema, sessionSnapshotSchema, uiSnapshotSchema } from "./opaque";
 
-// docs/09 §14 — SaveGame; versioning/migration remain BBX-030 responsibilities.
+// docs/09 §14 — structural SaveGame envelope; trusted V2 parsing and migration
+// live in the save domain boundary.
 export const saveGameSchema = z
   .object({
     saveSchemaVersion: z.number().int().min(0),

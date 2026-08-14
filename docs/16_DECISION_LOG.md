@@ -317,7 +317,7 @@ This log records durable decisions. New entries should use the same format.
 
 **Status:** Accepted
 
-**Decision:** Persist game saves in IndexedDB through Dexie, behind the docs/08 §8 `SaveRepository` interface kept verbatim (`load/save/delete/list`). Each slot stores `{ current, previous? }` snapshots written in one transaction; `previous` is the last valid persisted snapshot (not a load history). Checksums are FNV-1a 32-bit over the UTF-8 bytes of the exact stored JSON payload — the checksum field itself is excluded from the checksummed payload and caller checksums are never authoritative. `SAVE_SCHEMA_VERSION = 1` is established by this BBX-030 convention; BBX-032 owns migrations.
+**Decision:** Persist game saves in IndexedDB through Dexie, behind the docs/08 §8 `SaveRepository` interface kept verbatim (`load/save/delete/list`). Each slot stores `{ current, previous? }` snapshots written in one transaction; `previous` is the last valid persisted snapshot (not a load history). Checksums are FNV-1a 32-bit over the UTF-8 bytes of the exact stored JSON payload — the checksum field itself is excluded from the checksummed payload and caller checksums are never authoritative. BBX-030 established the original `SAVE_SCHEMA_VERSION = 1` storage convention; ADR-019 supersedes that version as the current format and records the implemented V1→V2 migration.
 
 **Context:** docs/08 §8 defines persistence (IndexedDB through Dexie) and save strategy (transactional write, checksum, versioned snapshots, previous known-good). docs/09 §14 leaves SaveGame's inner payloads (`sessionSnapshot`/`uiSnapshot`/`settings`/`gameEvents`) opaque; the envelope only verifies their structural shape, so the write boundary must independently guarantee JSON-safety.
 
@@ -337,7 +337,7 @@ This log records durable decisions. New entries should use the same format.
 
 **Consequences:**
 
-- BBX-030 is storage-only: no autosave coordinator (BBX-031), no migrations (BBX-032), no engine hydration/projection (later integration), no UI.
+- BBX-030 remains storage-only: no autosave coordinator (BBX-031), no runtime hydration/projection, and no UI. Migration was later added by BBX-050A3a under ADR-019.
 - Both adapters share one codec module to prevent semantic drift; an in-memory adapter exists for tests/dev with full parity.
 - Dexie + fake-indexeddb are new runtime/dev dependencies; no other dependencies.
 
@@ -372,22 +372,22 @@ This log records durable decisions. New entries should use the same format.
 
 ---
 
-## ADR-019 — Save migration blocked pending real schema transition (BBX-032)
+## ADR-019 — Save migration V1 to V2 (BBX-032)
 
-**Status:** Accepted — Documented Blocked
+**Status:** Accepted — Implemented at the format layer by BBX-050A3a; runtime hydration remains deferred to BBX-050A3b
 
-**Decision:** BBX-032 (Save migration) is BLOCKED. `SAVE_SCHEMA_VERSION = 1` is the only real SaveGame schema version; no v0, legacy-v1, or v2 format exists in the repository, docs, fixtures, or tests. No fake historical format may be invented to satisfy migration tests. Migration is keyed only by `saveSchemaVersion`; `contentVersion` and `applicationVersion` are preserved metadata, never migration keys. There is no v1→v1 identity migration step; real migration steps correspond only to actual transitions (e.g., 1→2, 2→3). `save-codec.ts` is unchanged today.
+**Decision:** BBX-032 owns explicit SaveGame migrations keyed only by `saveSchemaVersion`; `contentVersion` and `applicationVersion` remain preserved metadata, never migration keys. A3a introduces the first real transition, V1→V2, and sets `SAVE_SCHEMA_VERSION = 2`. V2 stores a typed session envelope containing `CaseEngineState` and `EvidenceBoardSnapshotV1`. Empty historical V1 session snapshots migrate to canonical fresh engine/board state. Non-empty opaque V1 session snapshots fail closed as `unsupported_version`; they are never discarded or reinterpreted. Runtime hydration and persistence wiring remain deferred to BBX-050A3b.
 
-**Context:** docs/12 assigns BBX-032 "P1 | Tests across schema versions". docs/13 §6 states: "Never ship a migration without fixtures from the previous supported version." BBX-030's validator (`verifyStoredSnapshot`) rejects non-v1 snapshots at `src/infrastructure/persistence/save-codec.ts:159-169` before selection — a v-old payload cannot currently reach a migration hook.
+**Context:** docs/12 assigns BBX-032 "P1 | Tests across schema versions". docs/13 §6 states: "Never ship a migration without fixtures from the previous supported version." A3a freezes explicit empty and non-empty V1 fixtures and places version discovery between checksum verification and current-schema validation so historical candidates can reach the migration boundary.
 
 **Rationale (documented future behavior):**
 
 - **Future candidate read pipeline** (per snapshot): checksum verification → `JSON.parse` into unknown → minimally extract/validate `saveSchemaVersion` → if current version: no migration → if older with a complete registered path: validate against that version's own historical schema, then migrate sequentially through real steps → validate the final output with the **current** `saveGameSchema` → return trusted current SaveGame. An old save must NOT be required to pass the current SaveGame schema before migration.
 - **Previous-known-good with future migration:** candidates are tried in order `current`, then `previous`, and each runs the full pipeline independently (checksum → parse-unknown → version discovery → supported migration → current-schema validation). A candidate becomes usable only when that entire chain passes.
 - **Version taxonomy:** `CURRENT` (`version === SAVE_SCHEMA_VERSION`) → no migration; `OLDER` with a complete real path → sequential migration; `OLDER` without a path → `unsupported_version`; `FUTURE` > current → `unsupported_version`; missing/malformed discriminator → `corrupt`. Version 0 is syntactically possible but not a historical format and stays unsupported unless a real v0 contract ever exists.
-- **Migration step model (conceptual only, not code):** `SaveMigrationStep<From, To> { fromVersion; toVersion; migrate(payload: From): To }`. Zero real migration steps exist today.
+- **Migration step model:** A3a implements the real V1→V2 migration in `src/domain/saves/save-migration.ts`. Future transitions must add another real step; no identity migration is used.
 
-**Unblock condition:** BBX-032 becomes implementable only when ALL of these hold: (1) a new real SaveGame schema version is introduced; (2) `SAVE_SCHEMA_VERSION` is bumped accordingly; (3) the previous supported schema shape is frozen/documented as a contract; (4) real previous-version fixtures exist; (5) a field-level migration specification exists (added/removed/renamed/reshaped fields, defaults, preservation rules).
+**Consequences:** BBX-032's format-layer acceptance is complete for V1→V2. A3b still owns loading a trusted V2 value into runtime providers and must not write migrated data back during load. Future transitions must preserve this checksum-first, version-discovery, migration, and final-current-schema validation order.
 
 ---
 
@@ -397,7 +397,7 @@ This log records durable decisions. New entries should use the same format.
 
 **Decision:** BBX-033 provides a pure domain debug report containing exactly the six documented diagnostic categories from docs/08 §13: application version, save schema version, content version, recent domain event-type codes, browser capability summary (`indexedDB` + `serviceWorker`, fixed fields, never an arbitrary map), and error codes. `saveSchemaVersion` is imported from `SAVE_SCHEMA_VERSION`; `contentVersion`/`applicationVersion` are preserved exactly as supplied by the caller; events are caller-supplied type-code strings filtered to the shape `^[a-z0-9_-]{1,64}$`, in chronological order, duplicates kept, last 16 valid entries retained. `errorCodes` is typed `SaveRepositoryErrorCode[]` reused directly. There is no raw-error ingestion, no payload data, no timestamp, no UI/download, no analytics, no persistence access.
 
-**Context:** docs/12 BBX-033 ("Non-sensitive diagnostics"); docs/08 §12 logs "a non-sensitive diagnostic code" only; docs/08 §13 lists the six exportable data points; docs/15 requires guest mode to store only local data with no unnecessary personal data and no analytics by default. BBX-032 is blocked (no migration), so no migration status is exported.
+**Context:** docs/12 BBX-033 ("Non-sensitive diagnostics"); docs/08 §12 logs "a non-sensitive diagnostic code" only; docs/08 §13 lists the six exportable data points; docs/15 requires guest mode to store only local data with no unnecessary personal data and no analytics by default. BBX-032 format migration is implemented; migration status remains outside the debug export contract.
 
 **Options considered:**
 
@@ -416,7 +416,7 @@ This log records durable decisions. New entries should use the same format.
 
 - The module is a pure, total, deterministic builder beside `src/domain/diagnostics`.
 - It never reads stores/engines/repositories and never touches browser APIs, `Date`, or `Math.random`.
-- Download/share UI remains a later integration task; BBX-032 stays blocked and completely decoupled.
+- Download/share UI remains a later integration task; BBX-032 format migration is implemented and remains decoupled from the debug export.
 
 ---
 

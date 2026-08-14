@@ -184,7 +184,7 @@ Note: BBX-012 was audited against the BBX-011 implementation and closed as fully
 |---|---:|---|---|
 | BBX-030 | P0 | IndexedDB save repository | Transactional versioned saves |
 | BBX-031 | P0 | Autosave coordinator | Debounced and resilient |
-| BBX-032 | P1 | Save migration | Tests across schema versions — BLOCKED: awaiting first real SaveGame schema transition |
+| BBX-032 | P1 | Save migration | SaveGame V1→V2 format migration implemented in A3a; runtime hydration remains with BBX-050A3b |
 | BBX-033 | P1 | Debug export | Non-sensitive diagnostics |
 | BBX-034 | P3 | Cloud-save adapter | Deferred |
 
