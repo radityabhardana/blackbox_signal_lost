@@ -63,10 +63,10 @@ Summarizes each slot's effective snapshot (current else valid previous) in `slot
 
 ## Deferred from BBX-030
 
-BBX-031 autosave coordinator/debounce, BBX-032 migration (later implemented as V1→V2 by BBX-050A3a), BBX-033 debug export, BBX-063 hydration/runtime assembly, UI (Continue/indicator/slots), cloud/Supabase/sync, BBX-100 Case 001 content, BBX-105 reachability. Dexie is added per docs; `fake-indexeddb` only for tests.
+BBX-031 autosave coordinator/debounce, BBX-032 migration (later implemented as V1→V2 by BBX-050A3a), BBX-033 debug export, UI (Continue/indicator/slots), cloud/Supabase/sync, BBX-100 Case 001 content, and BBX-105 reachability. The former BBX-063 hydration/runtime-assembly deferral is implemented for the guarded persistence slice by BBX-050A3b; production `/game` bootstrap remains separate. Dexie is added per docs; `fake-indexeddb` only for tests.
 
 ## Known limitations / remaining issues
 
-- The outer BBX-020 SaveGame envelope remains structural; A3a now validates the trusted V2 session payload while A3b still owns runtime hydration.
-- No UI/session wiring yet — repository is storage, not a save coordinator (BBX-031).
+- The outer BBX-020 SaveGame envelope remains structural; A3a now validates the trusted V2 session payload and A3b owns guarded runtime hydration.
+- The repository remains storage-only; runtime/session wiring is owned by BBX-050A3b.
 - `save_test.json` fixture continues to exist for BBX-020 structural coverage; real save content arrives when a producer task crates envelope values.

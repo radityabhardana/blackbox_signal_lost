@@ -5,9 +5,11 @@
 ## Public API
 
 ```ts
+import type { SaveGameV2 } from "@/domain/saves";
+
 createAutosaveCoordinator({
   slotId: string,
-  getSnapshot: () => SaveGame,
+   getSnapshot: () => SaveGameV2,
   repository: SaveRepository,
   debounceMs?: number,         // default AUTOSAVE_DEBOUNCE_MS (800)
   scheduler?: AutosaveScheduler // injectable; defaults to global setTimeout/clearTimeout
@@ -27,7 +29,8 @@ type AutosaveReason =
   | "objective_completed"
   | "message_choice"
   | "puzzle_completed"
-  | "report_submitted";
+  | "report_submitted"
+  | "evidence_board_edit";
 ```
 
 `AUTOSAVE_DEBOUNCE_MS = 800` (ADR-018 project convention; same number as BBX-013's existing layout hook). One coordinator per caller-provided `slotId`; slot switching creates a new coordinator via the shell.
@@ -57,7 +60,7 @@ type AutosaveReason =
 
 ## Tests
 
-19 focused tests (`autosave-coordinator.test.ts`) with fake timers and a controlled SaveRepository stub: trailing-debounce timing, reset-on-request, burst coalescing, all five reasons identical, snapshot captured only at write start and newest-state-correct, single-flight with follow-up, per-request trailing windows across in-flight saves, no concurrent writes, failed-generation no-auto-retry (incl. idle timers), retry-after-failure via new request, fail-then-newer-ready-work handoff, flush semantics + failure passthrough + explicit retry, dispose semantics, slot binding fidelity.
+19 focused tests (`autosave-coordinator.test.ts`) with fake timers and a controlled SaveRepository stub: trailing-debounce timing, reset-on-request, burst coalescing, all six reasons identical, snapshot captured only at write start and newest-state-correct, single-flight with follow-up, per-request trailing windows across in-flight saves, no concurrent writes, failed-generation no-auto-retry (incl. idle timers), retry-after-failure via new request, fail-then-newer-ready-work handoff, flush semantics + failure passthrough + explicit retry, dispose semantics, slot binding fidelity.
 
 ## Validation evidence
 
@@ -65,4 +68,4 @@ type AutosaveReason =
 
 ## Boundaries / remaining BBX-031 issues
 
-- None within scope. Browser lifecycle wiring, restart current case, hydration, save UI, migrations (BBX-032), and engine integration are explicitly deferred.
+- None within scope. Browser lifecycle wiring, restart current case, hydration, save UI, migrations (BBX-032), and engine integration remain outside the original BBX-031 coordinator task; runtime integration is owned by BBX-050A3b.

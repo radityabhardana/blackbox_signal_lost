@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
 import { CaseSessionProvider, useOptionalCaseSession } from "./case-session";
+import type { CaseSessionCommit } from "./case-session";
 import { createInitialEngineState, stepCaseEngine } from "@/domain/engine";
 import type { CaseEngineState } from "@/domain/engine";
 import { createMailTestSession } from "@/test/fixtures/mail-content";
@@ -103,6 +104,47 @@ describe("CaseSessionProvider dispatch", () => {
     const events = JSON.parse(screen.getByTestId("events-json").textContent!) as string[];
     // initialState carries exactly the fixture boot event and nothing else.
     expect(events).toEqual(["mail_test_bootstrap"]);
+  });
+
+  it("reports one committed transaction with its final state, inputs, and results", async () => {
+    const commits: CaseSessionCommit[] = [];
+    const { content, mailChannelId, initialState } = createMailTestSession();
+    render(
+      <CaseSessionProvider
+        content={content}
+        mailChannelId={mailChannelId}
+        initialState={initialState}
+        onCommittedChange={(commit) => commits.push(commit)}
+      >
+        <SessionProbe />
+      </CaseSessionProvider>,
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "Dispatch evidence" }));
+
+    expect(commits).toHaveLength(1);
+    expect(commits[0]!.inputs).toEqual([{ kind: "evidence_discovered", evidenceId: "evidence_test" }]);
+    expect(commits[0]!.state.discoveredEntityIds).toEqual(["evidence_test"]);
+    expect(commits[0]!.results).toHaveLength(1);
+  });
+
+  it("does not report an empty transaction as a commit", async () => {
+    const commits: CaseSessionCommit[] = [];
+    const { content, mailChannelId, initialState } = createMailTestSession();
+    render(
+      <CaseSessionProvider
+        content={content}
+        mailChannelId={mailChannelId}
+        initialState={initialState}
+        onCommittedChange={(commit) => commits.push(commit)}
+      >
+        <SessionProbe />
+      </CaseSessionProvider>,
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "None plan" }));
+
+    expect(commits).toEqual([]);
   });
 });
 

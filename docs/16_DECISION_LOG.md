@@ -597,6 +597,25 @@ Decision:
 
 ---
 
+## ADR-027 — SaveGame V2 runtime hydration and durable board persistence (BBX-050A3b)
+
+**Status:** Accepted
+
+**Decision:** Add an application-level `SessionSaveRuntime` that loads a trusted `SaveGameV2` through the existing `SaveRepository` before mounting interactive session providers. It passes the restored `CaseEngineState` to `CaseSessionProvider`, hydrates the saved `EvidenceBoardSnapshotV1` through A1, reconciles discovered evidence with `syncDiscoveredEvidence`, and activates autosave only after hydration is ready. The runtime owns repository/database lifecycle, persistence status, latest-state references, and the discovery-to-board reconciliation barrier; the session and board providers remain storage-agnostic authorities.
+
+**Consequences:**
+
+- SaveGame V2 remains the single durable transaction containing engine and canonical board state.
+- Desktop/window layout persistence remains a separate localStorage-backed presentation concern, outside SaveGame V2, EvidenceBoardSnapshotV1, and the SessionSaveRuntime IndexedDB transaction. React Flow viewport and selection remain transient and unpersisted.
+- Runtime identity gates require matching slot, case, and content version; incompatible saves fail closed without overwriting storage.
+- Autosave composes from the latest engine, board, game-event, UI-snapshot, and settings references at write-start. Only committed A1 board mutations request `evidence_board_edit`; React Flow transient state, viewport, and selection remain excluded.
+- Engine discovery requests wait for the matching board reconciliation callback, so a persisted save cannot contain new discovery with a stale board.
+- Existing coordinator single-flight, debounce, retry, and flush semantics remain unchanged. Persistence status observes actual repository writes through a decorated repository.
+- Normal unmount flushes before disposal and database close. `pagehide` flushing is best effort only; durability is claimed only after `repository.save()` resolves before unload.
+- The guarded evidence-board route proves browser reload through real IndexedDB. Production `/game` remains without a session bootstrap, so BBX-050 remains partial.
+
+---
+
 
 
 ## Proposed-decision template

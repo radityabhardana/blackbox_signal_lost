@@ -12,6 +12,7 @@ const ALL_REASONS: AutosaveReason[] = [
   "message_choice",
   "puzzle_completed",
   "report_submitted",
+  "evidence_board_edit",
 ];
 
 interface DeferredCall {
@@ -166,7 +167,7 @@ describe("debounce semantics", () => {
     expect(coordinator.hasPendingSave).toBe(false);
   });
 
-  it("Five documented reasons each schedule identically", async () => {
+  it("all documented reasons each schedule identically", async () => {
     const { repo, calls } = makeControlledRepository();
     const snapshot = makeSnapshotProvider(makeSave());
     const coordinator = makeCoordinator({ repo, getSnapshot: snapshot.getSnapshot });

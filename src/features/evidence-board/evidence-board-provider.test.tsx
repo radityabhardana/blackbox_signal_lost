@@ -1,6 +1,12 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { contentBundleSchema } from "@/content/validator";
+import {
+  createEvidenceBoardNote,
+  createInitialEvidenceBoardState,
+  syncDiscoveredEvidence,
+} from "@/domain/evidence-board";
+import type { EvidenceBoardChange } from "./evidence-board-provider";
 import { CaseSessionProvider } from "@/features/session/case-session";
 import { createEvidenceBoardTestSession } from "@/test/fixtures/evidence-board-content";
 import { EvidenceBoardProvider, useEvidenceBoard } from "./evidence-board-provider";
@@ -12,6 +18,70 @@ function Probe({ id }: { id: string }) {
 }
 
 describe("EvidenceBoardProvider", () => {
+  it("uses the restored board as its first reconciliation base", async () => {
+    const fixture = createEvidenceBoardTestSession();
+    const restored = createEvidenceBoardNote(
+      syncDiscoveredEvidence(createInitialEvidenceBoardState(), fixture.content, fixture.initialState.discoveredEntityIds),
+      "Restored note",
+      { x: 321, y: 654 },
+    );
+    const changes: EvidenceBoardChange[] = [];
+
+    render(
+      <CaseSessionProvider content={fixture.content} mailChannelId="channel_test" initialState={fixture.initialState}>
+        <EvidenceBoardProvider initialBoard={restored} onBoardChange={(change) => changes.push(change)}>
+          <Probe id="one" />
+        </EvidenceBoardProvider>
+      </CaseSessionProvider>,
+    );
+
+    expect(screen.getByTestId("board-one")).toHaveTextContent("Restored note");
+    await waitFor(() => expect(changes.filter((change) => change.kind === "reconciled")).toHaveLength(1));
+    expect(changes.filter((change) => change.kind === "committed")).toEqual([]);
+  });
+
+  it("emits reconciliation without creating an effect loop", async () => {
+    const fixture = createEvidenceBoardTestSession();
+    const changes: EvidenceBoardChange[] = [];
+    const view = render(
+      <CaseSessionProvider content={fixture.content} mailChannelId="channel_test" initialState={fixture.initialState}>
+        <EvidenceBoardProvider onBoardChange={(change) => changes.push(change)}>
+          <Probe id="one" />
+        </EvidenceBoardProvider>
+      </CaseSessionProvider>,
+    );
+
+    await waitFor(() => expect(changes.filter((change) => change.kind === "reconciled")).toHaveLength(1));
+    await act(async () => {
+      view.rerender(
+        <CaseSessionProvider content={fixture.content} mailChannelId="channel_test" initialState={fixture.initialState}>
+          <EvidenceBoardProvider onBoardChange={(change) => changes.push(change)}>
+            <Probe id="one" />
+          </EvidenceBoardProvider>
+        </CaseSessionProvider>,
+      );
+      await Promise.resolve();
+    });
+    expect(changes.filter((change) => change.kind === "reconciled")).toHaveLength(1);
+  });
+
+  it("emits committed changes only when an A1 operation returns a new state", () => {
+    const fixture = createEvidenceBoardTestSession();
+    const changes: EvidenceBoardChange[] = [];
+    render(
+      <CaseSessionProvider content={fixture.content} mailChannelId="channel_test" initialState={fixture.initialState}>
+        <EvidenceBoardProvider onBoardChange={(change) => changes.push(change)}>
+          <Probe id="one" />
+        </EvidenceBoardProvider>
+      </CaseSessionProvider>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Move one" }));
+    fireEvent.click(screen.getByRole("button", { name: "Move one" }));
+
+    expect(changes.filter((change) => change.kind === "committed")).toHaveLength(1);
+  });
+
   it("reconciles real session discovery without mutating engine state", () => {
     const fixture = createEvidenceBoardTestSession();
     render(<CaseSessionProvider content={fixture.content} mailChannelId="channel_test" initialState={fixture.initialState}><EvidenceBoardProvider><Probe id="one" /></EvidenceBoardProvider></CaseSessionProvider>);

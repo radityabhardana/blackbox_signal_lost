@@ -11,6 +11,13 @@ export interface CaseSessionConfig {
   readonly mailChannelId: string;
   readonly messengerChannelId?: string;
   readonly initialState?: CaseEngineState;
+  readonly onCommittedChange?: (commit: CaseSessionCommit) => void;
+}
+
+export interface CaseSessionCommit {
+  readonly state: CaseEngineState;
+  readonly inputs: readonly EngineInput[];
+  readonly results: readonly EngineResult[];
 }
 
 export interface CaseSession extends CaseSessionConfig {
@@ -51,6 +58,7 @@ export function CaseSessionProvider({ children, ...config }: { children: ReactNo
 
       stateRef.current = working;
       setState(working);
+      config.onCommittedChange?.({ state: working, inputs, results });
       return results;
     };
 

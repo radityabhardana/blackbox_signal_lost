@@ -4,13 +4,14 @@ import type { SaveGameV2 } from "./session-save-schema";
 /** ADR-018 convention: trailing debounce delay in milliseconds. */
 export const AUTOSAVE_DEBOUNCE_MS = 800;
 
-/** The five documented autosave trigger signals (docs/03 §5.11). */
+/** The documented autosave signals plus the A3b board-edit signal. */
 export type AutosaveReason =
   | "evidence_discovered"
   | "objective_completed"
   | "message_choice"
   | "puzzle_completed"
-  | "report_submitted";
+  | "report_submitted"
+  | "evidence_board_edit";
 
 export type TimerHandle = ReturnType<typeof setTimeout>;
 

@@ -1,9 +1,7 @@
 import { notFound } from "next/navigation";
-import { CaseSessionProvider } from "@/features/session/case-session";
 import { createEvidenceBoardTestSession } from "@/test/fixtures/evidence-board-content";
-import { WorkspaceShell } from "@/components/desktop/workspace-shell";
-import { Taskbar } from "@/components/desktop/taskbar";
-import { LayoutPersistence } from "@/components/desktop/layout-persistence";
+import { SessionSaveRuntime } from "@/features/session/session-save-runtime";
+import packageJson from "../../../../package.json";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -11,5 +9,13 @@ export const revalidate = 0;
 export default function EvidenceBoardTestPage() {
   if (process.env.PLAYWRIGHT_TEST !== "1") notFound();
   const session = createEvidenceBoardTestSession();
-  return <div className="flex h-dvh flex-col overflow-hidden bg-bbx-bg-0"><CaseSessionProvider content={session.content} mailChannelId="channel_test" initialState={session.initialState}><div className="flex min-h-0 flex-1 flex-col"><main id="main-content" tabIndex={-1} className="min-h-0 flex-1 outline-none"><WorkspaceShell /></main><Taskbar /><LayoutPersistence /></div></CaseSessionProvider></div>;
+  return (
+    <SessionSaveRuntime
+      content={session.content}
+      mailChannelId="channel_test"
+      initialState={session.initialState}
+      slotId="slot_evidence_board_test"
+      applicationVersion={packageJson.version}
+    />
+  );
 }

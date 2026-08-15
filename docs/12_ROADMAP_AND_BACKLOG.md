@@ -184,7 +184,7 @@ Note: BBX-012 was audited against the BBX-011 implementation and closed as fully
 |---|---:|---|---|
 | BBX-030 | P0 | IndexedDB save repository | Transactional versioned saves |
 | BBX-031 | P0 | Autosave coordinator | Debounced and resilient |
-| BBX-032 | P1 | Save migration | SaveGame V1→V2 format migration implemented in A3a; runtime hydration remains with BBX-050A3b |
+| BBX-032 | P1 | Save migration | SaveGame V1→V2 format migration implemented in A3a; runtime hydration is implemented by BBX-050A3b |
 | BBX-033 | P1 | Debug export | Non-sensitive diagnostics |
 | BBX-034 | P3 | Cloud-save adapter | Deferred |
 
@@ -206,6 +206,8 @@ Note: BBX-012 was audited against the BBX-011 implementation and closed as fully
 | BBX-051 | P1 | Verified relationships | Visually distinct from hypotheses |
 | BBX-052 | P2 | Undo/redo | Board operations |
 | BBX-053 | P2 | Auto-arrange | Stable optional layout |
+
+BBX-050A3b implements reusable SaveGame V2 runtime hydration, autosave, Evidence Board restore, and guarded browser-reload proof. BBX-050 remains PARTIAL until production `/game` receives a validated Case 001 session bootstrap.
 
 ### Objectives and hints
 

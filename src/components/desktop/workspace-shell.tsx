@@ -4,8 +4,16 @@ import { useWindowStore } from "@/stores/window-store";
 import { useWorkspaceSize } from "@/hooks/use-workspace-size";
 import { WindowLayer } from "@/components/windows/window-layer";
 import { EvidenceBoardProvider } from "@/features/evidence-board/evidence-board-provider";
+import type { EvidenceBoardChange } from "@/features/evidence-board/evidence-board-provider";
+import type { EvidenceBoardState } from "@/domain/evidence-board";
 
-export function WorkspaceShell() {
+export function WorkspaceShell({
+  initialBoard,
+  onBoardChange,
+}: {
+  readonly initialBoard?: EvidenceBoardState;
+  readonly onBoardChange?: (change: EvidenceBoardChange) => void;
+}) {
   const ref = useWorkspaceSize<HTMLElement>();
   const windowCount = useWindowStore((state) => state.manager.openWindows.length);
 
@@ -23,7 +31,10 @@ export function WorkspaceShell() {
           </p>
         </div>
       ) : null}
-      <EvidenceBoardProvider>
+      <EvidenceBoardProvider
+        {...(initialBoard === undefined ? {} : { initialBoard })}
+        {...(onBoardChange === undefined ? {} : { onBoardChange })}
+      >
         <WindowLayer />
       </EvidenceBoardProvider>
     </section>

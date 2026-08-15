@@ -25,14 +25,43 @@ export interface EvidenceBoardContextValue {
   moveNode(nodeId: string, position: EvidenceBoardPosition): void;
 }
 
+export interface EvidenceBoardChange {
+  readonly kind: "reconciled" | "committed";
+  readonly state: EvidenceBoardState;
+}
+
 const EvidenceBoardContext = createContext<EvidenceBoardContextValue | null>(null);
 
 /** Workspace-lifetime, non-persistent owner for committed A1 board state. */
-export function EvidenceBoardProvider({ children }: { children: ReactNode }) {
+export function EvidenceBoardProvider({
+  children,
+  initialBoard,
+  onBoardChange,
+}: {
+  readonly children: ReactNode;
+  readonly initialBoard?: EvidenceBoardState;
+  readonly onBoardChange?: (change: EvidenceBoardChange) => void;
+}) {
   const session = useOptionalCaseSession();
-  const [board, setBoard] = useState<EvidenceBoardState>(createInitialEvidenceBoardState);
+  const initialState = initialBoard ?? createInitialEvidenceBoardState();
+  const [board, setBoard] = useState<EvidenceBoardState>(initialState);
+  const boardRef = useRef(initialState);
+  const initialBoardRef = useRef(initialBoard);
+  const onBoardChangeRef = useRef(onBoardChange);
   const sessionIdentityRef = useRef<{ caseId: string; content: NonNullable<typeof session>["content"] } | null>(null);
   const caseId = session?.content.case.id ?? null;
+
+  useEffect(() => {
+    onBoardChangeRef.current = onBoardChange;
+  }, [onBoardChange]);
+
+  const commitBoard = (mutate: (current: EvidenceBoardState) => EvidenceBoardState): void => {
+    const next = mutate(boardRef.current);
+    if (next === boardRef.current) return;
+    boardRef.current = next;
+    setBoard(next);
+    onBoardChangeRef.current?.({ kind: "committed", state: next });
+  };
 
   useEffect(() => {
     const previousIdentity = sessionIdentityRef.current;
@@ -41,26 +70,39 @@ export function EvidenceBoardProvider({ children }: { children: ReactNode }) {
       : previousIdentity === null || previousIdentity.caseId !== caseId || previousIdentity.content !== session.content;
     if (sessionChanged) {
       sessionIdentityRef.current = session === null ? null : { caseId: session.content.case.id, content: session.content };
-      setBoard(session === null
-        ? createInitialEvidenceBoardState()
-        : syncDiscoveredEvidence(createInitialEvidenceBoardState(), session.content, session.state.discoveredEntityIds));
+      if (session === null) {
+        const next = createInitialEvidenceBoardState();
+        boardRef.current = next;
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setBoard(next);
+      } else {
+        const base = previousIdentity === null
+          ? initialBoardRef.current ?? createInitialEvidenceBoardState()
+          : createInitialEvidenceBoardState();
+        const next = syncDiscoveredEvidence(base, session.content, session.state.discoveredEntityIds);
+        boardRef.current = next;
+        setBoard(next);
+        onBoardChangeRef.current?.({ kind: "reconciled", state: next });
+      }
       return;
     }
     if (session !== null) {
       // Case-session discovery is an external source; reconcile it after commits.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setBoard((previous) => syncDiscoveredEvidence(previous, session.content, session.state.discoveredEntityIds));
+      const next = syncDiscoveredEvidence(boardRef.current, session.content, session.state.discoveredEntityIds);
+      boardRef.current = next;
+      setBoard(next);
+      onBoardChangeRef.current?.({ kind: "reconciled", state: next });
     }
   }, [caseId, session]);
 
   const value: EvidenceBoardContextValue = {
     board,
-    createNote: (text, position) => setBoard((previous) => createEvidenceBoardNote(previous, text, position)),
-    updateNote: (noteId, text) => setBoard((previous) => updateEvidenceBoardNote(previous, noteId, text)),
-    removeNote: (noteId) => setBoard((previous) => removeEvidenceBoardNote(previous, noteId)),
-    createEdge: (sourceNodeId, targetNodeId) => setBoard((previous) => createEvidenceBoardPlayerEdge(previous, sourceNodeId, targetNodeId)),
-    removeEdge: (edgeId) => setBoard((previous) => removeEvidenceBoardPlayerEdge(previous, edgeId)),
-    moveNode: (nodeId, position) => setBoard((previous) => moveEvidenceBoardNode(previous, nodeId, position)),
+    createNote: (text, position) => commitBoard((previous) => createEvidenceBoardNote(previous, text, position)),
+    updateNote: (noteId, text) => commitBoard((previous) => updateEvidenceBoardNote(previous, noteId, text)),
+    removeNote: (noteId) => commitBoard((previous) => removeEvidenceBoardNote(previous, noteId)),
+    createEdge: (sourceNodeId, targetNodeId) => commitBoard((previous) => createEvidenceBoardPlayerEdge(previous, sourceNodeId, targetNodeId)),
+    removeEdge: (edgeId) => commitBoard((previous) => removeEvidenceBoardPlayerEdge(previous, edgeId)),
+    moveNode: (nodeId, position) => commitBoard((previous) => moveEvidenceBoardNode(previous, nodeId, position)),
   };
 
   return <EvidenceBoardContext.Provider value={value}>{children}</EvidenceBoardContext.Provider>;
