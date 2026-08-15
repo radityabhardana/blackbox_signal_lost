@@ -31,6 +31,7 @@ import { LayoutPersistence } from "@/components/desktop/layout-persistence";
 
 export type HydrationStatus = "uninitialized" | "loading" | "ready" | "failed";
 export type PersistenceStatus = "idle" | "saving" | "saved" | "error";
+type RuntimeLifecycle = "active" | "draining" | "finalizing" | "disposed";
 
 export class SessionSaveRuntimeError extends Error {
   readonly code = "session_restore_incompatible";
@@ -159,10 +160,14 @@ export function createSaveRuntimeController(input: SaveRuntimeControllerInput): 
   let runtimeActivityGeneration = 0;
   let flushPromise: Promise<void> | null = null;
   let disposePromise: Promise<void> | null = null;
-  let disposed = false;
+  let lifecycle: RuntimeLifecycle = "active";
   let coordinator!: AutosaveCoordinator;
+  const retiredCoordinators = new Set<AutosaveCoordinator>();
   const activeRepositoryWrites = new Set<Promise<void>>();
+  let writeTail: Promise<void> = Promise.resolve();
   const contentEvidenceIds = new Set(input.content.evidence.map((evidence) => evidence.id));
+
+  const acceptsRuntimeWork = (): boolean => lifecycle === "active" || lifecycle === "draining";
 
   const setPersistenceStatus = (status: PersistenceStatus): void => {
     if (persistenceStatus === status) return;
@@ -173,11 +178,14 @@ export function createSaveRuntimeController(input: SaveRuntimeControllerInput): 
   const observeCoordinatorSettled = (): void => {
     queueMicrotask(() => {
       queueMicrotask(() => {
-        if (disposed) return;
+        if (!acceptsRuntimeWork()) return;
+        clearSettledRetiredCoordinators();
         if (pendingDiscovery === null
           && !discoveryIntegrationError
           && !coordinator.isSaving
           && !coordinator.hasPendingSave
+          && retiredCoordinators.size === 0
+          && activeRepositoryWrites.size === 0
           && coordinator.lastError === null) {
           setPersistenceStatus("saved");
         }
@@ -190,17 +198,24 @@ export function createSaveRuntimeController(input: SaveRuntimeControllerInput): 
     delete: (slotId) => input.repository.delete(slotId),
     list: () => input.repository.list(),
     save: async (slotId, value) => {
-      if (!disposed) setPersistenceStatus("saving");
-      const write = input.repository.save(slotId, value);
-      activeRepositoryWrites.add(write);
+      if (acceptsRuntimeWork()) setPersistenceStatus("saving");
+      const previousWrite = writeTail;
+      const queuedWrite = previousWrite.catch(() => undefined).then(async () => {
+        const write = input.repository.save(slotId, value);
+        activeRepositoryWrites.add(write);
+        try {
+          await write;
+        } finally {
+          activeRepositoryWrites.delete(write);
+        }
+      });
+      writeTail = queuedWrite.catch(() => undefined);
       try {
-        await write;
-        if (!disposed) observeCoordinatorSettled();
+        await queuedWrite;
+        if (acceptsRuntimeWork()) observeCoordinatorSettled();
       } catch (error: unknown) {
-        if (!disposed) setPersistenceStatus("error");
+        if (acceptsRuntimeWork()) setPersistenceStatus("error");
         throw error;
-      } finally {
-        activeRepositoryWrites.delete(write);
       }
     },
   };
@@ -228,14 +243,27 @@ export function createSaveRuntimeController(input: SaveRuntimeControllerInput): 
   const createCoordinator = (): AutosaveCoordinator => createAutosaveCoordinator(autosaveDeps);
   coordinator = createCoordinator();
 
+  const retireCoordinator = (): void => {
+    retiredCoordinators.add(coordinator);
+    coordinator.dispose();
+    coordinator = createCoordinator();
+  };
+
+  const clearSettledRetiredCoordinators = (): void => {
+    for (const retired of retiredCoordinators) {
+      if (!retired.isSaving && !retired.hasPendingSave) retiredCoordinators.delete(retired);
+    }
+  };
+
   const updateMetadata = (metadata: SaveRuntimeMetadataUpdate): void => {
+    if (!acceptsRuntimeWork()) return;
     if (metadata.gameEvents !== undefined) latestGameEventsRef.current = metadata.gameEvents;
     if (metadata.uiSnapshot !== undefined) latestUiSnapshotRef.current = metadata.uiSnapshot;
     if (metadata.settings !== undefined) latestSettingsRef.current = metadata.settings;
   };
 
   const scheduleSave = (reason: AutosaveReason): void => {
-    if (disposed) return;
+    if (!acceptsRuntimeWork()) return;
     runtimeActivityGeneration += 1;
     if (pendingDiscovery !== null) {
       if (!discoveryIntegrationError) setPersistenceStatus("saving");
@@ -258,6 +286,7 @@ export function createSaveRuntimeController(input: SaveRuntimeControllerInput): 
   };
 
   const onEngineCommit = (commit: CaseSessionCommit): void => {
+    if (!acceptsRuntimeWork()) return;
     const previousDiscovered = new Set(latestCaseEngineState.discoveredEntityIds);
     latestCaseEngineState = commit.state;
     const newlyDiscovered = commit.state.discoveredEntityIds.filter((id) => !previousDiscovered.has(id));
@@ -265,8 +294,7 @@ export function createSaveRuntimeController(input: SaveRuntimeControllerInput): 
     if (newlyDiscovered.length > 0) {
       runtimeActivityGeneration += 1;
       if (coordinator.isSaving || coordinator.hasPendingSave) {
-        coordinator.dispose();
-        coordinator = createCoordinator();
+        retireCoordinator();
       }
       pendingDiscovery = new Set([...(pendingDiscovery ?? []), ...newlyDiscovered]);
       setPersistenceStatus(discoveryIntegrationError ? "error" : "saving");
@@ -289,6 +317,7 @@ export function createSaveRuntimeController(input: SaveRuntimeControllerInput): 
   };
 
   const onBoardChange = (change: EvidenceBoardChange): void => {
+    if (!acceptsRuntimeWork()) return;
     latestEvidenceBoardState = change.state;
     if (change.kind === "committed") {
       scheduleSave("evidence_board_edit");
@@ -322,26 +351,33 @@ export function createSaveRuntimeController(input: SaveRuntimeControllerInput): 
     while (true) {
       const observedGeneration = runtimeActivityGeneration;
       const observedCoordinator = coordinator;
+      const observedWriteTail = writeTail;
       const coordinatorHasWork = observedCoordinator.isSaving || observedCoordinator.hasPendingSave;
+      const retiredHasWork = [...retiredCoordinators].some((retired) => retired.isSaving || retired.hasPendingSave);
       if (coordinatorHasWork) {
         observedWork = true;
         if (pendingDiscovery === null && !discoveryIntegrationError) {
           await observedCoordinator.flush();
         }
       }
+      if (retiredHasWork) observedWork = true;
       if (activeRepositoryWrites.size > 0) observedWork = true;
+      await observedWriteTail;
       await waitForActiveRepositoryWrites();
       await yieldMicrotasks();
 
+      clearSettledRetiredCoordinators();
       const currentCoordinator = coordinator;
       const coordinatorIdle = !currentCoordinator.isSaving && !currentCoordinator.hasPendingSave;
       const stable = observedGeneration === runtimeActivityGeneration
         && observedCoordinator === currentCoordinator
+        && observedWriteTail === writeTail
         && coordinatorIdle
+        && retiredCoordinators.size === 0
         && activeRepositoryWrites.size === 0;
       if (!stable) continue;
 
-      if (!disposed
+      if (acceptsRuntimeWork()
         && observedWork
         && pendingDiscovery === null
         && !discoveryIntegrationError
@@ -356,7 +392,7 @@ export function createSaveRuntimeController(input: SaveRuntimeControllerInput): 
     if (flushPromise !== null) return flushPromise;
     let tracked: Promise<void>;
     tracked = drainToQuiescence().catch((error: unknown) => {
-      if (!disposed) setPersistenceStatus("error");
+      if (acceptsRuntimeWork()) setPersistenceStatus("error");
       throw error;
     }).finally(() => {
       if (flushPromise === tracked) flushPromise = null;
@@ -367,12 +403,19 @@ export function createSaveRuntimeController(input: SaveRuntimeControllerInput): 
 
   const dispose = (): Promise<void> => {
     if (disposePromise !== null) return disposePromise;
+    lifecycle = "draining";
     disposePromise = flush()
       .catch(() => undefined)
+      .then(() => drainToQuiescence())
+      .catch(() => undefined)
       .then(() => waitForActiveRepositoryWrites())
+      .then(() => writeTail)
       .finally(() => {
-        disposed = true;
+        lifecycle = "finalizing";
         coordinator.dispose();
+        for (const retired of retiredCoordinators) retired.dispose();
+        retiredCoordinators.clear();
+        lifecycle = "disposed";
         input.closeDatabase?.();
       });
     return disposePromise;

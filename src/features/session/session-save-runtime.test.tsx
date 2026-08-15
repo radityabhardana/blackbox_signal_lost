@@ -1,7 +1,8 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { contentBundleSchema } from "@/content/validator";
-import { createInitialEngineState } from "@/domain/engine";
+import type { ContentBundle } from "@/content/validator";
+import { createInitialEngineState, type CaseEngineState } from "@/domain/engine";
 import { createEvidenceBoardNote, createInitialEvidenceBoardState, serializeEvidenceBoardSnapshot, syncDiscoveredEvidence } from "@/domain/evidence-board";
 import type { SaveRepository, SaveGameV2 } from "@/domain/saves";
 import { makeSave } from "@/infrastructure/persistence/save-repository.contract";
@@ -16,6 +17,7 @@ import {
 } from "./session-save-runtime";
 import { EvidenceBoardProvider } from "@/features/evidence-board/evidence-board-provider";
 import { createEvidenceBoardTestSession } from "@/test/fixtures/evidence-board-content";
+import { createNotificationTestSession } from "@/test/fixtures/notification-content";
 
 function makeRepository(onSave: (value: SaveGameV2) => Promise<void>): SaveRepository {
   return {
@@ -78,19 +80,47 @@ function makeDatabaseFactory() {
   };
 }
 
-function makeRuntimeSave(slotId: string, fixture: ReturnType<typeof createEvidenceBoardTestSession>, noteText: string): SaveGameV2 {
+function makeRuntimeSave(
+  slotId: string,
+  fixture: { readonly content: ContentBundle; readonly initialState: CaseEngineState },
+  noteText: string,
+  state: CaseEngineState = fixture.initialState,
+): SaveGameV2 {
   const board = createEvidenceBoardNote(
-    syncDiscoveredEvidence(createInitialEvidenceBoardState(), fixture.content, fixture.initialState.discoveredEntityIds),
+    syncDiscoveredEvidence(createInitialEvidenceBoardState(), fixture.content, state.discoveredEntityIds),
     noteText,
     { x: 321, y: 654 },
   );
   return makeSave(slotId, {
     sessionSnapshot: {
       version: 1,
-      caseEngineState: fixture.initialState,
+      caseEngineState: state,
       evidenceBoard: serializeEvidenceBoardSnapshot(board),
     },
   });
+}
+
+function makeDeferredWriteRepository() {
+  const writes: Array<Deferred<void>> = [];
+  let activeWrites = 0;
+  let maximumActiveWrites = 0;
+  const repository: SaveRepository = {
+    load: async () => null,
+    save: async () => {
+      const write = deferred<void>();
+      writes.push(write);
+      activeWrites += 1;
+      maximumActiveWrites = Math.max(maximumActiveWrites, activeWrites);
+      try {
+        await write.promise;
+      } finally {
+        activeWrites -= 1;
+      }
+    },
+    delete: async () => undefined,
+    list: async () => [],
+  };
+  return { repository, writes, maximumActiveWrites: () => maximumActiveWrites };
 }
 
 function makeDiscoveryControllerFixture() {
@@ -241,7 +271,7 @@ describe("session save runtime controller", () => {
   });
 
   it("ignores a valid stale save result from the old identity", async () => {
-    const fixture = createEvidenceBoardTestSession();
+    const fixture = createNotificationTestSession();
     const { loads, repository } = makeLoadingRepository();
     const { resources, databaseFactory } = makeDatabaseFactory();
     const view = render(
@@ -269,14 +299,28 @@ describe("session save runtime controller", () => {
       />,
     );
     await waitFor(() => expect(loads).toHaveLength(2));
-    loads[1]!.deferred.resolve(makeRuntimeSave("slot_b", fixture, "B note"));
+    loads[1]!.deferred.resolve(makeRuntimeSave(
+      "slot_b",
+      fixture,
+      "B note",
+      { ...fixture.initialState, notifications: ["notification_test_b"] },
+    ));
     await waitFor(() => expect(screen.getByRole("button", { name: "Launcher" })).toBeVisible());
     expect(resources[0]!.close).toHaveBeenCalledTimes(1);
     expect(resources[1]!.close).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Notification center" }));
+    expect(screen.getByText("Test notification B.")).toBeVisible();
 
-    loads[0]!.deferred.resolve(makeRuntimeSave("slot_a", fixture, "A note"));
+    loads[0]!.deferred.resolve(makeRuntimeSave(
+      "slot_a",
+      fixture,
+      "A note",
+      { ...fixture.initialState, notifications: ["notification_test_a"] },
+    ));
     await Promise.resolve();
     expect(screen.getByRole("button", { name: "Launcher" })).toBeVisible();
+    expect(screen.getByText("Test notification B.")).toBeVisible();
+    expect(screen.queryByText("Test notification A.")).toBeNull();
     expect(resources[0]!.close).toHaveBeenCalledTimes(1);
     expect(resources[1]!.close).not.toHaveBeenCalled();
 
@@ -616,6 +660,167 @@ describe("session save runtime controller", () => {
     expect(flushSettled).toBe(true);
     await controller.dispose();
     expect(events).toEqual(["save-1-start", "save-1-complete", "save-2-start", "save-2-complete"]);
+    expect(closeDatabase).toHaveBeenCalledTimes(1);
+    vi.useRealTimers();
+  });
+
+  it("serializes B when reconciliation happens before flush begins", async () => {
+    vi.useFakeTimers();
+    const fixture = makeDiscoveryControllerFixture();
+    const writes = makeDeferredWriteRepository();
+    const closeDatabase = vi.fn();
+    const controller = createSaveRuntimeController({
+      slotId: "slot_test",
+      content: fixture.content,
+      applicationVersion: "0.1.0",
+      caseEngineState: fixture.initialState,
+      evidenceBoard: fixture.initialBoard,
+      gameEvents: [],
+      uiSnapshot: {},
+      settings: {},
+      repository: writes.repository,
+      closeDatabase,
+    });
+
+    controller.requestSave("evidence_board_edit");
+    await vi.advanceTimersByTimeAsync(800);
+    controller.onEngineCommit({
+      state: fixture.discoveredState,
+      inputs: [{ kind: "evidence_discovered", evidenceId: "evidence_pending" }],
+      results: [{ state: fixture.discoveredState, appliedEffects: [] }],
+    });
+    controller.onBoardChange({ kind: "reconciled", state: fixture.reconciledBoard });
+    const flush = controller.flush();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(writes.writes).toHaveLength(1);
+
+    writes.writes[0]!.resolve();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(writes.writes).toHaveLength(2);
+    let flushSettled = false;
+    void flush.then(() => { flushSettled = true; });
+    expect(flushSettled).toBe(false);
+    writes.writes[1]!.resolve();
+    await flush;
+    expect(writes.maximumActiveWrites()).toBe(1);
+    await controller.dispose();
+    expect(closeDatabase).toHaveBeenCalledTimes(1);
+    vi.useRealTimers();
+  });
+
+  it("does not let debounce expiry overlap an active write from a retired coordinator", async () => {
+    vi.useFakeTimers();
+    const fixture = makeDiscoveryControllerFixture();
+    const writes = makeDeferredWriteRepository();
+    const controller = createSaveRuntimeController({
+      slotId: "slot_test",
+      content: fixture.content,
+      applicationVersion: "0.1.0",
+      caseEngineState: fixture.initialState,
+      evidenceBoard: fixture.initialBoard,
+      gameEvents: [],
+      uiSnapshot: {},
+      settings: {},
+      repository: writes.repository,
+    });
+
+    controller.requestSave("evidence_board_edit");
+    await vi.advanceTimersByTimeAsync(800);
+    controller.onEngineCommit({
+      state: fixture.discoveredState,
+      inputs: [{ kind: "evidence_discovered", evidenceId: "evidence_pending" }],
+      results: [{ state: fixture.discoveredState, appliedEffects: [] }],
+    });
+    controller.onBoardChange({ kind: "reconciled", state: fixture.reconciledBoard });
+    await vi.advanceTimersByTimeAsync(800);
+    expect(writes.writes).toHaveLength(1);
+
+    writes.writes[0]!.resolve();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(writes.writes).toHaveLength(2);
+    writes.writes[1]!.resolve();
+    await controller.flush();
+    expect(writes.maximumActiveWrites()).toBe(1);
+    await controller.dispose();
+    vi.useRealTimers();
+  });
+
+  it("allows B to start after retired A rejects without poisoning the write tail", async () => {
+    vi.useFakeTimers();
+    const fixture = makeDiscoveryControllerFixture();
+    const writes = makeDeferredWriteRepository();
+    const statuses: PersistenceStatus[] = [];
+    const controller = createSaveRuntimeController({
+      slotId: "slot_test",
+      content: fixture.content,
+      applicationVersion: "0.1.0",
+      caseEngineState: fixture.initialState,
+      evidenceBoard: fixture.initialBoard,
+      gameEvents: [],
+      uiSnapshot: {},
+      settings: {},
+      repository: writes.repository,
+      onPersistenceStatusChange: (status) => statuses.push(status),
+    });
+
+    controller.requestSave("evidence_board_edit");
+    await vi.advanceTimersByTimeAsync(800);
+    controller.onEngineCommit({
+      state: fixture.discoveredState,
+      inputs: [{ kind: "evidence_discovered", evidenceId: "evidence_pending" }],
+      results: [{ state: fixture.discoveredState, appliedEffects: [] }],
+    });
+    controller.onBoardChange({ kind: "reconciled", state: fixture.reconciledBoard });
+    const flush = controller.flush();
+    await vi.advanceTimersByTimeAsync(0);
+    writes.writes[0]!.reject(new Error("A failed"));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(writes.writes).toHaveLength(2);
+    writes.writes[1]!.resolve();
+    await flush;
+    expect(writes.maximumActiveWrites()).toBe(1);
+    expect(statuses.at(-1)).toBe("saved");
+    await controller.dispose();
+    vi.useRealTimers();
+  });
+
+  it("observes callbacks during draining and rejects scheduling after finalization", async () => {
+    vi.useFakeTimers();
+    const fixture = makeDiscoveryControllerFixture();
+    const writes = makeDeferredWriteRepository();
+    const closeDatabase = vi.fn();
+    const controller = createSaveRuntimeController({
+      slotId: "slot_test",
+      content: fixture.content,
+      applicationVersion: "0.1.0",
+      caseEngineState: fixture.initialState,
+      evidenceBoard: fixture.initialBoard,
+      gameEvents: [],
+      uiSnapshot: {},
+      settings: {},
+      repository: writes.repository,
+      closeDatabase,
+    });
+
+    controller.requestSave("evidence_board_edit");
+    await vi.advanceTimersByTimeAsync(800);
+    const disposal = controller.dispose();
+    controller.onEngineCommit({
+      state: fixture.discoveredState,
+      inputs: [{ kind: "evidence_discovered", evidenceId: "evidence_pending" }],
+      results: [{ state: fixture.discoveredState, appliedEffects: [] }],
+    });
+    controller.onBoardChange({ kind: "reconciled", state: fixture.reconciledBoard });
+    writes.writes[0]!.resolve();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(writes.writes).toHaveLength(2);
+    writes.writes[1]!.resolve();
+    await disposal;
+    const writesAfterFinalization = writes.writes.length;
+    controller.requestSave("evidence_board_edit");
+    controller.onBoardChange({ kind: "committed", state: fixture.reconciledBoard });
+    await vi.advanceTimersByTimeAsync(800);
+    expect(writes.writes).toHaveLength(writesAfterFinalization);
     expect(closeDatabase).toHaveBeenCalledTimes(1);
     vi.useRealTimers();
   });

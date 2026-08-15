@@ -37,6 +37,9 @@ describe("EvidenceBoardProvider", () => {
 
     expect(screen.getByTestId("board-one")).toHaveTextContent("Restored note");
     await waitFor(() => expect(changes.filter((change) => change.kind === "reconciled")).toHaveLength(1));
+    expect(changes.find((change) => change.kind === "reconciled")?.state.noteNodes).toContainEqual(
+      expect.objectContaining({ text: "Restored note" }),
+    );
     expect(changes.filter((change) => change.kind === "committed")).toEqual([]);
   });
 

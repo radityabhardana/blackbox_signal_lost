@@ -10,7 +10,7 @@
 - Latest-state engine, board, game-event, UI-snapshot, and settings refs composed by `composeSaveGameV2` at write-start.
 - Committed board autosave signal, engine autosave reason selection, and discovery-to-board reconciliation barrier.
 - Decorated repository persistence status with deterministic hydration/persistence attributes.
-- Flush-before-dispose lifecycle handling and best-effort `pagehide` flush.
+- Generation-aware flush-to-quiescence across coordinator generations before disposal, plus best-effort `pagehide` flush.
 - Guarded `/test/evidence-board` runtime integration using real IndexedDB.
 - Browser reload proof for notes, hypothesis edges, and canonical evidence positions.
 
@@ -26,9 +26,9 @@
 
 ## Validation
 
-- Focused Vitest: 4 files, 56 tests passed.
+- Focused Vitest: 4 files, 60 tests passed.
 - Focused browser reload: 1 Playwright test passed against the real IndexedDB route.
-- Full Vitest: 69 files, 659 tests passed.
+- Full Vitest: 69 files, 663 tests passed.
 - Full Playwright E2E: 12 tests passed.
 - `pnpm typecheck`, `pnpm lint`, `pnpm validate:content`, `pnpm build`, and `git diff --check` passed.
 

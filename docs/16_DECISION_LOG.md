@@ -611,7 +611,7 @@ Decision:
 - Autosave composes from the latest engine, board, game-event, UI-snapshot, and settings references at write-start. Only committed A1 board mutations request `evidence_board_edit`; React Flow transient state, viewport, and selection remain excluded.
 - Engine discovery requests wait for the matching board reconciliation callback, so a persisted save cannot contain new discovery with a stale board.
 - Existing coordinator single-flight, debounce, retry, and flush semantics remain unchanged. Persistence status observes actual repository writes through a decorated repository.
-- Normal unmount flushes before disposal and database close. `pagehide` flushing is best effort only; durability is claimed only after `repository.save()` resolves before unload.
+- Runtime-owned write serialization and generation-aware flush-to-quiescence drain current and retired coordinator work before disposal and database close. `pagehide` flushing is best effort only; durability is claimed only after `repository.save()` resolves before unload.
 - The guarded evidence-board route proves browser reload through real IndexedDB. Production `/game` remains without a session bootstrap, so BBX-050 remains partial.
 
 ---
