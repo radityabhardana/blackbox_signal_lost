@@ -226,8 +226,9 @@ BBX-050 is DONE.
 
 | ID | Priority | Task | Acceptance summary |
 |---|---:|---|---|
-| BBX-070 | P1 | Signal Analyzer | Visual and tabular solution |
+| BBX-070 | P1 | Signal Analyzer | DONE — authored signal_comparison puzzle, pure domain evaluator, production Signal Analyzer app (app_signal_analyzer) gated by CaseEngineState.unlockedApplications, incorrect/retry semantics, full Stage 1 → Stage 2 production E2E with reload restore |
 | BBX-071 | P2 | Puzzle adapter API | Reusable typed result contract |
+| — | — | Note | BBX-071 remains unimplemented; the Stage 2 slice uses the existing generic game_event/trigger/effect architecture instead of a dedicated adapter. |
 | BBX-080 | P0 | Conclusion report | Claims, evidence, disclosure |
 | BBX-081 | P0 | Outcome evaluator | All endings deterministic |
 | BBX-082 | P1 | Pre-report checkpoint | Safe retry |
@@ -236,17 +237,14 @@ BBX-050 is DONE.
 
 | ID | Priority | Task | Acceptance summary |
 |---|---:|---|---|
-| BBX-100 | P0 | Case content implementation | PARTIAL — Stage 1 minimum production slice only |
+| BBX-100 | P0 | Case content implementation | PARTIAL — Stage 1 + Stage 2 production slices implemented |
 | BBX-101 | P1 | Search aliases | Natural query coverage |
 | BBX-102 | P1 | Dialogue implementation | All branches reachable |
 | BBX-103 | P1 | Endings | Four outcomes and meta flag |
 | BBX-104 | P1 | Hint content | Every objective covered |
 | BBX-105 | P1 | Content reachability tests | No dead ends |
 
-BBX-100 is intentionally PARTIAL at M3: only the minimum coherent Stage 1
-content exists (single objective, two contradiction evidence items, four
-initial records, Sera's intro mail). Stage 2+ content, Signal Analyzer
-integration, full dialogue, and the complete evidence set remain future slices.
+BBX-100 remains PARTIAL at this delivery: Stage 1 and Stage 2 production slices are implemented (contradiction discovery, objective tracker, Signal Analyzer ferry-authenticity puzzle, replay-signature evidence). Stage 3+ content, full dialogue, the complete evidence set, and later-case content remain future slices.
 
 ### Art and audio
 

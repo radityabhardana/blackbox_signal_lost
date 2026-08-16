@@ -648,7 +648,36 @@ Decision:
 
 ---
 
+## ADR-029 — Case 001 Stage 2 + BBX-070 Signal Analyzer: authored puzzle truth, unlock-gated app, generic engine integration
 
+**Status:** Accepted
+
+**Decision:** BBX-070 is implemented as a production desktop app (`app_signal_analyzer`) whose puzzle truth is authored content: a `signal_comparison` puzzle kind in a new `puzzles` ContentBundle collection (schema + validator, `default([])` backward-compatible), with per-property authored reference/disputed values and a `decisive` flag set. A pure domain evaluator (`src/domain/signal-analyzer`) decides correctness: a submission is correct only when the player's marked discrepancy set exactly equals the authored decisive set. Correct submission dispatches the generic `game_event {type:"puzzle_completed", entityId}` input; authored triggers then discover the solution evidence, complete the Stage 2 objective, and set a flag. Incorrect submissions dispatch nothing, show generic feedback, and allow retry. The app is hidden from the Launcher until `CaseEngineState.unlockedApplications` contains `app_signal_analyzer` (new generic `ApplicationDescriptor.requiresUnlock` flag; Launcher projects availability from session state).
+
+**Context:** BBX-070 required a visual/tabular signal comparison with authored truth and no hardcoded answers. docs/05 Stage 2 specifies the ferry authenticity puzzle (4 properties × normal/disputed, decisive indicators: gate device + account signature; conclusion: administrative replay injection). No puzzle schema existed; `unlockedApplications` was tracked and persisted but never consumed; BBX-071 (generic Puzzle Adapter API) was not part of this slice.
+
+**Options considered:**
+
+- Hardcoding the correct-answer set in React or the domain (rejected: violates the authored-truth invariant; puzzle truth belongs in content).
+- Reusing record metadata for comparison data (rejected: metadata is flat scalars; cannot hold the property list cleanly; validator could not resolve references).
+- A separate puzzle-progress store or adapter contract (rejected: BBX-071 stays unimplemented; the existing generic engine input/trigger/effect architecture fully satisfies the flow).
+
+**Rationale:**
+
+- The `puzzles` collection follows the `notifications` precedent (default `[]`, validator registration, reference resolution) — the smallest honest schema addition.
+- The evaluator is total, deterministic, and reads only authored data; `decisive` is never rendered, so the answer is not revealed before completion.
+- Engine integration reuses existing machinery: `unlock_application`/`start_objective` on the authored activation trigger, `discover_evidence`/`complete_objective`/`set_flag` on the authored completion trigger. No runtime/engine changes were required.
+- Launcher gating is generic (any future app can set `requiresUnlock`); existing always-available apps are unaffected; the analyzer also renders a locked state as defense-in-depth against ungated window restoration.
+- Persistence requires no SaveGame V2 change: all progression lives in `CaseEngineState` (unlockedApplications, discoveredEntityIds, completedObjectives, flags, eventHistory). The analyzer's selection/result is transient component state. The pre-existing unused `"puzzle_completed"` AutosaveReason member stays unused in production because the trigger effects already autosave through `evidence_discovered`/`objective_completed` paths.
+
+**Consequences:**
+
+- BBX-070 is DONE: authored puzzle, pure evaluator, unlock-gated production app, incorrect/retry semantics, production Stage 1 → Stage 2 E2E with reload restore (e2e/case-001-stage-2.spec.ts).
+- BBX-100 remains PARTIAL (Stage 1 + Stage 2 slices; Stage 3+ deferred).
+- BBX-071 remains unimplemented; a future adapter may generalize puzzle results if more kinds arrive, but none is required today.
+- `puzzles` is a validated content collection; future puzzle kinds extend the discriminated union and must add validator coverage.
+
+---
 
 ## Proposed-decision template
 

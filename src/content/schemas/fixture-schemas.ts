@@ -9,6 +9,7 @@ import { hintDefinitionSchema } from "./hints";
 import { idSchema } from "./ids";
 import { objectiveDefinitionSchema } from "./objectives";
 import { outcomeDefinitionSchema } from "./outcomes";
+import { puzzleDefinitionSchema } from "./puzzles";
 import { recordDefinitionSchema } from "./records";
 import { ruleExpressionSchema } from "./rule-expression";
 import { saveGameSchema } from "./save";
@@ -39,6 +40,7 @@ export const schemasByDirectory: Record<string, FixtureSchemaDescriptor> = {
   "ids/": { schema: idSchema, entityType: "id" },
   "objectives/": { schema: objectiveDefinitionSchema, entityType: "objective" },
   "outcomes/": { schema: outcomeDefinitionSchema, entityType: "outcome" },
+  "puzzles/": { schema: puzzleDefinitionSchema, entityType: "puzzle" },
   "records/": { schema: recordDefinitionSchema, entityType: "record" },
   "rules/": { schema: ruleExpressionSchema, entityType: "rule expression" },
   "save/": { schema: saveGameSchema, entityType: "save game" },

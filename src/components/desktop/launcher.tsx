@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import { APP_CATALOG } from "@/lib/apps";
 import { useWindowStore } from "@/stores/window-store";
+import { useOptionalCaseSession } from "@/features/session/case-session";
 import { focusWindowRegion, registerLauncherButton, unregisterLauncherButton } from "@/lib/focus-registry";
 
 const MENU_ID = "app-launcher-menu";
@@ -13,6 +14,8 @@ export function Launcher() {
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const openApp = useWindowStore((state) => state.open);
+  const session = useOptionalCaseSession();
+  const unlocked = session?.state.unlockedApplications ?? [];
 
   useEffect(() => {
     if (!open) {
@@ -94,7 +97,7 @@ export function Launcher() {
           className="absolute bottom-12 left-0 z-bbx-modal min-w-48 border border-bbx-surface-2 bg-bbx-surface-2 p-1"
           onKeyDown={handleKeyDown}
         >
-          {APP_CATALOG.map((app) => (
+          {APP_CATALOG.filter((app) => app.requiresUnlock !== true || unlocked.includes(app.appId)).map((app) => (
             <button
               key={app.appId}
               type="button"

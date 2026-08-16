@@ -199,6 +199,110 @@ describe("validateContentBundle", () => {
     expect(bundle.notifications).toEqual([]);
     expect(validateContentBundle(bundle).success).toBe(true);
   });
+
+  it("defaults puzzles to an empty array for bundles without them", () => {
+    const bundle = loadValidBundle();
+    expect(bundle.puzzles).toEqual([]);
+    expect(validateContentBundle(bundle).success).toBe(true);
+  });
+
+  it("accepts a valid signal_comparison puzzle", () => {
+    const bundle = loadValidBundle();
+    bundle.puzzles.push({
+      kind: "signal_comparison",
+      id: "puzzle_test_signal",
+      caseId: "case_test",
+      title: "Test signal comparison",
+      referenceLabel: "Normal event",
+      disputedLabel: "Disputed event",
+      sourceEvidenceId: "evidence_test",
+      referenceRecordId: "record_test",
+      solutionEvidenceId: "evidence_test",
+      properties: [
+        {
+          id: "property_test_gate",
+          label: "Gate device",
+          referenceValue: "Physical terminal",
+          disputedValue: "Replication service",
+          decisive: true,
+        },
+      ],
+      conclusionText: "Replay service detected.",
+    });
+    expect(validateContentBundle(bundle).success).toBe(true);
+  });
+
+  it("detects an unresolved puzzle solutionEvidenceId", () => {
+    const bundle = loadValidBundle();
+    bundle.puzzles.push({
+      kind: "signal_comparison",
+      id: "puzzle_test_signal",
+      caseId: "case_test",
+      title: "Test signal comparison",
+      referenceLabel: "Normal event",
+      disputedLabel: "Disputed event",
+      sourceEvidenceId: "evidence_test",
+      referenceRecordId: "record_test",
+      solutionEvidenceId: "evidence_missing",
+      properties: [
+        {
+          id: "property_test_gate",
+          label: "Gate device",
+          referenceValue: "Physical terminal",
+          disputedValue: "Replication service",
+          decisive: true,
+        },
+      ],
+      conclusionText: "Replay service detected.",
+    });
+    const result = validateContentBundle(bundle);
+    expect(result.success).toBe(false);
+    expect(issuesOf(result)).toContainEqual(
+      expect.objectContaining({
+        code: "reference_unresolved",
+        entityType: "puzzle",
+        entityId: "puzzle_test_signal",
+        path: "solutionEvidenceId",
+        referencedId: "evidence_missing",
+      }),
+    );
+  });
+
+  it("detects a puzzle sourceEvidenceId pointing at the wrong entity kind", () => {
+    const bundle = loadValidBundle();
+    bundle.puzzles.push({
+      kind: "signal_comparison",
+      id: "puzzle_test_signal",
+      caseId: "case_test",
+      title: "Test signal comparison",
+      referenceLabel: "Normal event",
+      disputedLabel: "Disputed event",
+      sourceEvidenceId: "record_test",
+      referenceRecordId: "record_test",
+      solutionEvidenceId: "evidence_test",
+      properties: [
+        {
+          id: "property_test_gate",
+          label: "Gate device",
+          referenceValue: "Physical terminal",
+          disputedValue: "Replication service",
+          decisive: true,
+        },
+      ],
+      conclusionText: "Replay service detected.",
+    });
+    const result = validateContentBundle(bundle);
+    expect(result.success).toBe(false);
+    expect(issuesOf(result)).toContainEqual(
+      expect.objectContaining({
+        code: "reference_wrong_kind",
+        entityType: "puzzle",
+        entityId: "puzzle_test_signal",
+        path: "sourceEvidenceId",
+        referencedId: "record_test",
+      }),
+    );
+  });
 });
 
 describe("bundle fixtures", () => {

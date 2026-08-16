@@ -45,9 +45,10 @@ test("production /game: Case 001 investigation loop survives reload", async ({ p
   await expect(board.getByRole("button", { name: /Evidence: Ferry Departure Record/i })).toBeVisible();
   await expect(board.getByRole("button", { name: /Evidence: North Barrier Emergency Call Metadata/i })).toBeVisible();
 
-  // Objectives show completed; Active gone (same window re-renders reactively)
+  // Objectives show Stage 1 completed and Stage 2 active (same window re-renders reactively)
   await expect(objectives.getByText("Completed")).toBeVisible();
-  await expect(objectives.getByText("Active")).toHaveCount(0);
+  await expect(objectives.getByText("Active")).toBeVisible();
+  await expect(objectives.getByText(/Determine whether the ferry departure record is authentic/i)).toBeVisible();
 
   // Canonical board edit; wait for persistence
   await board.getByLabel("New private note").fill("Maya cannot be both on the ferry and at North Barrier.");
@@ -69,10 +70,11 @@ test("production /game: Case 001 investigation loop survives reload", async ({ p
     await page.getByRole("menuitem", { name: "Objectives" }).click();
   }
 
-  // Restored state: objective completed, discoveries and note intact
+  // Restored state: Stage 1 completed, Stage 2 active, discoveries and note intact
   const restoredObjectives = page.locator('[aria-label="Objectives"]');
   await expect(restoredObjectives.getByText("Completed")).toBeVisible();
-  await expect(restoredObjectives.getByText("Active")).toHaveCount(0);
+  await expect(restoredObjectives.getByText("Active")).toBeVisible();
+  await expect(restoredObjectives.getByText(/Determine whether the ferry departure record is authentic/i)).toBeVisible();
   const restoredBoard = page.locator('[aria-label="Evidence Board"]');
   await expect(restoredBoard.getByRole("button", { name: /Evidence: Ferry Departure Record/i })).toBeVisible();
   await expect(restoredBoard.getByRole("button", { name: /Evidence: North Barrier Emergency Call Metadata/i })).toBeVisible();

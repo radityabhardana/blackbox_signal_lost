@@ -24,6 +24,8 @@ export interface ApplicationDescriptor {
   title: string;
   minWidth?: number;
   minHeight?: number;
+  /** When true, the launcher hides the app unless the case has unlocked it. */
+  requiresUnlock?: boolean;
 }
 
 export interface ManagedWindow {

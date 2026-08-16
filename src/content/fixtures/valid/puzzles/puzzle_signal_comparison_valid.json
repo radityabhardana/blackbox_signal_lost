@@ -1,0 +1,16 @@
+{
+  "kind": "signal_comparison",
+  "id": "puzzle_test_signal",
+  "caseId": "case_test",
+  "title": "Test signal comparison",
+  "referenceLabel": "Normal event",
+  "disputedLabel": "Disputed event",
+  "sourceEvidenceId": "evidence_test",
+  "referenceRecordId": "record_test",
+  "solutionEvidenceId": "evidence_test",
+  "properties": [
+    { "id": "property_test_gate", "label": "Gate device", "referenceValue": "Physical terminal", "disputedValue": "Replication service", "decisive": true },
+    { "id": "property_test_location", "label": "Location proof", "referenceValue": "Beacon and camera", "disputedValue": "Beacon only", "decisive": false }
+  ],
+  "conclusionText": "Replay service detected."
+}

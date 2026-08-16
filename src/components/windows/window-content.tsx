@@ -6,6 +6,7 @@ import { RecordsApp } from "@/components/apps/records/records-app";
 import { MessengerApp } from "@/components/apps/messenger/messenger-app";
 import { EvidenceBoardApp } from "@/components/apps/evidence-board/evidence-board-app";
 import { ObjectivesApp } from "@/components/apps/objectives/objectives-app";
+import { SignalAnalyzerApp } from "@/components/apps/signal-analyzer/signal-analyzer-app";
 
 export function WindowContent({ appId }: { appId: string }) {
   if (appId === "app_mail") {
@@ -40,6 +41,14 @@ export function WindowContent({ appId }: { appId: string }) {
     return (
       <div className="bbx-window-body">
         <ObjectivesApp />
+      </div>
+    );
+  }
+
+  if (appId === "app_signal_analyzer") {
+    return (
+      <div className="bbx-window-body">
+        <SignalAnalyzerApp />
       </div>
     );
   }

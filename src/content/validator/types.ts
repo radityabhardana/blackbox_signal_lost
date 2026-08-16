@@ -8,6 +8,7 @@ import {
   evidenceDefinitionSchema,
   hintDefinitionSchema,
   notificationDefinitionSchema,
+  puzzleDefinitionSchema,
   recordDefinitionSchema,
 } from "../schemas";
 
@@ -32,6 +33,7 @@ export const contentBundleSchema = z.object({
   // so existing bundles parse unchanged while the parsed runtime shape always
   // exposes a deterministic notifications array.
   notifications: z.array(notificationDefinitionSchema).default([]),
+  puzzles: z.array(puzzleDefinitionSchema).default([]),
 });
 
 export type ContentBundle = z.infer<typeof contentBundleSchema>;
@@ -49,7 +51,8 @@ export type EntityKind =
   | "outcome"
   | "conclusion"
   | "asset"
-  | "notification";
+  | "notification"
+  | "puzzle";
 
 export type ValidationIssueCode =
   | "duplicate_id"

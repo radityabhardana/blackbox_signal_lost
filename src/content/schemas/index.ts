@@ -11,6 +11,7 @@ export * from "./evidence";
 export * from "./objectives";
 export * from "./hints";
 export * from "./notifications";
+export * from "./puzzles";
 export * from "./triggers";
 export * from "./dialogue";
 export * from "./search-index";

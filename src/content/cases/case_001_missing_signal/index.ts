@@ -37,6 +37,17 @@ export function loadCase001Session(): Case001Session {
           hintIds: ["hint_001_verify_location_1"],
           nextObjectiveIds: [],
         },
+        {
+          id: "obj_002_determine_authenticity",
+          title: "Determine whether the ferry departure record is authentic",
+          description:
+            "Compare the disputed ferry event against a normal ferry gate baseline and identify the discrepancies that prove the departure was not recorded normally.",
+          optional: false,
+          startRule: { objectiveCompleted: "obj_001_verify_location" },
+          completionRule: { eventOccurred: { type: "puzzle_completed", entityId: "puzzle_001_ferry_authenticity" } },
+          hintIds: ["hint_002_authenticity_1"],
+          nextObjectiveIds: [],
+        },
       ],
       triggers: [
         {
@@ -74,6 +85,27 @@ export function loadCase001Session(): Case001Session {
           priority: 10,
           rule: { all: [{ entityDiscovered: "ev_001_ferry_departure" }, { entityDiscovered: "ev_001_emergency_call" }] },
           effects: [{ type: "complete_objective", objectiveId: "obj_001_verify_location" }],
+        },
+        {
+          id: "trigger_002_stage2_activation",
+          once: true,
+          priority: 5,
+          rule: { objectiveCompleted: "obj_001_verify_location" },
+          effects: [
+            { type: "unlock_application", applicationId: "app_signal_analyzer" },
+            { type: "start_objective", objectiveId: "obj_002_determine_authenticity" },
+          ],
+        },
+        {
+          id: "trigger_002_authenticity_complete",
+          once: true,
+          priority: 10,
+          rule: { eventOccurred: { type: "puzzle_completed", entityId: "puzzle_001_ferry_authenticity" } },
+          effects: [
+            { type: "discover_evidence", evidenceId: "ev_001_replay_signature" },
+            { type: "complete_objective", objectiveId: "obj_002_determine_authenticity" },
+            { type: "set_flag", key: "ferry_record_forged", value: true },
+          ],
         },
       ],
       outcomes: [
@@ -152,6 +184,17 @@ export function loadCase001Session(): Case001Session {
           unavailableBehavior: "hidden",
           availabilityRule: { always: true },
           authoredRank: 5,
+        },
+        {
+          entityId: "rec_001_ferry_baseline",
+          entityType: "record",
+          title: "Ferry Gate Baseline — Normal Departure Event",
+          exactTerms: ["ferry", "baseline", "normal departure"],
+          aliases: ["normal ferry event", "gate baseline"],
+          partialTerms: ["ferry", "baseline", "normal"],
+          unavailableBehavior: "hidden",
+          availabilityRule: { always: true },
+          authoredRank: 4,
         },
       ],
       assetBundleId: "bundle_001_missing_signal",
@@ -239,6 +282,25 @@ export function loadCase001Session(): Case001Session {
         availabilityRule: { always: true },
         metadata: {},
       },
+      {
+        id: "rec_001_ferry_baseline",
+        caseId: "case_001_missing_signal",
+        recordType: "transit_record",
+        title: "Ferry Gate Baseline — Normal Departure Event",
+        body: {},
+        source: { system: "ferry_archive" },
+        createdAt: "2041-11-17T08:00:00+07:00",
+        relatedEntityIds: [],
+        searchTerms: ["ferry", "baseline", "normal", "departure", "gate"],
+        aliases: ["normal ferry event", "gate baseline"],
+        availabilityRule: { always: true },
+        metadata: {
+          gate: "Meridian Ferry Gate",
+          sync_delay_seconds: "2-8",
+          location_proof: "Beacon and camera",
+          account_signature: "Passenger token",
+        },
+      },
     ],
     evidence: [
       {
@@ -276,6 +338,24 @@ export function loadCase001Session(): Case001Session {
         redHerring: false,
         reportClaimsSupported: [],
       },
+      {
+        id: "ev_001_replay_signature",
+        caseId: "case_001_missing_signal",
+        title: "Administrative Replay Signature",
+        type: "system_log",
+        summary:
+          "Maya's ferry departure event was injected through an administrative replay service, not recorded by a physical terminal.",
+        source: { system: "ferry_archive" },
+        occurredAt: "2041-11-18T22:14:00+07:00",
+        tags: ["ferry", "replay", "signature", "falsification"],
+        relatedEntityIds: ["char_maya_pranata"],
+        assetIds: ["asset_001_ferry_document"],
+        discoveryRule: { eventOccurred: { type: "puzzle_completed", entityId: "puzzle_001_ferry_authenticity" } },
+        optional: false,
+        contested: true,
+        redHerring: false,
+        reportClaimsSupported: [],
+      },
     ],
     hints: [
       {
@@ -283,6 +363,12 @@ export function loadCase001Session(): Case001Session {
         objectiveId: "obj_001_verify_location",
         tier: 1,
         text: "Two records describe Maya's location on the same night. Compare the ferry archive with the emergency call metadata.",
+      },
+      {
+        id: "hint_002_authenticity_1",
+        objectiveId: "obj_002_determine_authenticity",
+        tier: 1,
+        text: "Compare the disputed ferry event against a normal departure from the same gate. Inspect the event source and the account signature.",
       },
     ],
     dialogue: [
@@ -350,6 +436,50 @@ export function loadCase001Session(): Case001Session {
       },
     ],
     notifications: [],
+    puzzles: [
+      {
+        kind: "signal_comparison",
+        id: "puzzle_001_ferry_authenticity",
+        caseId: "case_001_missing_signal",
+        title: "Ferry event signature comparison",
+        referenceLabel: "Normal ferry event",
+        disputedLabel: "Maya ferry event",
+        sourceEvidenceId: "ev_001_ferry_departure",
+        referenceRecordId: "rec_001_ferry_baseline",
+        solutionEvidenceId: "ev_001_replay_signature",
+        properties: [
+          {
+            id: "property_gate_device",
+            label: "Gate device",
+            referenceValue: "Physical terminal",
+            disputedValue: "Replication service",
+            decisive: true,
+          },
+          {
+            id: "property_location_proof",
+            label: "Location proof",
+            referenceValue: "Beacon and camera",
+            disputedValue: "Beacon only",
+            decisive: false,
+          },
+          {
+            id: "property_account_signature",
+            label: "Account signature",
+            referenceValue: "Passenger token",
+            disputedValue: "Administrative replay token",
+            decisive: true,
+          },
+          {
+            id: "property_sync_delay",
+            label: "Sync delay",
+            referenceValue: "2–8 seconds",
+            disputedValue: "19 minutes",
+            decisive: false,
+          },
+        ],
+        conclusionText: "The ferry departure was injected through an administrative replay service.",
+      },
+    ],
   });
 
   if (!validateContentBundle(parsed).success) {
