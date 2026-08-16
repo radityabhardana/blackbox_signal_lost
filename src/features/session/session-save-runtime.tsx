@@ -313,6 +313,10 @@ export function createSaveRuntimeController(input: SaveRuntimeControllerInput): 
     }
     if (commit.inputs.some((inputValue) => inputValue.kind === "dialogue_choice_selected")) {
       scheduleSave("message_choice");
+      return;
+    }
+    if (commit.inputs.some((inputValue) => inputValue.kind === "hint_revealed")) {
+      scheduleSave("hint_revealed");
     }
   };
 

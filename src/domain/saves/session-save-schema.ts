@@ -12,7 +12,7 @@ const ruleEventSchema: z.ZodType<RuleEvent> = z.union([
 ]);
 
 /** The serialized shape of the authoritative case-engine state. */
-export const caseEngineStateSchema: z.ZodType<CaseEngineState> = z.object({
+export const caseEngineStateSchema = z.object({
   flags: z.record(flagValueSchema),
   eventHistory: z.array(ruleEventSchema),
   discoveredEntityIds: z.array(z.string()),
@@ -25,7 +25,10 @@ export const caseEngineStateSchema: z.ZodType<CaseEngineState> = z.object({
   queuedDialogue: z.array(z.string()),
   audioCues: z.array(z.string()),
   notifications: z.array(z.string()),
-}).strict();
+  revealedHintIds: z.array(z.string()).default([]),
+  // Cast: `.default([])` widens the schema input with `undefined` while the
+  // output stays a full CaseEngineState; the annotation pins the output type.
+}).strict() as unknown as z.ZodType<CaseEngineState>;
 
 const evidenceBoardSnapshotSchema = z.unknown().transform((value, context) => {
   try {

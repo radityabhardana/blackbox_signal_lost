@@ -3,13 +3,54 @@
 import { useMemo } from "react";
 import { useOptionalCaseSession } from "@/features/session/case-session";
 import { projectObjectives } from "@/domain/objectives/project-objectives";
-import type { ObjectiveStatus } from "@/domain/objectives/project-objectives";
+import type { ObjectiveProjection, ObjectiveStatus } from "@/domain/objectives/project-objectives";
+import { buildHintLadder, HINT_TIER_LABELS } from "@/domain/hints";
+import type { HintLadderState } from "@/domain/hints";
 
 const STATUS_LABELS: Record<ObjectiveStatus, string> = {
   active: "Active",
   completed: "Completed",
   locked: "Locked",
 };
+
+interface HintLadderProps {
+  readonly objective: ObjectiveProjection;
+  readonly ladder: HintLadderState | null;
+  onReveal: (hintId: string) => void;
+}
+
+function HintLadder({ objective, ladder, onReveal }: HintLadderProps) {
+  if (ladder === null || ladder.hasNoHints || objective.status === "locked") return null;
+
+  const next = ladder.next;
+
+  return (
+    <div className="mt-2 space-y-1">
+      {objective.status === "active" && next !== null ? (
+        <button
+          type="button"
+          className="rounded-sm border border-bbx-surface-2 px-2 py-1 font-mono text-[0.625rem] uppercase tracking-widest text-bbx-text-1 hover:bg-bbx-surface-2 focus-visible:outline-1 focus-visible:outline-bbx-accent"
+          onClick={() => onReveal(next.id)}
+        >
+          Hint ({ladder.nextLabel})
+        </button>
+      ) : objective.status === "active" ? (
+        <p className="font-mono text-[0.625rem] uppercase tracking-widest text-bbx-text-2">
+          All hints revealed
+        </p>
+      ) : null}
+      {ladder.revealed.length > 0 ? (
+        <ul className="space-y-1">
+          {ladder.revealed.map((hint) => (
+            <li key={hint.id} className="font-mono text-[0.625rem] leading-4 text-bbx-text-2">
+              [{HINT_TIER_LABELS[hint.tier]}] {hint.text}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
 
 export function ObjectivesApp() {
   const session = useOptionalCaseSession();
@@ -22,6 +63,24 @@ export function ObjectivesApp() {
       activeObjectiveIds: session.state.activeObjectives,
       completedObjectiveIds: session.state.completedObjectives,
     });
+  }, [session]);
+
+  const ladders = useMemo(() => {
+    if (session === null) return null;
+
+    const ladders = new Map<string, HintLadderState>();
+    for (const definition of session.content.case.objectives) {
+      ladders.set(
+        definition.id,
+        buildHintLadder({
+          objectiveId: definition.id,
+          objectiveHintIds: definition.hintIds,
+          allHints: session.content.hints,
+          revealedHintIds: session.state.revealedHintIds,
+        }),
+      );
+    }
+    return ladders;
   }, [session]);
 
   if (objectives === null) {
@@ -54,6 +113,13 @@ export function ObjectivesApp() {
                 </p>
                 <h3 className="mt-1 text-sm text-bbx-text-1">{objective.title}</h3>
                 <p className="mt-1 text-xs leading-5 text-bbx-text-2">{objective.description}</p>
+                <HintLadder
+                  objective={objective}
+                  ladder={ladders?.get(objective.id) ?? null}
+                  onReveal={(hintId: string) =>
+                    session?.dispatch({ kind: "hint_revealed", hintId })
+                  }
+                />
               </article>
             </li>
           ))}

@@ -13,6 +13,7 @@ const ALL_REASONS: AutosaveReason[] = [
   "puzzle_completed",
   "report_submitted",
   "evidence_board_edit",
+  "hint_revealed",
 ];
 
 interface DeferredCall {

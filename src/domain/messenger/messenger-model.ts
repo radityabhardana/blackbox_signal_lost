@@ -13,6 +13,8 @@ export interface MessengerMessageViewModel {
   readonly body: string;
   readonly time: string | null;
   readonly choices: readonly MessengerChoiceViewModel[];
+  /** true when any choice of this node is in state.selectedChoices (ADR-023) */
+  readonly choicesResolved: boolean;
 }
 
 export type MessengerViewState =
@@ -49,6 +51,9 @@ export function buildMessengerView(input: MessengerViewModelInput): MessengerVie
     if (!node) continue;
     if (node.channelId !== input.messengerChannelId) continue;
 
+    const nodeChoiceIds = node.choices?.map((choice) => choice.id) ?? [];
+    const choicesResolved = nodeChoiceIds.some((id) => input.state.selectedChoices.includes(id));
+
     messages.push({
       nodeId: node.id,
       senderLabel: characters.get(node.speakerId)?.displayName ?? "Unknown sender",
@@ -58,6 +63,7 @@ export function buildMessengerView(input: MessengerViewModelInput): MessengerVie
         choiceId: choice.id,
         label: choice.label,
       })),
+      choicesResolved,
     });
   }
 

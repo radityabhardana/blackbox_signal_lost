@@ -852,6 +852,48 @@ describe("session save runtime controller", () => {
     vi.useRealTimers();
   });
 
+  it("hint_revealed commit schedules a save with the hint reason", async () => {
+    vi.useFakeTimers();
+    const fixture = createEvidenceBoardTestSession();
+    const persisted: SaveGameV2[] = [];
+    const statuses: PersistenceStatus[] = [];
+    const hintedState = {
+      ...fixture.initialState,
+      revealedHintIds: ["hint_a"] as const,
+      eventHistory: [
+        ...fixture.initialState.eventHistory,
+        { type: "hint_revealed", entityId: "hint_a" },
+      ],
+    };
+    const controller = createSaveRuntimeController({
+      slotId: "slot_test",
+      content: fixture.content,
+      applicationVersion: "0.1.0",
+      caseEngineState: fixture.initialState,
+      evidenceBoard: syncDiscoveredEvidence(createInitialEvidenceBoardState(), fixture.content, fixture.initialState.discoveredEntityIds),
+      gameEvents: [],
+      uiSnapshot: {},
+      settings: {},
+      repository: makeRepository(async (value) => { persisted.push(value); }),
+      onPersistenceStatusChange: (status) => statuses.push(status),
+    });
+
+    controller.onEngineCommit({
+      state: hintedState,
+      inputs: [{ kind: "hint_revealed", hintId: "hint_a" }],
+      results: [{ state: hintedState, appliedEffects: [] }],
+    });
+    expect(statuses.at(-1)).toBe("saving");
+    await vi.advanceTimersByTimeAsync(800);
+    expect(persisted).toHaveLength(1);
+    expect(persisted[0]!.sessionSnapshot.caseEngineState.revealedHintIds).toEqual(["hint_a"]);
+    expect(persisted[0]!.sessionSnapshot.caseEngineState.eventHistory).toContainEqual({ type: "hint_revealed", entityId: "hint_a" });
+    await controller.flush();
+    expect(statuses.at(-1)).toBe("saved");
+    await controller.dispose();
+    vi.useRealTimers();
+  });
+
   it("blocks all later save reasons until discovery reconciliation and persists the latest pair once", async () => {
     vi.useFakeTimers();
     const fixture = makeDiscoveryControllerFixture();

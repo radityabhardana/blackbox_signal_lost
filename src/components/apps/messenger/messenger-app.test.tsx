@@ -4,6 +4,9 @@ import { describe, expect, it } from "vitest";
 
 import { CaseSessionProvider, useOptionalCaseSession } from "@/features/session/case-session";
 import { createMessengerTestSession } from "@/test/fixtures/messenger-content";
+import { contentBundleSchema } from "@/content/validator";
+import type { ContentBundle } from "@/content/validator";
+import type { DialogueNode } from "@/content/schemas";
 import type { CaseEngineState } from "@/domain/engine";
 import { MessengerApp } from "./messenger-app";
 
@@ -15,6 +18,7 @@ import { MessengerApp } from "./messenger-app";
 function renderMessenger(options?: {
   initialState?: CaseEngineState;
   messengerChannelId: string | null;
+  content?: ContentBundle;
 }) {
   const sessionFixture = createMessengerTestSession();
   const channel: string | undefined =
@@ -23,7 +27,7 @@ function renderMessenger(options?: {
       : (options.messengerChannelId ?? undefined);
   return render(
     <CaseSessionProvider
-      content={sessionFixture.content}
+      content={options?.content ?? sessionFixture.content}
       mailChannelId="channel_test"
       {...(channel !== undefined ? { messengerChannelId: channel } : {})}
       initialState={options?.initialState ?? sessionFixture.initialState}
@@ -32,6 +36,40 @@ function renderMessenger(options?: {
       <MessengerApp />
     </CaseSessionProvider>,
   );
+}
+
+/**
+ * Fixture augmentation: parses the test-session content plus a synthetic
+ * 3-choice dialogue node (same channel, no consequences — selection only
+ * records the choice), and queues that node for rendering.
+ */
+const BRANCH_NODE: DialogueNode = {
+  id: "dialogue_messenger_branch",
+  channelId: "channel_messenger",
+  speakerId: "character_test",
+  text: "Branch message.",
+  enterRule: { always: true },
+  choices: [
+    { id: "choice_branch_one", label: "Branch one", consequences: [], nextNodeId: "dialogue_messenger_branch" },
+    { id: "choice_branch_two", label: "Branch two", consequences: [], nextNodeId: "dialogue_messenger_branch" },
+    { id: "choice_branch_three", label: "Branch three", consequences: [], nextNodeId: "dialogue_messenger_branch" },
+  ],
+};
+
+function branchContent(): ContentBundle {
+  const fixture = createMessengerTestSession();
+  return contentBundleSchema.parse({
+    ...fixture.content,
+    dialogue: [...fixture.content.dialogue, BRANCH_NODE],
+  });
+}
+
+function branchState(): CaseEngineState {
+  const fixture = createMessengerTestSession();
+  return {
+    ...fixture.initialState,
+    queuedDialogue: [...fixture.initialState.queuedDialogue, "dialogue_messenger_branch"],
+  };
 }
 
 /** Test-only probe: snapshots the authoritative engine state for assertions. */
@@ -152,5 +190,72 @@ describe("MessengerApp with session", () => {
     } finally {
       console.error = originalError;
     }
+  });
+
+  it("selecting one choice disables all sibling choices on the node", async () => {
+    renderMessenger({
+      initialState: branchState(),
+      messengerChannelId: "channel_messenger",
+      content: branchContent(),
+    });
+    const user = userEvent.setup();
+
+    const one = screen.getByRole("button", { name: "Branch one" });
+    const two = screen.getByRole("button", { name: "Branch two" });
+    const three = screen.getByRole("button", { name: "Branch three" });
+
+    await user.click(one);
+
+    expect(two).toBeDisabled();
+    expect(three).toBeDisabled();
+
+    // Clicking a disabled sibling must not dispatch a second event.
+    fireEvent.click(two);
+    fireEvent.click(three);
+
+    const state = readEngineState();
+    expect(choiceInputIds(state)).toEqual(["choice_branch_one"]);
+  });
+
+  it("all three choices enabled before any selection", () => {
+    renderMessenger({
+      initialState: branchState(),
+      messengerChannelId: "channel_messenger",
+      content: branchContent(),
+    });
+
+    expect(screen.getByRole("button", { name: "Branch one" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Branch two" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Branch three" })).toBeEnabled();
+  });
+
+  it("keyboard activation of first choice works, then siblings disabled", async () => {
+    renderMessenger({
+      initialState: branchState(),
+      messengerChannelId: "channel_messenger",
+      content: branchContent(),
+    });
+    const user = userEvent.setup();
+
+    const one = screen.getByRole("button", { name: "Branch one" });
+    const two = screen.getByRole("button", { name: "Branch two" });
+    one.focus();
+    await user.keyboard("{Enter}");
+
+    const state = readEngineState();
+    expect(choiceInputIds(state)).toEqual(["choice_branch_one"]);
+    expect(one).toBeDisabled();
+    expect(two).toBeDisabled();
+  });
+
+  it("single-choice node still disables its own button after selection (regression)", async () => {
+    renderMessenger();
+    const user = userEvent.setup();
+
+    const button = screen.getByRole("button", { name: "Acknowledge — continue" });
+    await user.click(button);
+
+    expect(button).toBeDisabled();
+    expect(choiceInputIds(readEngineState())).toEqual(["choice_messenger_confirm"]);
   });
 });

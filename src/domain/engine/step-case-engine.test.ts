@@ -87,6 +87,59 @@ describe("engine inputs", () => {
   });
 });
 
+describe("hint reveals", () => {
+  it("hint_revealed input records the hint id uniquely", () => {
+    const content = loadBundle();
+    const first = step(empty(), { kind: "hint_revealed", hintId: "hint_a" }, content);
+    expect(first.state.revealedHintIds).toEqual(["hint_a"]);
+    const second = step(first.state, { kind: "hint_revealed", hintId: "hint_a" }, content);
+    expect(second.state.revealedHintIds).toEqual(["hint_a"]);
+    const third = step(second.state, { kind: "hint_revealed", hintId: "hint_b" }, content);
+    expect(third.state.revealedHintIds).toEqual(["hint_a", "hint_b"]);
+  });
+
+  it("hint_revealed does not change any other state", () => {
+    const content = loadBundle();
+    const withProgress: CaseEngineState = {
+      ...empty(),
+      flags: { clue: "found" },
+      discoveredEntityIds: ["evidence_test"],
+      selectedChoices: ["choice_other"],
+      activeObjectives: ["objective_test"],
+      completedObjectives: [],
+      queuedDialogue: ["dialogue_test"],
+      eventHistory: [{ type: "evidence_discovered", entityId: "evidence_test" }],
+    };
+    const result = step(withProgress, { kind: "hint_revealed", hintId: "hint_a" }, content);
+    expect(result.state.flags).toEqual({ clue: "found" });
+    expect(result.state.discoveredEntityIds).toEqual(["evidence_test"]);
+    expect(result.state.selectedChoices).toEqual(["choice_other"]);
+    expect(result.state.activeObjectives).toEqual(["objective_test"]);
+    expect(result.state.completedObjectives).toEqual([]);
+    expect(result.state.queuedDialogue).toEqual(["dialogue_test"]);
+    expect(result.appliedEffects).toEqual([]);
+    expect(result.state.eventHistory).toEqual([
+      { type: "evidence_discovered", entityId: "evidence_test" },
+      { type: "hint_revealed", entityId: "hint_a" },
+    ]);
+    expect(result.state.revealedHintIds).toEqual(["hint_a"]);
+  });
+
+  it("hint_revealed is recorded in eventHistory as type hint_revealed", () => {
+    const content = loadBundle();
+    const result = step(empty(), { kind: "hint_revealed", hintId: "hint_a" }, content);
+    expect(result.state.eventHistory).toEqual([{ type: "hint_revealed", entityId: "hint_a" }]);
+  });
+
+  it("revealedHintIds survives clone/freeze", () => {
+    const content = loadBundle();
+    const revealed = step(empty(), { kind: "hint_revealed", hintId: "hint_a" }, content);
+    const after = step(revealed.state, { kind: "game_event", event: { type: "search_performed" } }, content);
+    expect(after.state.revealedHintIds).toEqual(["hint_a"]);
+    expect(Object.isFrozen(after.state.revealedHintIds)).toBe(true);
+  });
+});
+
 describe("trigger behavior", () => {
   it("false trigger applies no effects", () => {
     const content = loadBundle();

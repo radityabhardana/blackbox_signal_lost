@@ -1,12 +1,13 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
-import { CaseSessionProvider } from "@/features/session/case-session";
+import { CaseSessionProvider, useCaseSession } from "@/features/session/case-session";
 import { createInitialEngineState } from "@/domain/engine";
 import type { CaseEngineState } from "@/domain/engine";
 import { contentBundleSchema } from "@/content/validator";
 import type { ContentBundle } from "@/content/validator";
-import type { ObjectiveDefinition } from "@/content/schemas";
+import type { HintDefinition, ObjectiveDefinition } from "@/content/schemas";
 import bundleJson from "@/content/fixtures/bundles/valid/bundle_basic_valid.json";
 import { ObjectivesApp } from "./objectives-app";
 
@@ -85,5 +86,146 @@ describe("ObjectivesApp with session", () => {
     ]);
     expect(screen.getByText("Optional objective")).toBeVisible();
     expect(screen.getByText("Active · Optional")).toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Hint ladder fixtures
+// ---------------------------------------------------------------------------
+
+const HINT_OBJECTIVE_ID = "objective_hint";
+const LADDER_HINT_IDS = ["hint_ladder_1", "hint_ladder_2", "hint_ladder_3", "hint_ladder_4"] as const;
+
+const LADDER_HINTS: readonly HintDefinition[] = [
+  { id: "hint_ladder_1", objectiveId: HINT_OBJECTIVE_ID, tier: 1, text: "Refocus text one" },
+  { id: "hint_ladder_2", objectiveId: HINT_OBJECTIVE_ID, tier: 2, text: "Direction text two" },
+  { id: "hint_ladder_3", objectiveId: HINT_OBJECTIVE_ID, tier: 3, text: "Connection text three" },
+  { id: "hint_ladder_4", objectiveId: HINT_OBJECTIVE_ID, tier: 4, text: "Answer path text four" },
+];
+
+/** Test-only probe: exposes the authoritative revealedHintIds for assertions. */
+function EngineStateProbe() {
+  const session = useCaseSession();
+  return <output data-testid="revealed-hints">{session.state.revealedHintIds.join(",")}</output>;
+}
+
+function renderHintLadder(options: {
+  initialStateOverrides?: Partial<CaseEngineState>;
+  objectiveHintIds?: readonly string[];
+  hints?: readonly HintDefinition[];
+  withProbe?: boolean;
+} = {}) {
+  const baseContent = contentBundleSchema.parse(bundleJson);
+  const hintObjective: ObjectiveDefinition = {
+    id: HINT_OBJECTIVE_ID,
+    title: "Hint objective",
+    description: "Objective with a hint ladder.",
+    optional: false,
+    startRule: { always: true },
+    completionRule: { always: true },
+    hintIds: [...(options.objectiveHintIds ?? LADDER_HINT_IDS)],
+    nextObjectiveIds: [],
+  };
+  const content: ContentBundle = {
+    ...baseContent,
+    case: { ...baseContent.case, objectives: [hintObjective] },
+    hints: [...(options.hints ?? LADDER_HINTS)],
+  };
+  const initialState: CaseEngineState = {
+    ...createInitialEngineState(),
+    activeObjectives: [HINT_OBJECTIVE_ID],
+    ...options.initialStateOverrides,
+  };
+  return render(
+    <CaseSessionProvider content={content} mailChannelId="channel_test" initialState={initialState}>
+      {options.withProbe ? <EngineStateProbe /> : null}
+      <ObjectivesApp />
+    </CaseSessionProvider>,
+  );
+}
+
+describe("ObjectivesApp hint ladder", () => {
+  it("renders a Hint button with the first tier label on an active objective", () => {
+    renderHintLadder();
+    expect(screen.getByText("Hint objective")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Hint (Refocus)" })).toBeInTheDocument();
+  });
+
+  it("clicking the hint button reveals the first hint and advances the label", async () => {
+    const user = userEvent.setup();
+    renderHintLadder();
+
+    await user.click(screen.getByRole("button", { name: "Hint (Refocus)" }));
+
+    expect(screen.getByRole("button", { name: "Hint (Direction)" })).toBeInTheDocument();
+    expect(screen.getByText("[Refocus] Refocus text one")).toBeInTheDocument();
+  });
+
+  it("sequentially reveals all four tiers then shows exhausted state", async () => {
+    const user = userEvent.setup();
+    renderHintLadder();
+
+    for (const label of ["Hint (Refocus)", "Hint (Direction)", "Hint (Connection)", "Hint (Answer path)"]) {
+      await user.click(screen.getByRole("button", { name: label }));
+    }
+
+    expect(screen.queryByRole("button", { name: /Hint/ })).not.toBeInTheDocument();
+    expect(screen.getByText("All hints revealed")).toBeInTheDocument();
+    expect(screen.getAllByRole("listitem")).toHaveLength(5); // 1 objective li + 4 hint history li
+  });
+
+  it("revealed history renders tier label + text for each revealed hint", () => {
+    renderHintLadder({
+      initialStateOverrides: { revealedHintIds: ["hint_ladder_1", "hint_ladder_2"] },
+    });
+    expect(screen.getByText("[Refocus] Refocus text one")).toBeInTheDocument();
+    expect(screen.getByText("[Direction] Direction text two")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Hint (Connection)" })).toBeInTheDocument();
+  });
+
+  it("completed objective shows history only, no reveal button", () => {
+    renderHintLadder({
+      initialStateOverrides: {
+        activeObjectives: [],
+        completedObjectives: [HINT_OBJECTIVE_ID],
+        revealedHintIds: ["hint_ladder_1"],
+      },
+    });
+    expect(screen.getByText("Completed")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Hint/ })).not.toBeInTheDocument();
+    expect(screen.getByText("[Refocus] Refocus text one")).toBeInTheDocument();
+  });
+
+  it("locked objective shows no hint affordance", () => {
+    renderHintLadder({
+      initialStateOverrides: { activeObjectives: [], completedObjectives: [] },
+    });
+    expect(screen.queryByRole("button", { name: /Hint/ })).not.toBeInTheDocument();
+    expect(screen.queryByText(/\[/)).not.toBeInTheDocument();
+  });
+
+  it("objective with no authored hints shows no hint affordance", () => {
+    renderHintLadder({ objectiveHintIds: [] });
+    expect(screen.queryByRole("button", { name: /Hint/ })).not.toBeInTheDocument();
+    expect(screen.queryByText(/\[/)).not.toBeInTheDocument();
+    expect(screen.queryByText("All hints revealed")).not.toBeInTheDocument();
+  });
+
+  it("hint reveal dispatches the hint_revealed engine input", async () => {
+    const user = userEvent.setup();
+    renderHintLadder({ withProbe: true });
+
+    await user.click(screen.getByRole("button", { name: "Hint (Refocus)" }));
+
+    expect(screen.getByTestId("revealed-hints").textContent).toBe("hint_ladder_1");
+  });
+
+  it("history order is authored tier order", () => {
+    renderHintLadder({
+      initialStateOverrides: { revealedHintIds: ["hint_ladder_4", "hint_ladder_1"] },
+    });
+    const items = screen.getAllByRole("listitem");
+    expect(items[1]).toHaveTextContent("[Refocus]");
+    expect(items[2]).toHaveTextContent("[Answer path]");
   });
 });

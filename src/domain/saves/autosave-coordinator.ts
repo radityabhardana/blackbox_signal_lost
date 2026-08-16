@@ -11,7 +11,8 @@ export type AutosaveReason =
   | "message_choice"
   | "puzzle_completed"
   | "report_submitted"
-  | "evidence_board_edit";
+  | "evidence_board_edit"
+  | "hint_revealed";
 
 export type TimerHandle = ReturnType<typeof setTimeout>;
 

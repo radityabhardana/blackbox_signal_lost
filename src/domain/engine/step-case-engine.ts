@@ -55,6 +55,10 @@ export function stepCaseEngine(
     }
   }
 
+  if (input.kind === "hint_revealed") {
+    addUnique(next.revealedHintIds, input.hintId);
+  }
+
   const eligible = [...content.case.triggers]
     .sort((a, b) => b.priority - a.priority)
     .filter((trigger) => !(trigger.once && next.firedTriggerIds.includes(trigger.id)));
@@ -82,7 +86,10 @@ function toRuleEvent(input: EngineInput): RuleEvent {
   if (input.kind === "evidence_discovered") {
     return { type: "evidence_discovered", entityId: input.evidenceId };
   }
-  return { type: "dialogue_choice_selected", entityId: input.choiceId };
+  if (input.kind === "dialogue_choice_selected") {
+    return { type: "dialogue_choice_selected", entityId: input.choiceId };
+  }
+  return { type: "hint_revealed", entityId: input.hintId };
 }
 
 function resolveChoice(choiceId: string, content: ContentBundle): DialogueChoice | undefined {
@@ -201,6 +208,7 @@ interface MutableState {
   queuedDialogue: string[];
   audioCues: string[];
   notifications: string[];
+  revealedHintIds: string[];
 }
 
 function addUnique(list: string[], value: string): void {
@@ -226,6 +234,7 @@ function cloneState(state: CaseEngineState): MutableState {
     queuedDialogue: [...state.queuedDialogue],
     audioCues: [...state.audioCues],
     notifications: [...state.notifications],
+    revealedHintIds: [...state.revealedHintIds],
   };
 }
 
@@ -243,6 +252,7 @@ function freezeState(state: MutableState): CaseEngineState {
     state.queuedDialogue,
     state.audioCues,
     state.notifications,
+    state.revealedHintIds,
   ].forEach((list) => Object.freeze(list));
   return Object.freeze(state);
 }

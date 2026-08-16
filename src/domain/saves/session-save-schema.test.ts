@@ -36,6 +36,26 @@ describe("sessionSaveSnapshotSchema", () => {
     expect(() => parseSessionSaveSnapshot({ ...validSessionSnapshot(), version: 2 })).toThrow();
   });
 
+  it("existing V2 snapshot without revealedHintIds parses and defaults to []", () => {
+    const legacy = validSessionSnapshot();
+    delete (legacy.caseEngineState as Partial<typeof legacy.caseEngineState>).revealedHintIds;
+    const snapshot = parseSessionSaveSnapshot(legacy);
+
+    expect(snapshot.caseEngineState.revealedHintIds).toEqual([]);
+  });
+
+  it("snapshot with revealedHintIds round-trips", () => {
+    const snapshot = parseSessionSaveSnapshot({
+      ...validSessionSnapshot(),
+      caseEngineState: {
+        ...createInitialEngineState(),
+        revealedHintIds: ["hint_a", "hint_b"],
+      },
+    });
+
+    expect(snapshot.caseEngineState.revealedHintIds).toEqual(["hint_a", "hint_b"]);
+  });
+
   it("rejects malformed CaseEngineState", () => {
     const invalid = {
       ...validSessionSnapshot(),

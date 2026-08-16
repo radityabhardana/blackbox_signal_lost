@@ -2,6 +2,7 @@ import { contentBundleSchema, validateContentBundle } from "@/content/validator"
 import type { ContentBundle } from "@/content/validator";
 import { createInitialEngineState, stepCaseEngine } from "@/domain/engine";
 import type { CaseEngineState } from "@/domain/engine";
+import { CASE_001_HINTS } from "./hints";
 
 export interface Case001Session {
   readonly content: ContentBundle;
@@ -34,7 +35,7 @@ export function loadCase001Session(): Case001Session {
           completionRule: {
             all: [{ entityDiscovered: "ev_001_ferry_departure" }, { entityDiscovered: "ev_001_emergency_call" }],
           },
-          hintIds: ["hint_001_verify_location_1"],
+          hintIds: ["hint_001_verify_location_1", "hint_001_verify_location_2", "hint_001_verify_location_3", "hint_001_verify_location_4"],
           nextObjectiveIds: [],
         },
         {
@@ -45,7 +46,30 @@ export function loadCase001Session(): Case001Session {
           optional: false,
           startRule: { objectiveCompleted: "obj_001_verify_location" },
           completionRule: { eventOccurred: { type: "puzzle_completed", entityId: "puzzle_001_ferry_authenticity" } },
-          hintIds: ["hint_002_authenticity_1"],
+          hintIds: ["hint_002_authenticity_1", "hint_002_authenticity_2", "hint_002_authenticity_3", "hint_002_authenticity_4"],
+          nextObjectiveIds: [],
+        },
+        {
+          id: "obj_003_reason_for_north_barrier",
+          title: "Identify why Maya entered North Barrier after curfew",
+          description:
+            "Maya went to North Barrier in the middle of the night for a reason connected to her work on Node 7. Establish what she was doing there.",
+          optional: false,
+          startRule: {
+            any: [
+              { choiceSelected: "choice_001_stage3_ciab" },
+              { choiceSelected: "choice_001_stage3_offline" },
+              { choiceSelected: "choice_001_stage3_pelaga" },
+            ],
+          },
+          completionRule: {
+            all: [
+              { entityDiscovered: "ev_001_node7_summary" },
+              { entityDiscovered: "ev_001_manual_escalation" },
+              { entityDiscovered: "ev_001_corridor_access" },
+            ],
+          },
+          hintIds: ["hint_003_north_barrier_1", "hint_003_north_barrier_2", "hint_003_north_barrier_3", "hint_003_north_barrier_4"],
           nextObjectiveIds: [],
         },
       ],
@@ -106,6 +130,81 @@ export function loadCase001Session(): Case001Session {
             { type: "complete_objective", objectiveId: "obj_002_determine_authenticity" },
             { type: "set_flag", key: "ferry_record_forged", value: true },
           ],
+        },
+        {
+          // Stage 2 complete → Sera asks the tablet question (docs/05 Stage 3).
+          id: "trigger_003_stage3_surface",
+          once: true,
+          priority: 5,
+          rule: { objectiveCompleted: "obj_002_determine_authenticity" },
+          effects: [{ type: "queue_dialogue", nodeId: "dialogue_001_stage3_pressure" }],
+        },
+        {
+          // Any Stage 3 branch → Stage 4 objective starts. No choice is a dead end.
+          id: "trigger_003_stage4_activation",
+          once: true,
+          priority: 5,
+          rule: {
+            any: [
+              { choiceSelected: "choice_001_stage3_ciab" },
+              { choiceSelected: "choice_001_stage3_offline" },
+              { choiceSelected: "choice_001_stage3_pelaga" },
+            ],
+          },
+          effects: [{ type: "start_objective", objectiveId: "obj_003_reason_for_north_barrier" }],
+        },
+        {
+          // Option 2 only → Maya's diagnostic note becomes evidence.
+          // Flag-gated (NOT search-gated) per the Stage 3 oracle binding.
+          id: "trigger_003_diagnostic_note",
+          once: true,
+          priority: 5,
+          rule: { flagEquals: { key: "tablet_path_offline", value: true } },
+          effects: [{ type: "discover_evidence", evidenceId: "ev_001_diagnostic_note" }],
+        },
+        {
+          // Stage 4 required evidence: record_opened → discover_evidence pattern.
+          id: "trigger_004_node7_discovery",
+          once: true,
+          priority: 50,
+          rule: { eventOccurred: { type: "record_opened", entityId: "rec_001_node7_summary" } },
+          effects: [{ type: "discover_evidence", evidenceId: "ev_001_node7_summary" }],
+        },
+        {
+          id: "trigger_004_escalation_discovery",
+          once: true,
+          priority: 50,
+          rule: { eventOccurred: { type: "record_opened", entityId: "rec_001_manual_escalation" } },
+          effects: [{ type: "discover_evidence", evidenceId: "ev_001_manual_escalation" }],
+        },
+        {
+          // Corridor access also surfaces the OPTIONAL meta isolation event as a
+          // side companion (docs/05 L170). It never gates completion.
+          id: "trigger_004_corridor_discovery",
+          once: true,
+          priority: 50,
+          rule: { eventOccurred: { type: "record_opened", entityId: "rec_001_corridor_access" } },
+          effects: [
+            { type: "discover_evidence", evidenceId: "ev_001_corridor_access" },
+            { type: "discover_evidence", evidenceId: "ev_001_isolation_event" },
+          ],
+        },
+        {
+          // Stage 4 completion is branch-independent and requires ONLY the three
+          // documented evidence items. ev_001_diagnostic_note and
+          // ev_001_isolation_event are optional/conditional and must NOT gate
+          // completion (no-dead-end rule).
+          id: "trigger_004_obj003_complete",
+          once: true,
+          priority: 10,
+          rule: {
+            all: [
+              { entityDiscovered: "ev_001_node7_summary" },
+              { entityDiscovered: "ev_001_manual_escalation" },
+              { entityDiscovered: "ev_001_corridor_access" },
+            ],
+          },
+          effects: [{ type: "complete_objective", objectiveId: "obj_003_reason_for_north_barrier" }],
         },
       ],
       outcomes: [
@@ -195,6 +294,50 @@ export function loadCase001Session(): Case001Session {
           unavailableBehavior: "hidden",
           availabilityRule: { always: true },
           authoredRank: 4,
+        },
+        {
+          entityId: "rec_001_node7_summary",
+          entityType: "record",
+          title: "Node 7 Maintenance Summary",
+          exactTerms: ["node 7", "maintenance"],
+          aliases: ["node seven", "flood control"],
+          partialTerms: ["node", "maintenance", "alert"],
+          unavailableBehavior: "hidden",
+          availabilityRule: { always: true },
+          authoredRank: 3,
+        },
+        {
+          entityId: "rec_001_manual_escalation",
+          entityType: "record",
+          title: "Manual Escalation — Node 7 Alert Suppression",
+          exactTerms: ["escalation", "manual escalation"],
+          aliases: ["escalation ticket"],
+          partialTerms: ["escalation", "alert"],
+          unavailableBehavior: "hidden",
+          availabilityRule: { always: true },
+          authoredRank: 2,
+        },
+        {
+          entityId: "rec_001_corridor_access",
+          entityType: "record",
+          title: "North Barrier Corridor Access Log",
+          exactTerms: ["corridor", "access log"],
+          aliases: ["corridor access"],
+          partialTerms: ["corridor", "access"],
+          unavailableBehavior: "hidden",
+          availabilityRule: { always: true },
+          authoredRank: 2,
+        },
+        {
+          entityId: "rec_001_reliability_report",
+          entityType: "record",
+          title: "Pelaga Public Reliability Report — November",
+          exactTerms: ["reliability", "report"],
+          aliases: ["public report"],
+          partialTerms: ["reliability"],
+          unavailableBehavior: "hidden",
+          availabilityRule: { always: true },
+          authoredRank: 1,
         },
       ],
       assetBundleId: "bundle_001_missing_signal",
@@ -301,6 +444,71 @@ export function loadCase001Session(): Case001Session {
           account_signature: "Passenger token",
         },
       },
+      // rec_001_node7_summary — flood-control Node 7 maintenance summary.
+      // metadata.alerts_last_30_days is authored as a string ("≥ 160
+      // low-confidence") to stay JSON-safe rather than a numeric threshold.
+      {
+        id: "rec_001_node7_summary",
+        caseId: "case_001_missing_signal",
+        recordType: "maintenance_summary",
+        title: "Node 7 Maintenance Summary",
+        body: {},
+        source: { system: "pelaga_ops" },
+        createdAt: "2041-11-18T21:00:00+07:00",
+        relatedEntityIds: ["char_maya_pranata"],
+        searchTerms: ["node 7", "maintenance", "flood control"],
+        aliases: [],
+        availabilityRule: { always: true },
+        metadata: { alerts_last_30_days: "≥ 160 low-confidence", grouping: "auto-grouped as sensor noise" },
+      },
+      {
+        id: "rec_001_manual_escalation",
+        caseId: "case_001_missing_signal",
+        recordType: "escalation_ticket",
+        title: "Manual Escalation — Node 7 Alert Suppression",
+        body: {},
+        source: { system: "pelaga_mail_archive" },
+        createdAt: "2041-11-17T14:20:00+07:00",
+        relatedEntityIds: ["char_maya_pranata"],
+        searchTerms: ["escalation", "maya", "node 7", "alert"],
+        aliases: ["escalation ticket"],
+        availabilityRule: { always: true },
+        evidenceId: "ev_001_manual_escalation",
+        metadata: { author: "Maya Pranata", subject: "Node 7 low-confidence alerts suppressed as noise" },
+      },
+      {
+        id: "rec_001_corridor_access",
+        caseId: "case_001_missing_signal",
+        recordType: "access_log",
+        title: "North Barrier Corridor Access Log",
+        body: {},
+        source: { system: "pelaga_access" },
+        createdAt: "2041-11-18T22:31:10+07:00",
+        relatedEntityIds: [],
+        searchTerms: ["corridor", "access", "north barrier"],
+        aliases: [],
+        availabilityRule: { always: true },
+        evidenceId: "ev_001_corridor_access",
+        metadata: { corridor: "NB-7 maintenance corridor", badge: "Maya Pranata", initiator: "bbx_risk_orchestrator" },
+      },
+      // rec_001_reliability_report — Pelaga public reliability report that
+      // omits the manual escalation (docs/05 L169). NO fabricated content
+      // beyond that documented omission: metadata.mention_manual_escalation is
+      // the authored fact, nothing else about the report's contents is invented.
+      {
+        id: "rec_001_reliability_report",
+        caseId: "case_001_missing_signal",
+        recordType: "public_report",
+        title: "Pelaga Public Reliability Report — November",
+        body: {},
+        source: { system: "pelaga_public" },
+        createdAt: "2041-11-19T09:00:00+07:00",
+        relatedEntityIds: [],
+        searchTerms: ["reliability", "report", "pelaga"],
+        aliases: [],
+        availabilityRule: { always: true },
+        metadata: { mention_manual_escalation: false },
+      },
     ],
     evidence: [
       {
@@ -356,27 +564,188 @@ export function loadCase001Session(): Case001Session {
         redHerring: false,
         reportClaimsSupported: [],
       },
-    ],
-    hints: [
+      // ev_001_node7_summary — Required, Records, Context (docs/05 evidence table)
       {
-        id: "hint_001_verify_location_1",
-        objectiveId: "obj_001_verify_location",
-        tier: 1,
-        text: "Two records describe Maya's location on the same night. Compare the ferry archive with the emergency call metadata.",
+        id: "ev_001_node7_summary",
+        caseId: "case_001_missing_signal",
+        title: "Node 7 Maintenance Summary",
+        type: "database_record",
+        summary:
+          "Node 7 generated repeated low-confidence maintenance alerts that were automatically grouped as sensor noise.",
+        source: { system: "pelaga_ops" },
+        occurredAt: "2041-11-18T21:00:00+07:00",
+        tags: ["node 7", "maintenance", "noise"],
+        relatedEntityIds: ["char_maya_pranata"],
+        assetIds: ["asset_001_ferry_document"],
+        discoveryRule: { eventOccurred: { type: "record_opened", entityId: "rec_001_node7_summary" } },
+        optional: false,
+        contested: false,
+        redHerring: false,
+        reportClaimsSupported: [],
       },
+      // ev_001_manual_escalation — Required, Mail archive, Motive
       {
-        id: "hint_002_authenticity_1",
-        objectiveId: "obj_002_determine_authenticity",
-        tier: 1,
-        text: "Compare the disputed ferry event against a normal departure from the same gate. Inspect the event source and the account signature.",
+        id: "ev_001_manual_escalation",
+        caseId: "case_001_missing_signal",
+        title: "Maya's Escalation Ticket",
+        type: "database_record",
+        summary:
+          "Maya manually escalated the Node 7 low-confidence alerts after they were auto-grouped as noise.",
+        source: { system: "pelaga_mail_archive" },
+        occurredAt: "2041-11-17T14:20:00+07:00",
+        tags: ["maya", "escalation", "node 7"],
+        relatedEntityIds: ["char_maya_pranata"],
+        assetIds: [],
+        discoveryRule: { eventOccurred: { type: "record_opened", entityId: "rec_001_manual_escalation" } },
+        optional: false,
+        contested: false,
+        redHerring: false,
+        reportClaimsSupported: [],
+      },
+      // ev_001_corridor_access — Required, Records, Opportunity and location
+      {
+        id: "ev_001_corridor_access",
+        caseId: "case_001_missing_signal",
+        title: "North Barrier Corridor Access Log",
+        type: "system_log",
+        summary:
+          "Maya's badge opened the NB-7 corridor after curfew on the night of her disappearance.",
+        source: { system: "pelaga_access" },
+        occurredAt: "2041-11-18T22:31:10+07:00",
+        tags: ["corridor", "access", "north barrier"],
+        relatedEntityIds: ["char_maya_pranata"],
+        assetIds: ["asset_001_ferry_document"],
+        discoveryRule: { eventOccurred: { type: "record_opened", entityId: "rec_001_corridor_access" } },
+        optional: false,
+        contested: false,
+        redHerring: false,
+        reportClaimsSupported: [],
+      },
+      // ev_001_diagnostic_note — Conditional, Tablet, Suppression proof.
+      // OPTIONAL; unlocked ONLY by the Stage 3 Option 2 flag (flag-gated
+      // trigger, not search-gated). Never required for Stage 4 completion.
+      {
+        id: "ev_001_diagnostic_note",
+        caseId: "case_001_missing_signal",
+        title: "Maya's Diagnostic Note",
+        type: "document",
+        summary:
+          "Maya's offline note explaining that remote Node 7 records were being suppressed and the diagnostic archive must be collected locally.",
+        source: { system: "sera_field" },
+        occurredAt: "2041-11-18T22:00:00+07:00",
+        tags: ["maya", "diagnostic", "suppression"],
+        relatedEntityIds: ["char_maya_pranata"],
+        assetIds: [],
+        discoveryRule: { flagEquals: { key: "tablet_path_offline", value: true } },
+        optional: true,
+        contested: false,
+        redHerring: false,
+        reportClaimsSupported: [],
+      },
+      // ev_001_isolation_event — Optional/meta, System log, Meta mystery.
+      // OPTIONAL; discovered as a side companion on corridor access. Must NOT
+      // appear in any completion rule (docs/05 L170 + no-dead-end rule).
+      {
+        id: "ev_001_isolation_event",
+        caseId: "case_001_missing_signal",
+        title: "System Isolation Event — NB-7 Corridor",
+        type: "system_log",
+        summary:
+          "A corridor isolation event was initiated by an automated risk orchestrator, not a human security terminal.",
+        source: { system: "bbx_system" },
+        occurredAt: "2041-11-18T22:31:20+07:00",
+        tags: ["isolation", "corridor", "system"],
+        relatedEntityIds: [],
+        assetIds: [],
+        discoveryRule: { eventOccurred: { type: "record_opened", entityId: "rec_001_corridor_access" } },
+        optional: true,
+        contested: true,
+        redHerring: false,
+        reportClaimsSupported: [],
       },
     ],
+    hints: CASE_001_HINTS,
     dialogue: [
       {
         id: "dialogue_001_sera_intro",
         channelId: CASE_001_MAIL_CHANNEL_ID,
         speakerId: "char_sera_wibawa",
         text: "Pelaga Systems engineer Maya Pranata failed to report for a scheduled emergency maintenance review. Pelaga claims she voluntarily left the city after mishandling restricted data. Her transit account shows a ferry departure at 22:14. I am requesting verification because the departure record conflicts with an emergency call from the North Barrier logged at 22:31. Please verify Maya's final confirmed location.",
+        enterRule: { always: true },
+      },
+      // Stage 3 — the Sera tablet decision (docs/05 Stage 3).
+      // SOURCE GAP (docs/05 L156, Option 1): "some data is automatically
+      // redacted" — no doc names WHICH data. Represented ONLY by the generic
+      // tablet_path_ciab flag; no redacted content is fabricated. If future
+      // content specifies redactions, author them then.
+      // SOURCE GAP (docs/05 L158, Option 3): "one optional record becomes
+      // unavailable" — no doc names the record. No record is removed or gated
+      // this slice; the availabilityRule flagEquals mechanism stays available
+      // for future authored content.
+      {
+        id: "dialogue_001_stage3_pressure",
+        channelId: CASE_001_MESSENGER_CHANNEL_ID,
+        speakerId: "char_sera_wibawa",
+        text: "Found a damaged service tablet near Node 7. It likely belonged to Maya. What should I do with it?",
+        enterRule: { always: true },
+        choices: [
+          {
+            id: "choice_001_stage3_ciab",
+            label: "Send it directly to CIAB",
+            consequences: [
+              { type: "set_flag", key: "tablet_path_ciab", value: true },
+              { type: "queue_dialogue", nodeId: "dialogue_001_stage3_reply_ciab" },
+            ],
+            nextNodeId: "dialogue_001_stage3_reply_ciab",
+          },
+          {
+            id: "choice_001_stage3_offline",
+            label: "Let Sera inspect it offline first",
+            consequences: [
+              { type: "set_flag", key: "tablet_path_offline", value: true },
+              // sera_trust_increased: authored boolean recording the documented Option-2
+              // consequence (docs/05: "increases Sera's trust"). Permitted by ADR-008 (no
+              // numeric trust meter; the flag is never displayed). Currently unread by any
+              // rule — reserved as a progression seed for future dialogue/ending content.
+              { type: "set_flag", key: "sera_trust_increased", value: true },
+              { type: "queue_dialogue", nodeId: "dialogue_001_stage3_reply_offline" },
+            ],
+            nextNodeId: "dialogue_001_stage3_reply_offline",
+          },
+          {
+            id: "choice_001_stage3_pelaga",
+            label: "Hand it to Pelaga security",
+            consequences: [
+              { type: "set_flag", key: "tablet_path_pelaga", value: true },
+              { type: "queue_dialogue", nodeId: "dialogue_001_stage3_reply_pelaga" },
+            ],
+            nextNodeId: "dialogue_001_stage3_reply_pelaga",
+          },
+        ],
+      },
+      // Follow-up reply nodes: text stays within docs/05 Stage 3 consequences.
+      {
+        id: "dialogue_001_stage3_reply_ciab",
+        channelId: CASE_001_MESSENGER_CHANNEL_ID,
+        speakerId: "char_sera_wibawa",
+        text: "Understood — sending it up the standard chain. Some data will be automatically redacted by intake.",
+        enterRule: { always: true },
+      },
+      {
+        id: "dialogue_001_stage3_reply_offline",
+        channelId: CASE_001_MESSENGER_CHANNEL_ID,
+        speakerId: "char_sera_wibawa",
+        text: "Good — that keeps the diagnostics intact. I'll copy anything Maya left readable and flag what matters for Node 7.",
+        enterRule: { always: true },
+      },
+      {
+        // SOURCE GAP: docs/05 only says "Reno responds quickly" (L158). Reno's
+        // exact words are NOT fabricated — this text stays within that
+        // documented response and does not invent further dialogue.
+        id: "dialogue_001_stage3_reply_pelaga",
+        channelId: CASE_001_MESSENGER_CHANNEL_ID,
+        speakerId: "char_sera_wibawa",
+        text: "Alright. Pelaga is responding quickly — Reno is already asking about the tablet. I'll keep the chain aware of what I saw.",
         enterRule: { always: true },
       },
     ],

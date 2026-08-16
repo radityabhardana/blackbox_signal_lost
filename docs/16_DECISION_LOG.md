@@ -679,6 +679,42 @@ Decision:
 
 ---
 
+## ADR-030 — Case 001 midgame: Stage 3 branch flags, Stage 4 evidence set, and durable Hint Ladder (BBX-061)
+
+**Status:** Accepted
+
+**Decision:** Stage 3 (Sera's damaged-tablet decision) is authored as a Messenger dialogue node with three choices; each choice sets exactly one boolean branch flag (`tablet_path_ciab` / `tablet_path_offline` / `tablet_path_pelaga`) via its consequences. Messenger enforces node-level choice exclusivity: once any choice of a node is in `selectedChoices`, all sibling choices are disabled (`choicesResolved` derived in the pure messenger projection from engine state — no local component state, per ADR-023). Stage 4 activates on any branch via one authored trigger (`any([choiceSelected c1..c3])`), and its completion requires exactly three branch-independent evidence items (`ev_001_node7_summary`, `ev_001_manual_escalation`, `ev_001_corridor_access`) — so no Stage 3 choice can create a dead end. The optional `ev_001_diagnostic_note` (Option 2 only) and the optional/meta `ev_001_isolation_event` never gate completion. BBX-061 is implemented as a durable four-tier hint ladder: `CaseEngineState.revealedHintIds` (new `hint_revealed` EngineInput, added via `z.array(z.string()).default([])` to the strict `caseEngineStateSchema` — backward compatible, no V3/migration), a new `"hint_revealed"` AutosaveReason + `onEngineCommit` branch, a pure `src/domain/hints` ladder projection (tier labels Refocus/Direction/Connection/Answer path per docs/03 §5.9), and a player-requested Hint button + reviewable history in the Objectives app (no second store, no auto-reveal, no localStorage).
+
+**Context:** docs/05 specifies the Stage 3 choices and consequences and Stage 4 facts, but does NOT identify which data Option 1 redacts, which optional record Option 3 removes, or Reno's exact response content. docs/13's branch matrix (CIAB redacted-solvable, offline diagnostic-note unlocks, Pelaga optional-record-removed) verifies outcomes only. docs/12 BBX-061 requires "Four tiers and history"; docs/07 §16 requires hint button near the objective, no penalty, strength shown before reveal, and reviewable previous hints. The strict SaveGame V2 schema (zero defaults) meant a naive `revealedHintIds` field would break loading of every existing save.
+
+**Options considered:**
+
+- Fabricating the unspecified redaction/record/Reno content (rejected: violates the source-gap policy; the delivery must not invent narrative facts absent from docs).
+- Engine-level "one choice per node" enforcement (rejected: contradicts the documented engine pipeline and ADR-023's re-apply fact; the projection-level sibling-disable satisfies the acceptance deterministically).
+- A separate hint store, localStorage hint state, or app_hints application (rejected: engine-state ownership + Objectives-app placement per docs/07 "Hint button near objective").
+- Requiring `ev_001_diagnostic_note` for Stage 4 completion (rejected: it is Option-2-only, which would dead-end Options 1 and 3 — docs/05: "No choice prevents completion").
+- A SaveGame V3 bump for hint history (rejected: `.default([])` on the strict schema is backward compatible and needs no migration).
+
+**Rationale:**
+
+- Boolean branch flags are the smallest honest representation of the documented
+  consequences; ADR-008 forbids numeric trust meters but not authored booleans.
+  `sera_trust_increased` records the documented Option-2 consequence (docs/05:
+  "increases Sera's trust"); it is permitted but currently unread by any rule —
+  a progression seed reserved for future dialogue/ending content, so its
+  'consumption' claim is not made.
+- The three-evidence Stage 4 completion set honestly proves the documented answer ("collecting a local diagnostic archive because remote records were being suppressed"): Node 7 summary shows the suppression, the escalation ticket is the motive (docs/13 "Review manual escalation | objective advances"), and the corridor access log places Maya in the corridor. The isolation event stays optional/meta.
+- Hint reveal is a recorded player event with no progression effects: `toRuleEvaluationContext` never exposes `revealedHintIds`, so no authored rule can gate on it; durability comes from engine state inside SaveGame V2, autosaved via the new reason branch.
+
+**Consequences:**
+
+- BBX-061 is DONE: four tiers, progressive reveal, durable history, reload proof (e2e/case-001-midgame.spec.ts).
+- BBX-100 remains PARTIAL (Stage 1+2+3+4 slices; Stage 5+, conclusion, endings deferred).
+- The three source gaps are documented, not fabricated; future content work may name the specific redaction/record/Reno content when authored.
+- The sibling-disable guarantee holds at the projection/UI layer; a direct programmatic dispatch of a sibling choice would still re-apply consequences (engine contract unchanged) — noted for future dialogue work.
+
+---
+
 ## Proposed-decision template
 
 ```text

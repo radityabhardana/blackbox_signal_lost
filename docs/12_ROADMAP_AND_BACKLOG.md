@@ -220,7 +220,7 @@ BBX-050 is DONE.
 | ID | Priority | Task | Acceptance summary |
 |---|---:|---|---|
 | BBX-060 | P1 | Objective tracker | DONE — data-driven projection of CaseManifest.objectives + CaseEngineState active/completed ids; read-only Objectives app (app_objectives); no second progression store; pure projection tests + component tests + production reload E2E |
-| BBX-061 | P1 | Hint ladder | Four tiers and history |
+| BBX-061 | P1 | Hint ladder | DONE — durable 4-tier progressive hints with authored ladders, engine-state reveal history, autosave integration, Objectives-app UI, and reload proof |
 
 ### Puzzles and conclusion
 
@@ -237,14 +237,14 @@ BBX-050 is DONE.
 
 | ID | Priority | Task | Acceptance summary |
 |---|---:|---|---|
-| BBX-100 | P0 | Case content implementation | PARTIAL — Stage 1 + Stage 2 production slices implemented |
+| BBX-100 | P0 | Case content implementation | PARTIAL — Stage 1 + Stage 2 + Stage 3 + Stage 4 production slices implemented |
 | BBX-101 | P1 | Search aliases | Natural query coverage |
 | BBX-102 | P1 | Dialogue implementation | All branches reachable |
 | BBX-103 | P1 | Endings | Four outcomes and meta flag |
 | BBX-104 | P1 | Hint content | Every objective covered |
 | BBX-105 | P1 | Content reachability tests | No dead ends |
 
-BBX-100 remains PARTIAL at this delivery: Stage 1 and Stage 2 production slices are implemented (contradiction discovery, objective tracker, Signal Analyzer ferry-authenticity puzzle, replay-signature evidence). Stage 3+ content, full dialogue, the complete evidence set, and later-case content remain future slices.
+BBX-100 remains PARTIAL: Stage 1 through Stage 4 production slices are implemented (contradiction discovery, Signal Analyzer ferry-authenticity puzzle, Stage 3 tablet decision with three branches, Stage 4 suppressed-maintenance investigation, Objective Tracker, Hint Ladder). Stage 5 masked contact, Stage 6 conclusion, endings, full dialogue, and later-case content remain future slices.
 
 ### Art and audio
 

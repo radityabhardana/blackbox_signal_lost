@@ -60,14 +60,15 @@ function MessengerMessage({ message }: MessengerMessageProps) {
         <ul className="mt-2 flex flex-col gap-2">
           {message.choices.map((choice) => {
             const selected = session?.state.selectedChoices.includes(choice.choiceId) ?? false;
+            const disabled = selected || message.choicesResolved;
             return (
               <li key={choice.choiceId}>
                 <button
                   type="button"
-                  disabled={selected}
+                  disabled={disabled}
                   className="w-full rounded-sm border border-bbx-surface-2 px-3 py-2 text-left text-sm text-bbx-text-1 hover:bg-bbx-surface-2 disabled:cursor-not-allowed disabled:text-bbx-text-2 disabled:hover:bg-transparent"
                   onClick={() => {
-                    if (!selected) {
+                    if (!disabled) {
                       session?.dispatch({ kind: "dialogue_choice_selected", choiceId: choice.choiceId });
                     }
                   }}

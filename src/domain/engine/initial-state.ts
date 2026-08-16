@@ -15,5 +15,6 @@ export function createInitialEngineState(): CaseEngineState {
     queuedDialogue: [],
     audioCues: [],
     notifications: [],
+    revealedHintIds: [],
   };
 }

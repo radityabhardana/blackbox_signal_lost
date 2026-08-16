@@ -19,6 +19,8 @@ export interface CaseEngineState {
   queuedDialogue: readonly string[];
   audioCues: readonly string[];
   notifications: readonly string[];
+  /** Unique-ID list of revealed hint ids; player-requested hint history only — never read by rules */
+  revealedHintIds: readonly string[];
 }
 
 /**
@@ -29,7 +31,8 @@ export interface CaseEngineState {
 export type EngineInput =
   | { kind: "game_event"; event: RuleEvent }
   | { kind: "evidence_discovered"; evidenceId: string }
-  | { kind: "dialogue_choice_selected"; choiceId: string };
+  | { kind: "dialogue_choice_selected"; choiceId: string }
+  | { kind: "hint_revealed"; hintId: string };
 
 export interface EngineResult {
   state: CaseEngineState;
