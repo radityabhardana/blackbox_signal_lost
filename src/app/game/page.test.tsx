@@ -1,18 +1,16 @@
-import { screen } from "@testing-library/react";
+import "fake-indexeddb/auto";
+import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { renderWithProviders } from "@/test/helpers/render";
 import GamePage from "./page";
 
 describe("game route", () => {
-  it("renders the empty workspace shell", () => {
-    renderWithProviders(<GamePage />);
-    expect(screen.getByTestId("workspace-shell")).toBeInTheDocument();
-    expect(screen.getByText(/workspace ready/i)).toBeInTheDocument();
+  it("hydrates a real Case 001 session and renders the workspace shell", async () => {
+    render(<GamePage />);
+    expect(await screen.findByTestId("workspace-shell")).toBeInTheDocument();
   });
 
-  it("renders the taskbar with no active case", () => {
-    renderWithProviders(<GamePage />);
-    expect(screen.getByRole("navigation", { name: /application launcher/i })).toBeInTheDocument();
-    expect(screen.getByText(/case: none/i)).toBeInTheDocument();
+  it("shows the active Case 001 title in the taskbar case status", async () => {
+    render(<GamePage />);
+    expect(await screen.findByText(/case: missing signal/i)).toBeInTheDocument();
   });
 });

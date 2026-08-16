@@ -11,5 +11,6 @@ test("landing page renders and links to the game route", async ({ page }) => {
 
   await expect(page).toHaveURL(/\/game$/);
   await expect(page.getByTestId("workspace-shell")).toBeVisible();
-  await expect(page.getByText(/case: none/i)).toBeVisible();
+  await expect(page.locator('[data-hydration-status="ready"]')).toBeVisible();
+  await expect(page.getByText(/case: missing signal/i)).toBeVisible();
 });

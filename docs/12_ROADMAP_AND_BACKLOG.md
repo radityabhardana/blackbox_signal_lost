@@ -207,13 +207,19 @@ Note: BBX-012 was audited against the BBX-011 implementation and closed as fully
 | BBX-052 | P2 | Undo/redo | Board operations |
 | BBX-053 | P2 | Auto-arrange | Stable optional layout |
 
-BBX-050A3b implements reusable SaveGame V2 runtime hydration, autosave, Evidence Board restore, and guarded browser-reload proof. BBX-050 remains PARTIAL until production `/game` receives a validated Case 001 session bootstrap.
+BBX-050A1 (pure board domain), BBX-050B (workspace ownership), and BBX-050A3a/A3b
+(SaveGame V2, migration, runtime hydration, autosave, durable board restore,
+reload proof) are implemented. M3 production entry adds the validated Case 001
+session bootstrap: production `/game` mounts SessionSaveRuntime with Case 001,
+real IndexedDB persistence, and a production E2E proving evidence discovery,
+board edit, objective progression, and their restoration across reload.
+BBX-050 is DONE.
 
 ### Objectives and hints
 
 | ID | Priority | Task | Acceptance summary |
 |---|---:|---|---|
-| BBX-060 | P1 | Objective tracker | Data-driven state |
+| BBX-060 | P1 | Objective tracker | DONE — data-driven projection of CaseManifest.objectives + CaseEngineState active/completed ids; read-only Objectives app (app_objectives); no second progression store; pure projection tests + component tests + production reload E2E |
 | BBX-061 | P1 | Hint ladder | Four tiers and history |
 
 ### Puzzles and conclusion
@@ -230,12 +236,17 @@ BBX-050A3b implements reusable SaveGame V2 runtime hydration, autosave, Evidence
 
 | ID | Priority | Task | Acceptance summary |
 |---|---:|---|---|
-| BBX-100 | P0 | Case content implementation | Full validated data |
+| BBX-100 | P0 | Case content implementation | PARTIAL — Stage 1 minimum production slice only |
 | BBX-101 | P1 | Search aliases | Natural query coverage |
 | BBX-102 | P1 | Dialogue implementation | All branches reachable |
 | BBX-103 | P1 | Endings | Four outcomes and meta flag |
 | BBX-104 | P1 | Hint content | Every objective covered |
 | BBX-105 | P1 | Content reachability tests | No dead ends |
+
+BBX-100 is intentionally PARTIAL at M3: only the minimum coherent Stage 1
+content exists (single objective, two contradiction evidence items, four
+initial records, Sera's intro mail). Stage 2+ content, Signal Analyzer
+integration, full dialogue, and the complete evidence set remain future slices.
 
 ### Art and audio
 

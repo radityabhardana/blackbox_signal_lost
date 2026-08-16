@@ -35,7 +35,7 @@ test("notifications: preserves authored history order, duplicates, priorities, a
   expect(consoleErrors).toEqual([]);
 });
 
-test("notifications: no-session game shell shows an honest empty state", async ({ page }) => {
+test("notifications: game shell shows an honest empty notification state before any case notifications", async ({ page }) => {
   const pageErrors: string[] = [];
   page.on("pageerror", (error) => pageErrors.push(error.message));
   const consoleErrors: string[] = [];

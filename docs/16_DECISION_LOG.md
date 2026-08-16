@@ -618,6 +618,38 @@ Decision:
 
 
 
+## ADR-028 — M3 production entry: /game bootstrap, single-slot identity, and Objective Tracker (BBX-050 completion + BBX-060)
+
+**Status:** Accepted
+
+**Decision:** Production `/game` mounts `SessionSaveRuntime` directly with the validated production Case 001 bundle as content, the authored bootstrap initial state, and a deterministic single local save slot (`slot_case_001`). The production bootstrap is a thin composition seam only: it selects the case content, the initial engine state, the slot identity, channel ids, and application/content version metadata. It owns no gameplay mutation logic.
+
+**Context:** BBX-050 required production `/game` to run through the real persistence/runtime stack, not the guarded test harness. BBX-060 required an objective tracker that is a data-driven projection only. No save-slot UI, profiles, cloud save, or login existed, and none were needed for the vertical slice.
+
+**Options considered:**
+
+- Multiple save slots / a slot-selection UI (rejected: no product contract exists yet; a single deterministic slot is the smallest honest policy for the vertical slice, documented until a future BBX slot-management milestone).
+- A second objective state store (rejected: every other authority holds exactly one store; the tracker must not decide progression).
+- Loading Case 001 from a JSON fixture file under `src/content/fixtures/` (rejected: production content must not depend on test fixtures; production content lives under `src/content/cases/case_001_missing_signal/` and is parsed/validated through the same real Zod + BBX-024 boundary used by validators and tests).
+
+**Rationale:**
+
+- `SessionSaveRuntime` keeps trusted load, identity gates, hydration, autosave, flush, and disposal as the single persistence authority; `/game` duplicates none of it.
+- Slot/case/content-version gates require a stable produced slot constant and content version; `slot_case_001` and `case.version` ("1.0.0") satisfy them deterministically.
+- Objectives are projected by the pure `projectObjectives` function from `CaseManifest.objectives` plus `CaseEngineState.activeObjectives`/`completedObjectives`; objective lifecycle remains engine-owned via authored `start_objective`/`complete_objective` trigger effects. `ObjectiveDefinition.completionRule` remains authored documentation (like `DialogueNode.enterRule`); the runtime completion path is a once-trigger whose rule requires both contradiction evidence items to be discovered.
+- The Taskbar shows the active case title from the session via `useOptionalCaseSession` (fallback "Case: none"), giving the production E2E a stable semantic case-status signal.
+
+**Consequences:**
+
+- BBX-050 is DONE: production persistence acceptance passes (production E2E `e2e/case-001.spec.ts` proves evidence discovery, objective progression, a canonical board note, and their restoration across real IndexedDB reload).
+- BBX-060 is DONE: projection + read-only Objectives app + focused tests; progression implementation stays data-driven.
+- BBX-100 remains PARTIAL: Stage 1 minimum production slice only; later stages, Signal Analyzer, and full content remain.
+- The single-slot policy is a documented temporary constraint; future slot management is a separate milestone and must preserve SaveGame V2 compatibility.
+
+---
+
+
+
 ## Proposed-decision template
 
 ```text

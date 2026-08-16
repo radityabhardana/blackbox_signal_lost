@@ -5,6 +5,7 @@ import { MailApp } from "@/components/apps/mail/mail-app";
 import { RecordsApp } from "@/components/apps/records/records-app";
 import { MessengerApp } from "@/components/apps/messenger/messenger-app";
 import { EvidenceBoardApp } from "@/components/apps/evidence-board/evidence-board-app";
+import { ObjectivesApp } from "@/components/apps/objectives/objectives-app";
 
 export function WindowContent({ appId }: { appId: string }) {
   if (appId === "app_mail") {
@@ -33,6 +34,14 @@ export function WindowContent({ appId }: { appId: string }) {
 
   if (appId === "app_evidence_board") {
     return <div className="bbx-window-body"><EvidenceBoardApp /></div>;
+  }
+
+  if (appId === "app_objectives") {
+    return (
+      <div className="bbx-window-body">
+        <ObjectivesApp />
+      </div>
+    );
   }
 
   const app = getApp(appId);

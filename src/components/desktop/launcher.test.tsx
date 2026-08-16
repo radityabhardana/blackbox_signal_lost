@@ -9,7 +9,7 @@ beforeEach(() => {
 });
 
 describe("Launcher", () => {
-  it("opens a menu listing the four placeholder applications", async () => {
+  it("opens a menu listing the six catalog applications", async () => {
     const user = userEvent.setup();
     render(<Launcher />);
     const trigger = screen.getByRole("button", { name: "Launcher" });
@@ -22,6 +22,7 @@ describe("Launcher", () => {
       "Messenger",
       "Records",
       "Evidence Board",
+      "Objectives",
       "System Log",
     ]);
   });
