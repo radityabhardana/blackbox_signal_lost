@@ -5,6 +5,7 @@ import type { CSSProperties } from "react";
 import type { ManagedWindow } from "@/domain/windows";
 import { useWindowStore } from "@/stores/window-store";
 import { getApp } from "@/lib/apps";
+import { AppIcon } from "@/components/icons";
 import { registerWindowRegion, unregisterWindowRegion } from "@/lib/focus-registry";
 import { usePointerDrag } from "@/hooks/use-pointer-drag";
 import { WindowContent } from "./window-content";
@@ -67,9 +68,14 @@ export function WindowFrame({ window, focused }: { window: ManagedWindow; focuse
         onDoubleClick={() => toggleMaximize(window.id)}
         {...drag}
       >
-        <h2 id={titleId} className="bbx-window-title">
-          {title}
-        </h2>
+        <div className="flex min-w-0 items-center gap-1.5">
+          {app?.icon !== undefined ? (
+            <AppIcon id={app.icon} size={16} className="shrink-0" />
+          ) : null}
+          <h2 id={titleId} className="bbx-window-title">
+            {title}
+          </h2>
+        </div>
         <WindowControls window={window} />
       </header>
       <WindowContent appId={window.appId} />

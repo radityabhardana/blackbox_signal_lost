@@ -1,15 +1,20 @@
 import Link from "next/link";
+import { BlackboxSymbol, BlackboxWordmark, CiabMark } from "@/components/brand";
 
 export default function LandingPage() {
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-4xl flex-col gap-8 px-6 py-10">
       <header>
-        <p className="font-mono text-xs uppercase tracking-widest text-bbx-text-2">
-          Blackbox Civic Systems // Analyst Terminal
-        </p>
-        <h1 className="mt-2 text-4xl font-semibold tracking-tight text-bbx-text-1">
+        <div className="flex items-center gap-3">
+          <BlackboxSymbol size={32} className="shrink-0 text-bbx-accent-civic" />
+          <BlackboxWordmark size={160} className="text-bbx-text-1" />
+        </div>
+        <h1 className="mt-4 text-4xl font-semibold tracking-tight text-bbx-text-1">
           BLACKBOX: Signal Lost
         </h1>
+        <p className="mt-1 font-mono text-xs uppercase tracking-widest text-bbx-text-2">
+          Blackbox Civic Systems // Analyst Terminal
+        </p>
         <p className="mt-4 max-w-2xl text-base leading-relaxed text-bbx-text-2">
           Investigate a city through its data, decide which version of the truth becomes official,
           and discover why the system is studying you.
@@ -48,7 +53,8 @@ export default function LandingPage() {
       </section>
 
       <footer className="mt-auto">
-        <p className="font-mono text-xs text-bbx-text-2">
+        <p className="flex items-center gap-2 font-mono text-xs text-bbx-text-2">
+          <CiabMark size={14} className="shrink-0" />
           Prototype build — Case 001 is not available yet.
         </p>
       </footer>

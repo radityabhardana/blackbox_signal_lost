@@ -9,6 +9,8 @@ export interface EvidenceFlowNodeData extends Record<string, unknown> {
   readonly detail: string;
   readonly source?: string;
   readonly tags?: readonly string[];
+  /** Case evidence id — present on evidence nodes; note nodes have none. */
+  readonly evidenceId?: string;
 }
 
 export function projectEvidenceBoardNodes(board: EvidenceBoardState, content: ContentBundle): Node<EvidenceFlowNodeData>[] {
@@ -26,6 +28,7 @@ export function projectEvidenceBoardNodes(board: EvidenceBoardState, content: Co
         detail: `${evidence.type}: ${evidence.summary}`,
         source: evidence.source.system ?? evidence.source.organizationId ?? "Unknown source",
         tags: evidence.tags,
+        evidenceId: evidence.id,
       },
     }];
   });

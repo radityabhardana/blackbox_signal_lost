@@ -22,7 +22,7 @@ export function WorkspaceShell({
       ref={ref}
       aria-label="Blackbox analyst workspace"
       data-testid="workspace-shell"
-      className="bbx-grid relative h-full min-h-0 overflow-hidden"
+      className="bbx-grid bbx-desktop relative h-full min-h-0 overflow-hidden"
     >
       {windowCount === 0 ? (
         <div className="absolute inset-0 grid place-items-center">

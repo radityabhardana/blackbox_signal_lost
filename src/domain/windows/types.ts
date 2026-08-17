@@ -1,3 +1,14 @@
+export type AppIconId =
+  | "mail"
+  | "messenger"
+  | "records"
+  | "evidence_board"
+  | "objectives"
+  | "signal_analyzer"
+  | "conclusion"
+  | "system_log"
+  | "notifications";
+
 export const DEFAULT_WINDOW_WIDTH = 800;
 export const DEFAULT_WINDOW_HEIGHT = 600;
 export const DEFAULT_MIN_WINDOW_WIDTH = 320;
@@ -26,6 +37,8 @@ export interface ApplicationDescriptor {
   minHeight?: number;
   /** When true, the launcher hides the app unless the case has unlocked it. */
   requiresUnlock?: boolean;
+  /** Presentation-only icon id; consumers fall back to a generic glyph. */
+  icon?: AppIconId;
 }
 
 export interface ManagedWindow {

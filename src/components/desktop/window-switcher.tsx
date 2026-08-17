@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useWindowStore } from "@/stores/window-store";
 import { getApp } from "@/lib/apps";
+import { AppIcon, SystemGlyph } from "@/components/icons";
 import { focusWindowRegion } from "@/lib/focus-registry";
 
 const PANEL_ID = "window-switcher-panel";
@@ -76,7 +77,8 @@ export function WindowSwitcher() {
         disabled={!hasWindows}
         onClick={() => setOpen((value) => !value)}
       >
-        Switch window
+        <SystemGlyph id="window_switcher" size={16} className="shrink-0" />
+        <span>Switch window</span>
       </button>
       {open ? (
         <div
@@ -87,17 +89,25 @@ export function WindowSwitcher() {
           className="absolute bottom-12 left-0 z-bbx-modal min-w-40 border border-bbx-surface-2 bg-bbx-surface-2 p-1"
           onKeyDown={handleKeyDown}
         >
-          {windows.map((window) => (
-            <button
-              key={window.id}
-              type="button"
-              role="menuitem"
-              className="bbx-menu-item"
-              onClick={() => activate(window.id)}
-            >
-              {getApp(window.appId)?.title ?? window.appId}
-            </button>
-          ))}
+          {windows.map((window) => {
+            const app = getApp(window.appId);
+            return (
+              <button
+                key={window.id}
+                type="button"
+                role="menuitem"
+                className="bbx-menu-item"
+                onClick={() => activate(window.id)}
+              >
+                {app?.icon !== undefined ? (
+                  <AppIcon id={app.icon} size={16} className="shrink-0" />
+                ) : (
+                  <SystemGlyph id="discovery" size={16} className="shrink-0" />
+                )}
+                <span>{app?.title ?? window.appId}</span>
+              </button>
+            );
+          })}
         </div>
       ) : null}
     </div>

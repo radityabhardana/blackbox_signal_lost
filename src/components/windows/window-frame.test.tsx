@@ -22,6 +22,23 @@ describe("WindowFrame", () => {
     expect(screen.getByRole("button", { name: "Close Mail" })).toBeInTheDocument();
   });
 
+  it("renders the app icon beside the window title", () => {
+    const window = openWindow();
+    render(<WindowFrame window={window} focused={true} />);
+    const heading = screen.getByRole("heading", { name: "Mail" });
+    expect(heading.parentElement?.querySelector("svg[aria-hidden='true']")).not.toBeNull();
+  });
+
+  it("renders svg glyphs in the window controls without unicode text", () => {
+    const window = openWindow();
+    render(<WindowFrame window={window} focused={true} />);
+    for (const name of ["Minimize Mail", "Maximize Mail", "Close Mail"]) {
+      const button = screen.getByRole("button", { name });
+      expect(button.querySelector("svg[aria-hidden='true']")).not.toBeNull();
+      expect(button.textContent).toBe("");
+    }
+  });
+
   it("minimizes the window from its control", () => {
     const window = openWindow();
     render(<WindowFrame window={window} focused={true} />);

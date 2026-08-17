@@ -19,6 +19,23 @@ describe("Taskbar", () => {
     expect(screen.getByText(/case: none/i)).toBeInTheDocument();
   });
 
+  it("shows decorative glyphs beside the case label and reset button", () => {
+    render(<Taskbar />);
+    const caseLabel = screen.getByText(/case: none/i);
+    expect(caseLabel.closest("span")?.parentElement?.querySelector("svg[aria-hidden='true']")).not.toBeNull();
+    const reset = screen.getByRole("button", { name: "Reset workspace" });
+    expect(reset.querySelector("svg[aria-hidden='true']")).not.toBeNull();
+    expect(reset).toHaveTextContent("Reset workspace");
+  });
+
+  it("renders an icon beside the title in an open app's taskbar tab", () => {
+    useWindowStore.getState().open("app_mail");
+    render(<Taskbar />);
+    const tab = screen.getByRole("button", { name: "Mail window, focused" });
+    expect(tab.querySelector("svg[aria-hidden='true']")).not.toBeNull();
+    expect(tab).toHaveTextContent("Mail");
+  });
+
   it("opens an application from the launcher and shows it in the taskbar", async () => {
     const user = userEvent.setup();
     render(<Taskbar />);

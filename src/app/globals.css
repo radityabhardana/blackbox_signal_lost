@@ -187,6 +187,25 @@
   background-size: 32px 32px;
 }
 
+/*
+ * Desktop background: original civic-grid texture
+ * (public/assets/textures/desktop-civic-grid.svg, registry
+ * texture_desktop_civic_grid) layered over the .bbx-grid crosshatch. The
+ * texture is ambient decoration and conveys no information; low-contrast
+ * strokes live in the SVG itself so windows and text stay readable. Static
+ * by design — nothing to reduce under prefers-reduced-motion.
+ */
+.bbx-desktop {
+  background-color: var(--bbx-bg-0);
+  background-image:
+    url("/assets/textures/desktop-civic-grid.svg"),
+    linear-gradient(to right, color-mix(in srgb, var(--bbx-text-2) 7%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--bbx-text-2) 7%, transparent) 1px, transparent 1px);
+  background-size:
+    512px 512px,
+    32px 32px;
+}
+
 /* Windows. */
 @keyframes bbx-window-in {
   from {
@@ -359,4 +378,21 @@
 .bbx-menu-item:focus-visible {
   background-color: var(--bbx-surface-1);
   border-color: var(--bbx-surface-2);
+}
+
+/*
+ * High contrast (forced-colors) mode.
+ * Background images are suppressed by the UA, so the desktop texture is
+ * dropped explicitly and the solid token background keeps content legible.
+ * Focus outlines switch to currentColor so they remain visible against the
+ * system palette.
+ */
+@media (forced-colors: active) {
+  .bbx-desktop {
+    background-image: none;
+  }
+
+  :focus-visible {
+    outline-color: currentColor;
+  }
 }

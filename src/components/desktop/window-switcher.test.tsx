@@ -25,6 +25,16 @@ describe("WindowSwitcher", () => {
     await user.click(screen.getByRole("button", { name: "Switch window" }));
     const items = screen.getAllByRole("menuitem");
     expect(items.map((item) => item.textContent)).toEqual(["Records"]);
+    expect(items[0]!.querySelector("svg[aria-hidden='true']")).not.toBeNull();
+  });
+
+  it("shows a glyph on the switch trigger while keeping its accessible name", () => {
+    const store = useWindowStore.getState();
+    store.open("app_mail");
+    render(<WindowSwitcher />);
+    const trigger = screen.getByRole("button", { name: "Switch window" });
+    expect(trigger.querySelector("svg[aria-hidden='true']")).not.toBeNull();
+    expect(trigger).toHaveTextContent("Switch window");
   });
 
   it("focuses the selected window on activation", async () => {

@@ -29,6 +29,14 @@ describe("Launcher", () => {
       "Objectives",
       "System Log",
     ]);
+    expect(items.every((item) => item.querySelector("svg[aria-hidden='true']") !== null)).toBe(true);
+  });
+
+  it("shows the BlackboxSymbol mark beside the trigger's Launcher label", () => {
+    render(<Launcher />);
+    const trigger = screen.getByRole("button", { name: "Launcher" });
+    expect(trigger.querySelector("svg[aria-hidden='true']")).not.toBeNull();
+    expect(trigger).toHaveTextContent("Launcher");
   });
 
   it("launches an application on activation", async () => {

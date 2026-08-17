@@ -72,22 +72,25 @@ Exit criteria:
 - Invalid content fails clearly.
 - Save migration tests pass.
 
-### M3 — First complete investigation loop
+### M3 — First complete investigation loop (DONE)
+
+Status: COMPLETED — The full Case 001 investigation loop (evidence discovery → Signal Analyzer puzzle → Stage 3 tablet choices → Stage 4 suppression → Stage 5 masked contact → Stage 6 conclusion report → deterministic outcome evaluation → pre-report checkpoint & retry) is implemented and verified end-to-end.
 
 Deliverables:
 
-- Mail
-- Records
-- Messenger
-- Evidence discovery
-- Evidence board
-- Hints
-- Conclusion report
-- One simplified Case 001 path
+- Mail (BBX-040 — DONE)
+- Records (BBX-041 — DONE)
+- Messenger (BBX-042 — DONE)
+- Evidence discovery (BBX-022, BBX-050 — DONE)
+- Evidence board (BBX-050 — DONE)
+- Hints (BBX-061 — DONE)
+- Conclusion report (BBX-080 — DONE)
+- One simplified Case 001 path (Full Case 001 loop Stage 1–6 — DONE)
 
 Exit criteria:
 
-- A player can find evidence, form a hypothesis, submit a report, and see an outcome.
+- A player can find evidence, form a hypothesis, submit a report, and see an outcome (VERIFIED: unit reachability tests, component tests, and E2E specs `e2e/case-001-endgame.spec.ts` & `e2e/case-001-endgame-harness.spec.ts`).
+- Definition of ready: acceptance criteria pass, all unit/component/E2E tests pass (85 Vitest files / 964 tests in the latest run), save/restore across reloads verified via IndexedDB, accessibility considered (semantic landmarks, accessible form controls, ARIA status), content reachable with zero dead ends, and documentation matches implementation.
 
 ### M4 — Vertical slice
 
@@ -229,28 +232,28 @@ BBX-050 is DONE.
 | BBX-070 | P1 | Signal Analyzer | DONE — authored signal_comparison puzzle, pure domain evaluator, production Signal Analyzer app (app_signal_analyzer) gated by CaseEngineState.unlockedApplications, incorrect/retry semantics, full Stage 1 → Stage 2 production E2E with reload restore |
 | BBX-071 | P2 | Puzzle adapter API | Reusable typed result contract |
 | — | — | Note | BBX-071 remains unimplemented; the Stage 2 slice uses the existing generic game_event/trigger/effect architecture instead of a dedicated adapter. |
-| BBX-080 | P0 | Conclusion report | Claims, evidence, disclosure |
-| BBX-081 | P0 | Outcome evaluator | All endings deterministic |
-| BBX-082 | P1 | Pre-report checkpoint | Safe retry |
+| BBX-080 | P0 | Conclusion report | DONE — production Conclusion Report app (app_conclusion): 4 claim slots (location, ferry record, obstruction, return reason) with typed answer options, 3 evidence slots validated against the case conclusion definition, 4 disclosure choices (MIO full / MIO redacted / Pelaga / Open Signal), a review step, deterministic submission, and persistence in SaveGame V2 |
+| BBX-081 | P0 | Outcome evaluator | DONE — pure selectOutcome evaluator: filters outcomes whose evaluationRule matches, sorts priority DESCENDING with declaration-order tie-break, returns one winner; prepareSubmission always emits all four claim_*_correct flags plus disclosure_recipient and disclosure_redacts; every valid report matches ≥1 outcome (no dead end); all four Case 001 ending families unit- and E2E-tested |
+| BBX-082 | P1 | Pre-report checkpoint | DONE — submit dispatches checkpoint_requested → report_submitted → outcome_selected; SessionSaveRuntime captures the pre-submission engine state (captureCheckpoint), retry dispatches checkpoint_restore_requested and remounts the session from the checkpoint (stripping submittedReport/selectedOutcomeId/caseCompleted); the checkpoint is preserved across autosaves and restored from SaveGame V2 on reload |
 
 ### Case 001
 
 | ID | Priority | Task | Acceptance summary |
 |---|---:|---|---|
-| BBX-100 | P0 | Case content implementation | PARTIAL — Stage 1 + Stage 2 + Stage 3 + Stage 4 production slices implemented |
+| BBX-100 | P0 | Case content implementation | PARTIAL — Stage 1 through Stage 6 production slices implemented |
 | BBX-101 | P1 | Search aliases | Natural query coverage |
 | BBX-102 | P1 | Dialogue implementation | All branches reachable |
-| BBX-103 | P1 | Endings | Four outcomes and meta flag |
+| BBX-103 | P1 | Endings | DONE — all four Case 001 outcomes (Protected Truth, Official Compliance, Public Exposure, Misidentified Culprit) and the hidden BLACKBOX meta flag (noticed_blackbox_intervention) implemented, verified via unit reachability tests and E2E ending tests |
 | BBX-104 | P1 | Hint content | Every objective covered |
 | BBX-105 | P1 | Content reachability tests | No dead ends |
 
-BBX-100 remains PARTIAL: Stage 1 through Stage 4 production slices are implemented (contradiction discovery, Signal Analyzer ferry-authenticity puzzle, Stage 3 tablet decision with three branches, Stage 4 suppressed-maintenance investigation, Objective Tracker, Hint Ladder). Stage 5 masked contact, Stage 6 conclusion, endings, full dialogue, and later-case content remain future slices.
+BBX-100 remains PARTIAL: Stage 1 through Stage 6 production slices are implemented (Stage 1 contradiction discovery, Stage 2 Signal Analyzer ferry-authenticity puzzle, Stage 3 tablet decision with three branches, Stage 4 suppressed-maintenance investigation, Stage 5 masked contact with checksum discovery and compliance flags, Stage 6 Conclusion Report with 4 claims, 3 evidence slots, 4 disclosure options, and all 4 ending outcomes plus the hidden meta flag). Search alias expansion (BBX-101), full dialogue polish (BBX-102), and later-case content remain future slices.
 
 ### Art and audio
 
 | ID | Priority | Task | Acceptance summary |
 |---|---:|---|---|
-| BBX-110 | P1 | Boot and shell polish | Art direction applied |
+| BBX-110 | P1 | Boot and shell polish | PARTIAL — original in-repo brand marks (BLACKBOX/CIAB/Pelaga + wordmark), 9 app icons, 11 system glyphs, 8 Case 001 evidence visuals, desktop civic-grid texture, launcher/taskbar/window-title/control icon integration, landing brand, and forced-colors polish shipped (BBX-110 slice 1); boot treatment, portraits, environment stills, audio, and anomaly effects remain |
 | BBX-111 | P1 | Character portraits | Consistent approved sheets |
 | BBX-112 | P1 | Environment stills | North Barrier and ferry |
 | BBX-113 | P1 | UI sounds | Grouped and adjustable |

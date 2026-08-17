@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import type { ManagedWindow } from "@/domain/windows";
 import { useWindowStore } from "@/stores/window-store";
 import { getApp } from "@/lib/apps";
+import { AppIcon } from "@/components/icons";
 import {
   focusWindowRegion,
   registerTaskbarItem,
@@ -25,7 +26,9 @@ export function TaskbarAppItem({ window }: { window: ManagedWindow }) {
     return () => unregisterTaskbarItem(window.id);
   }, [window.id]);
 
-  const title = getApp(window.appId)?.title ?? window.appId;
+  const app = getApp(window.appId);
+  const title = app?.title ?? window.appId;
+  const icon = app?.icon;
   const isMinimized = window.display === "minimized";
   const stateLabel = isMinimized ? "minimized" : focused ? "focused" : "open";
 
@@ -49,7 +52,8 @@ export function TaskbarAppItem({ window }: { window: ManagedWindow }) {
       }`}
       onClick={handleClick}
     >
-      {title}
+      {icon !== undefined ? <AppIcon id={icon} size={16} className="shrink-0" /> : null}
+      <span className="min-w-0 truncate">{title}</span>
     </button>
   );
 }

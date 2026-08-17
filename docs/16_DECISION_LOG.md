@@ -715,6 +715,86 @@ Decision:
 
 ---
 
+## ADR-031 — Case 001 endgame: conclusion report, outcome evaluator, and pre-report checkpoint (BBX-080/081/082)
+
+**Status:** Accepted
+
+**Decision:** BBX-080 ships the production Conclusion Report desktop app (`app_conclusion`) as a thin presentation layer over two pure domain contracts. BBX-081 owns deterministic outcome selection and canonical report preparation. BBX-082 owns a pre-submission checkpoint with in-memory retry restore. The submission event pipeline is `checkpoint_requested → report_submitted → outcome_selected`, each step driven through the existing BBX-022 engine input path.
+
+- **Report draft domain (`src/domain/outcomes/report-draft.ts`):** typed `ReportDraft` (claimAnswers by claim-slot id, evidenceIds, disclosureChoiceId) with pure selectors; no UI or engine coupling.
+- **Submission domain (`src/domain/outcomes/report-submission.ts`):** `validateReportDraft` checks every non-optional claim answer exists and is a valid option id, evidence count ≥ `evidenceSlotCount`, no duplicate evidence ids, every evidence id resolves in `content.evidence`, and the disclosure choice resolves. `prepareSubmission` is total and deterministic: on valid drafts it always emits one `claim_<slotId>_correct` flag per answered claim, plus `disclosure_recipient` and `disclosure_redacts` — the engine applies these as `set_flag` effects during the `report_submitted` step.
+- **Outcome evaluator (`src/domain/outcomes/evaluate-outcomes.ts`):** `selectOutcome(outcomes, state)` evaluates each `evaluationRule` via the shared BBX-021 `evaluateRule`/`toRuleEvaluationContext`, keeps matches, sorts by **priority descending** with **declaration-order tie-break**, and returns the winner (`{kind:"none"}` only when nothing matches). Case 001 authored priorities: placeholder stage-1 = 1, A protected_truth = 40, B official_compliance = 30, C public_exposure = 20, D misidentified = 10. Because `prepareSubmission` always emits all four claim flags (true or false), every valid report matches ≥1 outcome — the evaluator contract guarantees no dead end.
+- **Pre-report checkpoint (BBX-082):** `SessionSaveRuntime.captureCheckpoint` stores an immutable `SessionSaveSnapshotV1` (engine state + board) as `sessionSnapshot.checkpoint` when a `checkpoint_requested` commit is seen; once captured it is preserved across all later autosaves. `restoreCheckpoint` returns a remount seed that strips `submittedReport`/`selectedOutcomeId`/`caseCompleted`. Retry dispatches `checkpoint_restore_requested`; the runtime bumps `sessionEpoch` to remount the session providers from the checkpoint seed (a state swap, not a page reload). A checkpoint-less restore is a defensive no-op.
+
+**Context:** docs/12 assigned BBX-080 (claims, evidence, disclosure), BBX-081 (all endings deterministic), and BBX-082 (safe retry) on the critical path. docs/09 §13 documents outcome priority but not the direction or tie-break; docs/05 Stage 6 defines 4 claim slots, 3+ supporting evidence, and 4 disclosure choices. docs/03 §5.10 requires the player to review the outcome and restart from the pre-report checkpoint. `CaseEngineState` previously had no notion of a submitted report, a selected outcome, or a completed case.
+
+**Options considered:**
+
+- A dedicated report/ending state store (rejected: every other authority holds exactly one store; the conclusion must not decide progression).
+- Storing the checkpoint outside the SaveGame envelope (rejected: the checkpoint must survive reloads, so it belongs in the same trusted V2 transaction).
+- A SaveGame V3 bump for the new engine fields (rejected: `.default(...)` on the strict schema is backward compatible with existing V2 snapshots and needs no migration; V1→V2 migration already exists and is untouched).
+- Gating Ending A on `disclosure_redacts = true` (rejected — see the Ending A decision below).
+
+**Rationale:**
+
+- Reusing `evaluateRule`/`toRuleEvaluationContext` keeps the BBX-021 rule context authoritative for outcomes, matching the precedent set by search gates (ADR-016) and Record availability (ADR-022).
+- Emitting correctness flags from `prepareSubmission` keeps authored outcome rules simple and total: `not(flagEquals ... true)` reliably means "wrong" because the flag is always present after a valid submission.
+- Priority descending matches the only documented priority direction (docs/09 §13 "highest priority wins", ADR-015); declaration-order ties match engine trigger tie-break semantics.
+- The checkpoint is captured from committed engine state at submission start, so the restored session is exactly what the player saw before submitting — not the live draft form state.
+
+**Consequences:**
+
+- BBX-080, BBX-081, and BBX-082 are DONE; the full Case 001 Stage 1→6 loop including report submission, deterministic ending, and retry is implemented and proven by unit tests, component tests, and production E2E.
+- `CaseEngineState` now includes `submittedReport` (nullable record), `selectedOutcomeId` (nullable string), and `caseCompleted` (boolean), all with `.default(...)` for backward-compatible SaveGame V2 parsing.
+- The checkpoint uses a self-referential lazy schema (`z.lazy`) with `checkpoint` optional/nullable, so legacy V2 snapshots without a checkpoint parse cleanly.
+- Ending A's authored rule intentionally does not require `disclosure_redacts=true` (see ADR-032); `redactsLocation` remains authored data used by UI presentation.
+- Later content collections added by future ending/report work must each add their own BBX-024 reference checks (per ADR-013).
+
+---
+
+## ADR-032 — Ending A rule omits `disclosure_redacts` to guarantee every valid report lands
+
+**Status:** Accepted
+
+**Decision:** `outcome_001_protected_truth`'s `evaluationRule` requires all four claim flags correct AND `disclosure_recipient = "mio"`, and does **not** require `disclosure_redacts = true`. `disclosure_redacts` remains authored data (emitted by `prepareSubmission`, used by UI presentation) but is deliberately absent from the outcome rule.
+
+**Context:** docs/05 §5 lists "Redact Maya's location" among Ending A conditions. The implementation intentionally diverges from that narrative ideal: a fully-correct report submitted to MIO **without** the redaction option (disclosure_001_mio_full) would otherwise match NO ending — A requires redact, B requires forwarded/pelaga, C requires leak, D requires a wrong claim. That is an unhandled dead end for a valid, well-evidenced submission. Ending A's priority (40) already sits above B/C/D, so all-four-correct + MIO resolves unambiguously to A even before redaction is considered.
+
+**Rationale:**
+
+- The deterministic guarantee that "every valid submission lands" (documented in ADR-031 and enforced by the evaluator contract) takes precedence over the narrative condition; a report that is factually correct and discloses to the integrity office is authored to represent the Protected Truth path regardless of redaction granularity.
+- Keeping `redactsLocation` in the data model preserves the authored distinction for UI presentation (and for future content that may read it) without making the rule fragile.
+- The docs/05 condition remains the narrative ideal; this ADR records the rule-level decision so the divergence is deliberate and reviewable, not a silent drift.
+
+**Consequences:**
+
+- A valid report can never produce `{kind:"none"}`; all four ending families are reachable and deterministic (proven by `case-001-content.test.ts` parameterized reachability and `evaluate-outcomes.test.ts`).
+- Ending A is achievable via both MIO-full and MIO-redacted disclosure; players are never punished for choosing the non-redacting MIO submission.
+- Future content authors must understand that `disclosure_redacts` is presentation data unless a rule explicitly reads it.
+
+---
+
+## ADR-033 — Hidden BLACKBOX meta flag gates on `outcome_selected`
+
+**Status:** Accepted
+
+**Decision:** `trigger_006_meta_flag` (once, priority 5) fires only when all three of: `ev_001_isolation_event` discovered, `masked_forwarded` NOT true, and an `outcome_selected` event has occurred. Its effects set `noticed_blackbox_intervention = true` and show `notification_001_blackbox_meta` ("ANALYST MODEL: RESISTS RECOMMENDED CLOSURE"), which is tied to the hidden meta ending `ending_001_blackbox_meta` (`isHiddenMeta: true`). The meta flag is a hidden epilogue, not a fifth primary ending.
+
+**Context:** docs/05 §5 specifies the meta flag fires when the player discovers `bbx_risk_orchestrator` and does not forward the masked contact. Without the `outcome_selected` gate, the trigger would fire during Stage 4 for every isolation-event discoverer — before the Stage 5 forward decision is settled.
+
+**Rationale:**
+
+- Gating on `outcome_selected` (an event the engine appends only after report submission) makes the flag evaluate the Stage 5 decision in its final, committed state, per the "choice consequences execute before trigger evaluation" ordering fact (ADR-015).
+- `not`/`flagEquals` on `masked_forwarded` encodes the docs' "does not forward" condition deterministically via the authored Stage 5 choice consequence.
+- Keeping it a single hidden flag + notification (rather than a fifth outcome) preserves the documented four-ending taxonomy while still rewarding the meta discovery.
+
+**Consequences:**
+
+- The meta flag is reachable and tested (unit reachability + E2E harness), and remains optional — it never gates completion or any primary ending.
+- A player who forwards the masked contact or never discovers the isolation event simply never sees the meta epilogue; no dead end is introduced.
+
+---
+
 ## Proposed-decision template
 
 ```text

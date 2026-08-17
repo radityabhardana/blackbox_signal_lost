@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import { APP_CATALOG } from "@/lib/apps";
+import { AppIcon, SystemGlyph } from "@/components/icons";
+import { BlackboxSymbol } from "@/components/brand";
 import { useWindowStore } from "@/stores/window-store";
 import { useOptionalCaseSession } from "@/features/session/case-session";
 import { focusWindowRegion, registerLauncherButton, unregisterLauncherButton } from "@/lib/focus-registry";
@@ -86,7 +88,8 @@ export function Launcher() {
         aria-controls={MENU_ID}
         onClick={() => setOpen((value) => !value)}
       >
-        Launcher
+        <BlackboxSymbol size={16} className="shrink-0" />
+        <span>Launcher</span>
       </button>
       {open ? (
         <div
@@ -105,7 +108,12 @@ export function Launcher() {
               className="bbx-menu-item"
               onClick={() => activate(app.appId)}
             >
-              {app.title}
+              {app.icon !== undefined ? (
+                <AppIcon id={app.icon} size={16} className="shrink-0" />
+              ) : (
+                <SystemGlyph id="discovery" size={16} className="shrink-0" />
+              )}
+              <span>{app.title}</span>
             </button>
           ))}
         </div>

@@ -4,6 +4,7 @@ import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent }
 import type { ManagedWindow } from "@/domain/windows";
 import { useWindowStore } from "@/stores/window-store";
 import { getApp } from "@/lib/apps";
+import { SystemGlyph } from "@/components/icons";
 import {
   focusLauncherButton,
   focusTaskbarItem,
@@ -56,7 +57,7 @@ export function WindowControls({ window }: { window: ManagedWindow }) {
         onDoubleClick={stopDoubleClick}
         onClick={handleMinimize}
       >
-        <span aria-hidden="true">−</span>
+        <SystemGlyph id="minimize" size={16} />
       </button>
       <button
         type="button"
@@ -67,7 +68,7 @@ export function WindowControls({ window }: { window: ManagedWindow }) {
         onDoubleClick={stopDoubleClick}
         onClick={() => toggleMaximize(window.id)}
       >
-        <span aria-hidden="true">{isMaximized ? "❐" : "□"}</span>
+        <SystemGlyph id={isMaximized ? "restore" : "maximize"} size={16} />
       </button>
       <button
         type="button"
@@ -78,7 +79,7 @@ export function WindowControls({ window }: { window: ManagedWindow }) {
         onDoubleClick={stopDoubleClick}
         onClick={handleClose}
       >
-        <span aria-hidden="true">×</span>
+        <SystemGlyph id="close" size={16} />
       </button>
     </div>
   );

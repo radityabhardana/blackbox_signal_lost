@@ -7,9 +7,29 @@ import { projectEvidenceBoardEdges, projectEvidenceBoardNodes } from "@/features
 import { useEvidenceBoard } from "@/features/evidence-board/evidence-board-provider";
 import { useOptionalCaseSession } from "@/features/session/case-session";
 import type { EvidenceFlowNodeData } from "@/features/evidence-board/evidence-board-react-flow-adapter";
+import { EvidenceVisual, EVIDENCE_VISUAL_IDS } from "@/components/evidence";
+import type { EvidenceVisualId } from "@/components/evidence";
 
-function BoardNode({ data }: NodeProps<Node<EvidenceFlowNodeData>>) {
-  return <article className={`bbx-evidence-node bbx-evidence-node-${data.kind}`}><Handle type="target" position={Position.Left} /><strong>{data.title}</strong><p>{data.detail}</p>{data.source ? <small>{data.source}</small> : null}<Handle type="source" position={Position.Right} /></article>;
+function isEvidenceVisualId(value: string): value is EvidenceVisualId {
+  return (EVIDENCE_VISUAL_IDS as readonly string[]).includes(value);
+}
+
+export function BoardNode({ data }: NodeProps<Node<EvidenceFlowNodeData>>) {
+  return (
+    <article className={`bbx-evidence-node bbx-evidence-node-${data.kind}`}>
+      <Handle type="target" position={Position.Left} />
+      {data.kind === "evidence" && data.evidenceId !== undefined && isEvidenceVisualId(data.evidenceId) ? (
+        <EvidenceVisual
+          evidenceId={data.evidenceId}
+          className="mb-1 h-6 w-6 text-bbx-text-2"
+        />
+      ) : null}
+      <strong>{data.title}</strong>
+      <p>{data.detail}</p>
+      {data.source ? <small>{data.source}</small> : null}
+      <Handle type="source" position={Position.Right} />
+    </article>
+  );
 }
 
 const nodeTypes = { evidence: BoardNode, note: BoardNode };

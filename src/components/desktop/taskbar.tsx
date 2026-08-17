@@ -2,6 +2,8 @@
 
 import { useWindowStore } from "@/stores/window-store";
 import { useOptionalCaseSession } from "@/features/session/case-session";
+import { SystemGlyph } from "@/components/icons";
+import { BlackboxSymbol } from "@/components/brand";
 import { SystemTime } from "@/components/desktop/system-time";
 import { Launcher } from "./launcher";
 import { WindowSwitcher } from "./window-switcher";
@@ -23,8 +25,9 @@ export function Taskbar() {
       </nav>
       <WindowSwitcher />
       <TaskbarAppItems />
-      <span className="font-mono text-xs uppercase tracking-widest text-bbx-text-2">
-        Case: {caseLabel}
+      <span className="flex items-center gap-1.5 font-mono text-xs uppercase tracking-widest text-bbx-text-2">
+        <BlackboxSymbol size={16} className="shrink-0" />
+        <span>Case: {caseLabel}</span>
       </span>
       <div className="ml-auto flex items-center gap-3">
         <button
@@ -33,7 +36,8 @@ export function Taskbar() {
           className="bbx-btn px-2 py-1 text-[0.625rem]"
           onClick={resetWorkspace}
         >
-          Reset workspace
+          <SystemGlyph id="reset_layout" size={16} className="shrink-0" />
+          <span>Reset workspace</span>
         </button>
         <span className="font-mono text-xs tabular-nums text-bbx-text-2">
           <SystemTime />

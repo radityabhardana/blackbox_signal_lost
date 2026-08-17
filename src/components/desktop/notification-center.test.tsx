@@ -59,6 +59,8 @@ describe("NotificationCenter without a session", () => {
 
     const trigger = screen.getByRole("button", { name: "Notification center" });
     expect(trigger).toBeEnabled();
+    expect(trigger.querySelector("svg[aria-hidden='true']")).not.toBeNull();
+    expect(trigger).toHaveTextContent("Notification center");
     await user.click(trigger);
     expect(screen.getByText("No notifications")).toBeInTheDocument();
   });

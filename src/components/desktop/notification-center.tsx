@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import { buildNotificationHistory } from "@/domain/notifications";
 import { useOptionalCaseSession } from "@/features/session/case-session";
+import { SystemGlyph } from "@/components/icons";
 
 const PANEL_ID = "notification-center-panel";
 const HEADING_ID = "notification-center-heading";
@@ -49,7 +50,8 @@ export function NotificationCenter() {
         aria-controls={PANEL_ID}
         onClick={() => setOpen((value) => !value)}
       >
-        Notification center
+        <SystemGlyph id="bell" size={16} className="shrink-0" />
+        <span>Notification center</span>
       </button>
       {open ? (
         <section

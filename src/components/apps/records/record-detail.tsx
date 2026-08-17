@@ -2,6 +2,22 @@
 
 import { useEffect, useRef } from "react";
 import type { RecordDetailViewModel } from "@/domain/records";
+import { EvidenceVisual } from "@/components/evidence";
+import type { EvidenceVisualId } from "@/components/evidence";
+
+/**
+ * Presentation-only mapping from Case 001 record ids to their decorative
+ * evidence visuals. Records without an entry render no visual. The svg is
+ * aria-hidden; the semantic record text remains the authoritative content.
+ */
+const RECORD_VISUAL: Record<string, EvidenceVisualId> = {
+  rec_001_ferry_departure: "ev_001_ferry_departure",
+  rec_001_emergency_call: "ev_001_emergency_call",
+  rec_001_node7_summary: "ev_001_node7_summary",
+  rec_001_manual_escalation: "ev_001_manual_escalation",
+  rec_001_corridor_access: "ev_001_corridor_access",
+  rec_001_checksum_record: "ev_001_checksum_record",
+};
 
 export function RecordDetail({ detail }: { detail: RecordDetailViewModel | null }) {
   const sectionRef = useRef<HTMLElement>(null);
@@ -21,6 +37,8 @@ export function RecordDetail({ detail }: { detail: RecordDetailViewModel | null 
     );
   }
 
+  const visualId = RECORD_VISUAL[detail.recordId];
+
   return (
     <section
       ref={sectionRef}
@@ -28,6 +46,12 @@ export function RecordDetail({ detail }: { detail: RecordDetailViewModel | null 
       aria-label="Record"
       className="min-h-0 flex-1 overflow-y-auto border-t border-bbx-surface-2 px-4 py-4 focus-visible:outline-1 focus-visible:outline-bbx-accent"
     >
+      {visualId !== undefined ? (
+        <EvidenceVisual
+          evidenceId={visualId}
+          className="mb-3 h-10 w-10 text-bbx-text-2"
+        />
+      ) : null}
       <h3 className="text-base font-semibold text-bbx-text-1">{detail.title}</h3>
       <dl className="mt-3 space-y-3">
         <div>

@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!--
+    BLACKBOX desktop civic-grid texture (original, decorative).
+    64px civic grid (lines on cell centers so the tile repeats seamlessly)
+    with sparse infrastructure glyphs: node circles, tick marks, one faint
+    diagonal route line. Dark-on-dark, no text, no scripts, no remote
+    references, no filters. Ambient only: conveys no information.
+  -->
+  <g stroke="#e6ecf4" stroke-width="1" opacity="0.05">
+    <path d="M32 0v512M96 0v512M160 0v512M224 0v512M288 0v512M352 0v512M416 0v512M480 0v512"/>
+    <path d="M0 32h512M0 96h512M0 160h512M0 224h512M0 288h512M0 352h512M0 416h512M0 480h512"/>
+  </g>
+  <path d="M32 480 480 32" stroke="#57c0c2" stroke-width="1" stroke-dasharray="6 10" opacity="0.07"/>
+  <g stroke="#57c0c2" stroke-width="1" fill="none" opacity="0.1">
+    <circle cx="128" cy="128" r="3"/>
+    <circle cx="384" cy="256" r="3"/>
+    <circle cx="256" cy="384" r="3"/>
+  </g>
+  <g fill="#57c0c2" opacity="0.08">
+    <circle cx="128" cy="128" r="1"/>
+    <circle cx="384" cy="256" r="1"/>
+    <circle cx="256" cy="384" r="1"/>
+  </g>
+  <g stroke="#8d99ad" stroke-width="1" opacity="0.08">
+    <path d="M188 64h8M64 316v8M444 384h8M316 448v8"/>
+  </g>
+</svg>
