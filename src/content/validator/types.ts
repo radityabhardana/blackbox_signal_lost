@@ -5,6 +5,7 @@ import {
   characterDefinitionSchema,
   conclusionDefinitionSchema,
   dialogueNodeSchema,
+  endingDefinitionSchema,
   evidenceDefinitionSchema,
   hintDefinitionSchema,
   notificationDefinitionSchema,
@@ -34,6 +35,10 @@ export const contentBundleSchema = z.object({
   // exposes a deterministic notifications array.
   notifications: z.array(notificationDefinitionSchema).default([]),
   puzzles: z.array(puzzleDefinitionSchema).default([]),
+  // BBX-080 — authored ending presentation content. Defaults to [] so
+  // pre-existing bundles parse unchanged while outcome.endingContentId
+  // references are validated against the collection when present.
+  endings: z.array(endingDefinitionSchema).default([]),
 });
 
 export type ContentBundle = z.infer<typeof contentBundleSchema>;
@@ -50,6 +55,8 @@ export type EntityKind =
   | "dialogue_choice"
   | "outcome"
   | "conclusion"
+  | "claim"
+  | "ending"
   | "asset"
   | "notification"
   | "puzzle";

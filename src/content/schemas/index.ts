@@ -16,6 +16,7 @@ export * from "./triggers";
 export * from "./dialogue";
 export * from "./search-index";
 export * from "./conclusion";
+export * from "./endings";
 export * from "./outcomes";
 export * from "./case";
 export * from "./save";

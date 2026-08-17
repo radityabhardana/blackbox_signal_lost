@@ -173,6 +173,14 @@
       "disclosureChoices": []
     }
   ],
+  "endings": [
+    {
+      "id": "ending_test",
+      "caseId": "case_test",
+      "title": "Test ending",
+      "body": {}
+    }
+  ],
   "assets": [
     {
       "id": "asset_test",

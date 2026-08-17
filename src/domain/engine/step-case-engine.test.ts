@@ -473,6 +473,101 @@ describe("rule integration across steps", () => {
   });
 });
 
+describe("report submission and outcome inputs", () => {
+  it("report_submitted stores the report and applies flag effects", () => {
+    const content = loadBundle();
+    const report = { claimAnswers: { claim_a: "opt_a" }, evidenceIds: ["evidence_test"], disclosureChoiceId: "d_a" };
+    const result = step(
+      empty(),
+      { kind: "report_submitted", report, flagEffects: [{ key: "claim_a_correct", value: true }] },
+      content,
+    );
+    expect(result.state.submittedReport).toEqual(report);
+    expect(result.state.flags).toEqual({ claim_a_correct: true });
+    expect(result.appliedEffects).toEqual([{ type: "set_flag", key: "claim_a_correct", value: true }]);
+    expect(result.state.eventHistory).toEqual([{ type: "report_submitted" }]);
+  });
+
+  it("report_submitted with empty flagEffects stores the report only", () => {
+    const content = loadBundle();
+    const report = { evidenceIds: ["evidence_test"] };
+    const result = step(empty(), { kind: "report_submitted", report, flagEffects: [] }, content);
+    expect(result.state.submittedReport).toEqual(report);
+    expect(result.state.flags).toEqual({});
+    expect(result.appliedEffects).toEqual([]);
+  });
+
+  it("report_submitted does not mutate the input report", () => {
+    const content = loadBundle();
+    const report = { evidenceIds: ["evidence_test"] };
+    const before = JSON.stringify(report);
+    step(empty(), { kind: "report_submitted", report, flagEffects: [] }, content);
+    expect(JSON.stringify(report)).toBe(before);
+  });
+
+  it("outcome_selected sets selectedOutcomeId, caseCompleted, and applies outcome effects", () => {
+    const content = loadBundle();
+    const result = step(empty(), { kind: "outcome_selected", outcomeId: "outcome_test" }, content);
+    expect(result.state.selectedOutcomeId).toBe("outcome_test");
+    expect(result.state.caseCompleted).toBe(true);
+    expect(result.appliedEffects).toEqual([{ type: "play_audio_cue", assetId: "asset_test_audio" }]);
+    expect(result.state.audioCues).toEqual(["asset_test_audio"]);
+    expect(result.state.eventHistory).toEqual([{ type: "outcome_selected", entityId: "outcome_test" }]);
+  });
+
+  it("outcome_selected with null clears selection and does not complete the case", () => {
+    const content = loadBundle();
+    const result = step(empty(), { kind: "outcome_selected", outcomeId: null }, content);
+    expect(result.state.selectedOutcomeId).toBeNull();
+    expect(result.state.caseCompleted).toBe(false);
+    expect(result.appliedEffects).toEqual([]);
+    expect(result.state.eventHistory).toEqual([{ type: "outcome_selected" }]);
+  });
+
+  it("outcome_selected with an unknown outcome id throws EngineError", () => {
+    const content = loadBundle();
+    expect(() => step(empty(), { kind: "outcome_selected", outcomeId: "outcome_missing" }, content)).toThrow(EngineError);
+  });
+
+  it("checkpoint_requested appends an event and changes no other state", () => {
+    const content = loadBundle();
+    const withProgress: CaseEngineState = { ...empty(), flags: { clue: "found" } };
+    const result = step(withProgress, { kind: "checkpoint_requested" }, content);
+    expect(result.state.eventHistory).toEqual([{ type: "checkpoint_requested" }]);
+    expect(result.state.flags).toEqual({ clue: "found" });
+    expect(result.state.submittedReport).toBeNull();
+    expect(result.state.selectedOutcomeId).toBeNull();
+    expect(result.state.caseCompleted).toBe(false);
+    expect(result.appliedEffects).toEqual([]);
+  });
+
+  it("checkpoint_restore_requested appends an event and changes no other state", () => {
+    const content = loadBundle();
+    const result = step(empty(), { kind: "checkpoint_restore_requested" }, content);
+    expect(result.state.eventHistory).toEqual([{ type: "checkpoint_restore_requested" }]);
+    expect(result.appliedEffects).toEqual([]);
+  });
+
+  it("submittedReport survives clone/freeze across a later step and stays frozen", () => {
+    const content = loadBundle();
+    const report = { evidenceIds: ["evidence_test"] };
+    const submitted = step(empty(), { kind: "report_submitted", report, flagEffects: [] }, content);
+    const after = step(submitted.state, { kind: "game_event", event: { type: "search_performed" } }, content);
+    expect(after.state.submittedReport).toEqual(report);
+    expect(Object.isFrozen(after.state.submittedReport)).toBe(true);
+    expect(after.state.selectedOutcomeId).toBeNull();
+    expect(after.state.caseCompleted).toBe(false);
+  });
+
+  it("selectedOutcomeId and caseCompleted survive clone/freeze", () => {
+    const content = loadBundle();
+    const selected = step(empty(), { kind: "outcome_selected", outcomeId: "outcome_test" }, content);
+    const after = step(selected.state, { kind: "game_event", event: { type: "search_performed" } }, content);
+    expect(after.state.selectedOutcomeId).toBe("outcome_test");
+    expect(after.state.caseCompleted).toBe(true);
+  });
+});
+
 describe("determinism and immutability", () => {
   it("same state + input + content returns identical results repeatedly", () => {
     const content = loadBundle();

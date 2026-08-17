@@ -1,0 +1,10 @@
+{
+  "id": "ending_001_stage1",
+  "caseId": "case_001_missing_signal",
+  "title": "Protected truth",
+  "body": {
+    "kind": "rich_text",
+    "blocks": [{ "type": "paragraph", "text": "MIO opens a limited review." }]
+  },
+  "isHiddenMeta": false
+}

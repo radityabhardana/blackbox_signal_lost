@@ -134,22 +134,143 @@ describe("validateContentBundle", () => {
     expect(result.success).toBe(true);
   });
 
-  it("ignores opaque subtype contents", () => {
+  it("accepts a conclusion with a typed claim, disclosure, and resolving refs", () => {
+    const bundle = loadValidBundle();
+    bundle.conclusions[0]!.claimSlots = [
+      {
+        id: "claim_001_location",
+        prompt: "Where was Maya last located?",
+        answerOptions: [
+          { id: "claim_001_location_north_barrier", label: "North Barrier maintenance corridor", correct: true },
+          { id: "claim_001_location_dorms", label: "Crew dorms" },
+        ],
+        optional: false,
+        supportedByEvidenceIds: ["evidence_test"],
+      },
+    ];
+    bundle.conclusions[0]!.disclosureChoices = [
+      {
+        id: "disclosure_001_redact_maya",
+        label: "Submit obstruction evidence but redact Maya's location.",
+        recipient: "mio",
+        redactsLocation: true,
+      },
+    ];
+    bundle.evidence[0]!.reportClaimsSupported = ["claim_001_location"];
+    expect(validateContentBundle(bundle).success).toBe(true);
+  });
+
+  it("detects reportClaimsSupported referencing a claim id that does not exist", () => {
+    const bundle = loadValidBundle();
+    bundle.evidence[0]!.reportClaimsSupported = ["claim_missing"];
+    const result = validateContentBundle(bundle);
+    expect(result.success).toBe(false);
+    expect(issuesOf(result)).toContainEqual(
+      expect.objectContaining({
+        code: "reference_unresolved",
+        entityType: "evidence",
+        entityId: "evidence_test",
+        path: "reportClaimsSupported",
+        referencedId: "claim_missing",
+      }),
+    );
+  });
+
+  it("detects an outcome endingContentId referencing a missing ending", () => {
+    const bundle = loadValidBundle();
+    bundle.case.outcomes[0]!.endingContentId = "ending_missing";
+    const result = validateContentBundle(bundle);
+    expect(result.success).toBe(false);
+    expect(issuesOf(result)).toContainEqual(
+      expect.objectContaining({
+        code: "reference_unresolved",
+        entityType: "outcome",
+        entityId: "outcome_test",
+        path: "endingContentId",
+        referencedId: "ending_missing",
+      }),
+    );
+  });
+
+  it("detects a claim supportedByEvidenceIds referencing missing evidence", () => {
+    const bundle = loadValidBundle();
+    bundle.conclusions[0]!.claimSlots = [
+      {
+        id: "claim_001_location",
+        prompt: "Where was Maya last located?",
+        answerOptions: [{ id: "claim_001_location_north_barrier", label: "North Barrier maintenance corridor", correct: true }],
+        optional: false,
+        supportedByEvidenceIds: ["evidence_missing"],
+      },
+    ];
+    const result = validateContentBundle(bundle);
+    expect(result.success).toBe(false);
+    expect(issuesOf(result)).toContainEqual(
+      expect.objectContaining({
+        code: "reference_unresolved",
+        entityType: "conclusion",
+        entityId: "conclusion_test",
+        path: "claimSlots[0].supportedByEvidenceIds",
+        referencedId: "evidence_missing",
+      }),
+    );
+  });
+
+  it("detects reportClaimsSupported pointing at a record instead of a claim", () => {
+    const bundle = loadValidBundle();
+    bundle.evidence[0]!.reportClaimsSupported = ["record_test"];
+    const result = validateContentBundle(bundle);
+    expect(result.success).toBe(false);
+    expect(issuesOf(result)).toContainEqual(
+      expect.objectContaining({
+        code: "reference_wrong_kind",
+        entityType: "evidence",
+        entityId: "evidence_test",
+        path: "reportClaimsSupported",
+        referencedId: "record_test",
+      }),
+    );
+  });
+
+  it("detects duplicate claim ids across conclusions", () => {
+    const bundle = loadValidBundle();
+    const typedClaim = {
+      id: "claim_001_location",
+      prompt: "Where was Maya last located?",
+      answerOptions: [{ id: "claim_001_location_north_barrier", label: "North Barrier maintenance corridor", correct: true }],
+      optional: false,
+      supportedByEvidenceIds: [] as string[],
+    };
+    bundle.conclusions[0]!.claimSlots = [typedClaim];
+    bundle.conclusions.push({
+      ...bundle.conclusions[0]!,
+      id: "conclusion_other",
+      claimSlots: [{ ...typedClaim }],
+    });
+    expect(codesOf(validateContentBundle(bundle))).toContain("duplicate_id");
+  });
+
+  it("detects an ending whose caseId does not match the manifest", () => {
+    const bundle = loadValidBundle();
+    bundle.endings[0]!.caseId = "case_other";
+    expect(codesOf(validateContentBundle(bundle))).toContain("case_reference_mismatch");
+  });
+
+  it("defaults endings to an empty array for bundles without them", () => {
+    const raw = JSON.parse(readFileSync(path.join(fixturesRoot, "valid/bundle_basic_valid.json"), "utf-8"));
+    delete raw.endings;
+    const bundle = contentBundleSchema.parse(raw);
+    expect(bundle.endings).toEqual([]);
+  });
+
+  it("ignores opaque subtype contents and deferred references", () => {
     const bundle = loadValidBundle();
     bundle.records[0]!.body = { paragraphs: [{ text: "x" }], block: { nested: true } };
     bundle.characters[0]!.publicProfile = { headline: "y", sections: [1, 2, 3] };
     bundle.case.stages = [{ internal: { id: "not_a_real_id", x: 1 } }];
-    bundle.conclusions[0]!.claimSlots = [{ id: "claim_invented" }];
-    expect(validateContentBundle(bundle).success).toBe(true);
-  });
-
-  it("ignores deferred and non-content references", () => {
-    const bundle = loadValidBundle();
     bundle.evidence[0]!.relatedEntityIds = ["loc_missing", "char_anyone"];
     bundle.characters[0]!.organizationIds = ["org_missing"];
     bundle.dialogue[0]!.channelId = "channel_missing";
-    bundle.evidence[0]!.reportClaimsSupported = ["claim_missing"];
-    bundle.case.outcomes[0]!.endingContentId = "ending_missing";
     bundle.case.triggers[0]!.effects.push({ type: "unlock_application", applicationId: "app_missing" });
     bundle.case.triggers[0]!.effects.push({ type: "set_flag", key: "k", value: true });
     bundle.case.triggers[0]!.rule = { eventOccurred: { type: "record_opened" } };

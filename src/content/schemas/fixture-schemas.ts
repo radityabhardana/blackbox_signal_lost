@@ -4,6 +4,7 @@ import { caseManifestSchema } from "./case";
 import { characterDefinitionSchema, productionCharacterDefinitionSchema } from "./characters";
 import { conclusionDefinitionSchema } from "./conclusion";
 import { dialogueNodeSchema } from "./dialogue";
+import { endingDefinitionSchema } from "./endings";
 import { evidenceDefinitionSchema } from "./evidence";
 import { hintDefinitionSchema } from "./hints";
 import { idSchema } from "./ids";
@@ -35,6 +36,7 @@ export const schemasByDirectory: Record<string, FixtureSchemaDescriptor> = {
   },
   "conclusion/": { schema: conclusionDefinitionSchema, entityType: "conclusion" },
   "dialogue/": { schema: dialogueNodeSchema, entityType: "dialogue node" },
+  "endings/": { schema: endingDefinitionSchema, entityType: "ending" },
   "evidence/": { schema: evidenceDefinitionSchema, entityType: "evidence" },
   "hints/": { schema: hintDefinitionSchema, entityType: "hint" },
   "ids/": { schema: idSchema, entityType: "id" },

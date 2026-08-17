@@ -56,6 +56,71 @@ describe("sessionSaveSnapshotSchema", () => {
     expect(snapshot.caseEngineState.revealedHintIds).toEqual(["hint_a", "hint_b"]);
   });
 
+  it("existing V2 snapshot without the BBX-081 fields parses with defaults", () => {
+    const legacy = validSessionSnapshot();
+    delete (legacy.caseEngineState as Partial<typeof legacy.caseEngineState>).submittedReport;
+    delete (legacy.caseEngineState as Partial<typeof legacy.caseEngineState>).selectedOutcomeId;
+    delete (legacy.caseEngineState as Partial<typeof legacy.caseEngineState>).caseCompleted;
+    const snapshot = parseSessionSaveSnapshot(legacy);
+
+    expect(snapshot.caseEngineState.submittedReport).toBeNull();
+    expect(snapshot.caseEngineState.selectedOutcomeId).toBeNull();
+    expect(snapshot.caseEngineState.caseCompleted).toBe(false);
+  });
+
+  it("snapshot with the BBX-081 fields round-trips", () => {
+    const snapshot = parseSessionSaveSnapshot({
+      ...validSessionSnapshot(),
+      caseEngineState: {
+        ...createInitialEngineState(),
+        submittedReport: { claimAnswers: { claim_a: "opt_a" } },
+        selectedOutcomeId: "outcome_test",
+        caseCompleted: true,
+      },
+    });
+
+    expect(snapshot.caseEngineState.submittedReport).toEqual({ claimAnswers: { claim_a: "opt_a" } });
+    expect(snapshot.caseEngineState.selectedOutcomeId).toBe("outcome_test");
+    expect(snapshot.caseEngineState.caseCompleted).toBe(true);
+  });
+
+  it("rejects a non-object submittedReport", () => {
+    const invalid = {
+      ...validSessionSnapshot(),
+      caseEngineState: { ...createInitialEngineState(), submittedReport: "not-an-object" },
+    };
+
+    expect(() => parseSessionSaveSnapshot(invalid)).toThrow();
+  });
+
+  it("snapshot without a checkpoint parses with checkpoint null", () => {
+    const snapshot = parseSessionSaveSnapshot(validSessionSnapshot());
+    expect(snapshot.checkpoint ?? null).toBeNull();
+  });
+
+  it("snapshot with a checkpoint round-trips", () => {
+    const checkpoint = {
+      version: 1 as const,
+      caseEngineState: createInitialEngineState(),
+      evidenceBoard: serializeEvidenceBoardSnapshot(createInitialEvidenceBoardState()),
+    };
+    const snapshot = parseSessionSaveSnapshot({
+      ...validSessionSnapshot(),
+      checkpoint,
+    });
+
+    expect(snapshot.checkpoint).toEqual(checkpoint);
+  });
+
+  it("rejects a malformed checkpoint", () => {
+    const invalid = {
+      ...validSessionSnapshot(),
+      checkpoint: { version: 1, caseEngineState: { not: "a state" }, evidenceBoard: {} },
+    };
+
+    expect(() => parseSessionSaveSnapshot(invalid)).toThrow();
+  });
+
   it("rejects malformed CaseEngineState", () => {
     const invalid = {
       ...validSessionSnapshot(),

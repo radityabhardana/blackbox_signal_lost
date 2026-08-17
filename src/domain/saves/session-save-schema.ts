@@ -3,6 +3,7 @@ import { saveGameSchema } from "@/content/schemas";
 import type { SaveGame } from "@/content/schemas";
 import type { CaseEngineState } from "@/domain/engine";
 import { parseEvidenceBoardSnapshot } from "@/domain/evidence-board";
+import type { EvidenceBoardSnapshotV1 } from "@/domain/evidence-board";
 import type { RuleEvent } from "@/domain/rules";
 
 const flagValueSchema = z.union([z.string(), z.number(), z.boolean()]);
@@ -26,6 +27,9 @@ export const caseEngineStateSchema = z.object({
   audioCues: z.array(z.string()),
   notifications: z.array(z.string()),
   revealedHintIds: z.array(z.string()).default([]),
+  submittedReport: z.record(z.unknown()).nullable().default(null),
+  selectedOutcomeId: z.string().nullable().default(null),
+  caseCompleted: z.boolean().default(false),
   // Cast: `.default([])` widens the schema input with `undefined` while the
   // output stays a full CaseEngineState; the annotation pins the output type.
 }).strict() as unknown as z.ZodType<CaseEngineState>;
@@ -39,14 +43,35 @@ const evidenceBoardSnapshotSchema = z.unknown().transform((value, context) => {
   }
 });
 
-/** Typed session payload persisted inside a SaveGame V2 envelope. */
-export const sessionSaveSnapshotSchema = z.object({
-  version: z.literal(1),
-  caseEngineState: caseEngineStateSchema,
-  evidenceBoard: evidenceBoardSnapshotSchema,
-}).strict();
+/**
+ * Typed session payload persisted inside a SaveGame V2 envelope.
+ *
+ * `checkpoint` (BBX-082) is a self-referential snapshot of the session state
+ * captured immediately before the conclusion report is submitted. It is only
+ * written at capture time, so it is optional in the type and defaults to null
+ * when absent. The self-reference is expressed with z.lazy; the explicit
+ * interface keeps `checkpoint` optional so existing snapshot constructors
+ * (which omit it) remain valid.
+ */
+export type SessionSaveSnapshotV1 = {
+  readonly version: 1;
+  readonly caseEngineState: CaseEngineState;
+  readonly evidenceBoard: EvidenceBoardSnapshotV1;
+  readonly checkpoint?: SessionSaveSnapshotV1 | null;
+};
 
-export type SessionSaveSnapshotV1 = z.infer<typeof sessionSaveSnapshotSchema>;
+export const sessionSaveSnapshotSchema = z.lazy(() =>
+  z
+    .object({
+      version: z.literal(1),
+      caseEngineState: caseEngineStateSchema,
+      evidenceBoard: evidenceBoardSnapshotSchema,
+      checkpoint: z.lazy(() => sessionSaveSnapshotSchema).nullable().optional(),
+    })
+    .strict(),
+  // Cast: the self-referential lazy schema plus the `.default(null)` widening
+  // make direct inference circular; the annotation pins the output type.
+) as unknown as z.ZodType<SessionSaveSnapshotV1>;
 export type SaveGameV2 = Omit<SaveGame, "saveSchemaVersion" | "sessionSnapshot"> & {
   saveSchemaVersion: 2;
   sessionSnapshot: SessionSaveSnapshotV1;

@@ -59,6 +59,27 @@ export function stepCaseEngine(
     addUnique(next.revealedHintIds, input.hintId);
   }
 
+  if (input.kind === "report_submitted") {
+    next.submittedReport = { ...input.report };
+    for (const flagEffect of input.flagEffects) {
+      applyEffect(next, { type: "set_flag", key: flagEffect.key, value: flagEffect.value }, content, applied);
+    }
+  }
+
+  if (input.kind === "outcome_selected") {
+    next.selectedOutcomeId = input.outcomeId;
+    next.caseCompleted = input.outcomeId !== null;
+    if (input.outcomeId !== null) {
+      const outcome = content.case.outcomes.find((candidate) => candidate.id === input.outcomeId);
+      if (!outcome) {
+        throw new EngineError(`unknown outcome '${input.outcomeId}'`);
+      }
+      for (const effect of outcome.effects) {
+        applyEffect(next, effect, content, applied);
+      }
+    }
+  }
+
   const eligible = [...content.case.triggers]
     .sort((a, b) => b.priority - a.priority)
     .filter((trigger) => !(trigger.once && next.firedTriggerIds.includes(trigger.id)));
@@ -89,7 +110,21 @@ function toRuleEvent(input: EngineInput): RuleEvent {
   if (input.kind === "dialogue_choice_selected") {
     return { type: "dialogue_choice_selected", entityId: input.choiceId };
   }
-  return { type: "hint_revealed", entityId: input.hintId };
+  if (input.kind === "hint_revealed") {
+    return { type: "hint_revealed", entityId: input.hintId };
+  }
+  if (input.kind === "report_submitted") {
+    return { type: "report_submitted" };
+  }
+  if (input.kind === "outcome_selected") {
+    return input.outcomeId === null
+      ? { type: "outcome_selected" }
+      : { type: "outcome_selected", entityId: input.outcomeId };
+  }
+  if (input.kind === "checkpoint_restore_requested") {
+    return { type: "checkpoint_restore_requested" };
+  }
+  return { type: "checkpoint_requested" };
 }
 
 function resolveChoice(choiceId: string, content: ContentBundle): DialogueChoice | undefined {
@@ -209,6 +244,9 @@ interface MutableState {
   audioCues: string[];
   notifications: string[];
   revealedHintIds: string[];
+  submittedReport: Record<string, unknown> | null;
+  selectedOutcomeId: string | null;
+  caseCompleted: boolean;
 }
 
 function addUnique(list: string[], value: string): void {
@@ -235,11 +273,15 @@ function cloneState(state: CaseEngineState): MutableState {
     audioCues: [...state.audioCues],
     notifications: [...state.notifications],
     revealedHintIds: [...state.revealedHintIds],
+    submittedReport: state.submittedReport === null ? null : { ...state.submittedReport },
+    selectedOutcomeId: state.selectedOutcomeId,
+    caseCompleted: state.caseCompleted,
   };
 }
 
 function freezeState(state: MutableState): CaseEngineState {
   Object.freeze(state.flags);
+  if (state.submittedReport !== null) Object.freeze(state.submittedReport);
   [
     state.eventHistory,
     state.discoveredEntityIds,

@@ -16,5 +16,8 @@ export function createInitialEngineState(): CaseEngineState {
     audioCues: [],
     notifications: [],
     revealedHintIds: [],
+    submittedReport: null,
+    selectedOutcomeId: null,
+    caseCompleted: false,
   };
 }

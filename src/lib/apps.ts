@@ -7,6 +7,7 @@ export const APP_CATALOG: ApplicationDescriptor[] = [
   { appId: "app_evidence_board", title: "Evidence Board", minWidth: 760, minHeight: 520 },
   { appId: "app_objectives", title: "Objectives", minWidth: 420, minHeight: 360 },
   { appId: "app_signal_analyzer", title: "Signal Analyzer", minWidth: 640, minHeight: 460, requiresUnlock: true },
+  { appId: "app_conclusion", title: "Conclusion Report", minWidth: 760, minHeight: 520, requiresUnlock: true },
   { appId: "app_system_log", title: "System Log", minWidth: 480, minHeight: 320 },
 ];
 

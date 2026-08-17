@@ -21,6 +21,12 @@ export interface CaseEngineState {
   notifications: readonly string[];
   /** Unique-ID list of revealed hint ids; player-requested hint history only — never read by rules */
   revealedHintIds: readonly string[];
+  /** Immutable canonical submission snapshot (opaque JSON bag; typed shape lives in the conclusion schema). */
+  submittedReport: Record<string, unknown> | null;
+  /** Selected outcome id once the outcome evaluator runs; null before submission. */
+  selectedOutcomeId: string | null;
+  /** True once a case-ending outcome has been delivered. */
+  caseCompleted: boolean;
 }
 
 /**
@@ -32,7 +38,17 @@ export type EngineInput =
   | { kind: "game_event"; event: RuleEvent }
   | { kind: "evidence_discovered"; evidenceId: string }
   | { kind: "dialogue_choice_selected"; choiceId: string }
-  | { kind: "hint_revealed"; hintId: string };
+  | { kind: "hint_revealed"; hintId: string }
+  | { kind: "report_submitted"; report: Record<string, unknown>; flagEffects: readonly ReportFlagEffect[] }
+  | { kind: "outcome_selected"; outcomeId: string | null }
+  | { kind: "checkpoint_requested" }
+  | { kind: "checkpoint_restore_requested" };
+
+/** A single set_flag effect carried by a report submission (BBX-081). */
+export interface ReportFlagEffect {
+  readonly key: string;
+  readonly value: string | number | boolean;
+}
 
 export interface EngineResult {
   state: CaseEngineState;

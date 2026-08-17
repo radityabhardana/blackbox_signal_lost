@@ -29,6 +29,8 @@ const KIND_LABELS: Record<EntityKind, string> = {
   dialogue_choice: "dialogue choice",
   outcome: "outcome",
   conclusion: "conclusion",
+  claim: "claim",
+  ending: "ending",
   asset: "asset",
   notification: "notification",
   puzzle: "puzzle",
@@ -79,8 +81,9 @@ export function validateContentBundle(bundle: ContentBundle): ValidationResult {
   validateOutcomes(bundle.case.outcomes, registry, issues);
   validateSearchIndex(bundle.case.searchableIndex, registry, issues);
   validateAssets(bundle, caseId, issues);
-  validateConclusions(bundle, caseId, issues);
+  validateConclusions(bundle, registry, caseId, issues);
   validatePuzzles(bundle, registry, caseId, issues);
+  validateEndings(bundle, caseId, issues);
 
   return issues.length === 0 ? { success: true } : { success: false, issues: sortIssues(issues) };
 }
@@ -127,6 +130,13 @@ function buildRegistrations(
   }
   for (const conclusion of bundle.conclusions) {
     registrations.push({ id: conclusion.id, kind: "conclusion", owner: { entityType: "conclusion", entityId: conclusion.id } });
+    for (const claimSlot of conclusion.claimSlots) {
+      registrations.push({
+        id: claimSlot.id,
+        kind: "claim",
+        owner: { entityType: "conclusion", entityId: conclusion.id },
+      });
+    }
   }
   for (const asset of bundle.assets) {
     registrations.push({ id: asset.id, kind: "asset", owner: { entityType: "asset", entityId: asset.id } });
@@ -136,6 +146,9 @@ function buildRegistrations(
   }
   for (const puzzle of bundle.puzzles) {
     registrations.push({ id: puzzle.id, kind: "puzzle", owner: { entityType: "puzzle", entityId: puzzle.id } });
+  }
+  for (const ending of bundle.endings) {
+    registrations.push({ id: ending.id, kind: "ending", owner: { entityType: "ending", entityId: ending.id } });
   }
   return registrations;
 }
@@ -371,6 +384,9 @@ function validateEvidence(
       resolveRef(assetId, "asset", owner, "assetIds", registry, issues);
     }
     validateRule(evidence.discoveryRule, owner, "discoveryRule", registry, issues);
+    for (const claimId of evidence.reportClaimsSupported) {
+      resolveRef(claimId, "claim", owner, "reportClaimsSupported", registry, issues);
+    }
   }
 }
 
@@ -414,6 +430,7 @@ function validateOutcomes(
     const owner: Owner = { entityType: "outcome", entityId: outcome.id };
     validateRule(outcome.evaluationRule, owner, "evaluationRule", registry, issues);
     resolveEffectTargets(outcome.effects, owner, "effects", registry, issues);
+    resolveRef(outcome.endingContentId, "ending", owner, "endingContentId", registry, issues);
   }
 }
 
@@ -452,10 +469,27 @@ function validateAssets(bundle: ContentBundle, bundleCaseId: string, issues: Val
   }
 }
 
-function validateConclusions(bundle: ContentBundle, bundleCaseId: string, issues: ValidationIssue[]): void {
+function validateConclusions(
+  bundle: ContentBundle,
+  registry: Registry,
+  bundleCaseId: string,
+  issues: ValidationIssue[],
+): void {
   for (const conclusion of bundle.conclusions) {
     const owner: Owner = { entityType: "conclusion", entityId: conclusion.id };
     checkCaseRef(conclusion.caseId, owner, "caseId", bundleCaseId, issues);
+    for (const [index, claimSlot] of conclusion.claimSlots.entries()) {
+      for (const evId of claimSlot.supportedByEvidenceIds) {
+        resolveRef(evId, "evidence", owner, `claimSlots[${index}].supportedByEvidenceIds`, registry, issues);
+      }
+    }
+  }
+}
+
+function validateEndings(bundle: ContentBundle, bundleCaseId: string, issues: ValidationIssue[]): void {
+  for (const ending of bundle.endings) {
+    const owner: Owner = { entityType: "ending", entityId: ending.id };
+    checkCaseRef(ending.caseId, owner, "caseId", bundleCaseId, issues);
   }
 }
 

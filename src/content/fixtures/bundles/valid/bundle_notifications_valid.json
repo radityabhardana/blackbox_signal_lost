@@ -147,6 +147,14 @@
       "disclosureChoices": []
     }
   ],
+  "endings": [
+    {
+      "id": "ending_notifications_test",
+      "caseId": "case_notifications_test",
+      "title": "Notifications test ending",
+      "body": {}
+    }
+  ],
   "assets": [
     {
       "id": "asset_notifications_test",

@@ -1,8 +1,17 @@
 import { describe, expect, it } from "vitest";
 import { validateContentBundle } from "@/content/validator";
 import type { ContentBundle } from "@/content/validator";
-import { stepCaseEngine } from "@/domain/engine";
+import { createInitialEngineState, stepCaseEngine, toRuleEvaluationContext } from "@/domain/engine";
 import type { CaseEngineState } from "@/domain/engine";
+import { evaluateRule } from "@/domain/rules";
+import {
+  attachEvidence,
+  createEmptyReportDraft,
+  prepareSubmission,
+  selectClaimAnswer,
+  selectDisclosure,
+  selectOutcome,
+} from "@/domain/outcomes";
 import { CASE_001_SLOT_ID, loadCase001Session } from "./index";
 
 /** Post-Stage-2 engine state: ferry + emergency reviewed, puzzle solved.
@@ -146,37 +155,68 @@ describe("Case 001 content bundle", () => {
     expect(decisiveIds).toEqual(["property_gate_device", "property_account_signature"]);
   });
 
-  it("no Stage 5+ scope creep", () => {
+  it("Stage 5 and 6 content present, no Stage 7", () => {
     const { content } = loadCase001Session();
     expect(content.puzzles).toHaveLength(1);
     expect(content.puzzles[0]!.id).toBe("puzzle_001_ferry_authenticity");
     expect(content.case.objectives).toHaveLength(3);
-    // Evidence set is EXACTLY the Stage 1-4 set (8 items). ev_001_damaged_tablet
-    // (docs/05 evidence table, Conditional) is deliberately NOT authored this
-    // slice — it needs its own Stage 3 tablet content path; the optional
-    // boundary is preserved without it.
-    expect(new Set(content.evidence.map((evidence) => evidence.id))).toEqual(
-      new Set([
-        "ev_001_ferry_departure",
-        "ev_001_emergency_call",
-        "ev_001_replay_signature",
-        "ev_001_node7_summary",
-        "ev_001_manual_escalation",
-        "ev_001_corridor_access",
-        "ev_001_diagnostic_note",
-        "ev_001_isolation_event",
-      ]),
-    );
-    // No Stage 5/6 content: no masked-contact choice ids, no conclusion slots
-    // filled, no endings authored.
-    const choiceIds = content.dialogue.flatMap((node) => (node.choices ?? []).map((choice) => choice.id));
-    expect(choiceIds.some((id) => id.includes("masked") || id.includes("contact"))).toBe(false);
+    // Stage 6 conclusion is filled: >=4 claim slots, exactly 4 disclosures.
     const conclusion = content.conclusions[0]!;
-    expect(conclusion.claimSlots).toHaveLength(0);
-    expect(conclusion.disclosureChoices).toHaveLength(0);
-    expect(content.case.outcomes).toHaveLength(1);
-    expect(content.case.outcomes[0]!.id).toBe("outcome_001_stage1");
-    expect(content.case.outcomes[0]!.endingContentId).toBe("ending_001_stage1");
+    expect(conclusion.claimSlots.length).toBeGreaterThanOrEqual(4);
+    expect(conclusion.disclosureChoices).toHaveLength(4);
+    // Outcomes: the Stage 1 placeholder plus the four ending outcomes.
+    expect(content.case.outcomes.length).toBeGreaterThanOrEqual(5);
+    const outcomeIds = content.case.outcomes.map((outcome) => outcome.id);
+    for (const id of [
+      "outcome_001_stage1",
+      "outcome_001_protected_truth",
+      "outcome_001_official_compliance",
+      "outcome_001_public_exposure",
+      "outcome_001_misidentified",
+    ]) {
+      expect(outcomeIds).toContain(id);
+    }
+    // Endings collection has the authored entries: stage1 placeholder + A/B/C/D
+    // + the hidden meta epilogue.
+    const endingIds = content.endings.map((ending) => ending.id);
+    for (const id of [
+      "ending_001_stage1",
+      "ending_001_protected_truth",
+      "ending_001_official_compliance",
+      "ending_001_public_exposure",
+      "ending_001_misidentified",
+      "ending_001_blackbox_meta",
+    ]) {
+      expect(endingIds).toContain(id);
+    }
+    // Stage 5 masked-contact choices exist.
+    const choiceIds = content.dialogue.flatMap((node) => (node.choices ?? []).map((choice) => choice.id));
+    for (const id of [
+      "choice_001_stage5_ignore",
+      "choice_001_stage5_proof",
+      "choice_001_stage5_identity",
+      "choice_001_stage5_forward",
+    ]) {
+      expect(choiceIds).toContain(id);
+    }
+    // Stage 5 checksum evidence present.
+    expect(content.evidence.map((evidence) => evidence.id)).toContain("ev_001_checksum_record");
+    // No Stage 7 markers: no ids beyond the Stage 1-6 set.
+    const knownIds = new Set([
+      ...content.case.objectives.map((objective) => objective.id),
+      ...content.case.triggers.map((trigger) => trigger.id),
+      ...content.case.outcomes.map((outcome) => outcome.id),
+      ...content.records.map((record) => record.id),
+      ...content.evidence.map((evidence) => evidence.id),
+      ...content.dialogue.map((node) => node.id),
+      ...content.endings.map((ending) => ending.id),
+      ...choiceIds,
+    ]);
+    expect(knownIds.has("stage7")).toBe(false);
+    expect(knownIds.has("stage_7")).toBe(false);
+    for (const id of knownIds) {
+      expect(id).not.toMatch(/stage_?7/);
+    }
   });
 
   it("Stage 3 surfaces after Stage 2 completes", () => {
@@ -276,9 +316,10 @@ describe("Case 001 content bundle", () => {
     expect(reply.text).not.toContain('"');
     // Source gap (docs/05 L158): "one optional record becomes unavailable" — no
     // doc names the record, so no record may have been removed or gated this
-    // slice: every authored rec_001_* remains.
+    // slice: every authored rec_001_* remains (the Stage 5 checksum record is
+    // flag-gated, not removed).
     const recordIds = content.records.map((record) => record.id);
-    expect(recordIds).toHaveLength(9);
+    expect(recordIds).toHaveLength(10);
     for (const id of [
       "rec_001_ferry_departure",
       "rec_001_emergency_call",
@@ -289,6 +330,7 @@ describe("Case 001 content bundle", () => {
       "rec_001_manual_escalation",
       "rec_001_corridor_access",
       "rec_001_reliability_report",
+      "rec_001_checksum_record",
     ]) {
       expect(recordIds).toContain(id);
     }
@@ -390,6 +432,246 @@ describe("Case 001 content bundle", () => {
       const lower = hint.text.toLowerCase();
       for (const word of banned) {
         expect(lower).not.toContain(word);
+      }
+    }
+  });
+
+  it("validateContentBundle passes with endings", () => {
+    const { content } = loadCase001Session();
+    expect(validateContentBundle(content).success).toBe(true);
+  });
+
+  it("Stage 5 masked contact surfaces after Stage 4", () => {
+    const { content, initialState } = loadCase001Session();
+    const preChoice = stage3ReadyState(content, initialState);
+    const afterChoice = stepCaseEngine(
+      preChoice,
+      { kind: "dialogue_choice_selected", choiceId: "choice_001_stage3_ciab" },
+      content,
+    ).state;
+    const afterSummary = stepCaseEngine(
+      afterChoice,
+      { kind: "game_event", event: { type: "record_opened", entityId: "rec_001_node7_summary" } },
+      content,
+    ).state;
+    const afterEscalation = stepCaseEngine(
+      afterSummary,
+      { kind: "game_event", event: { type: "record_opened", entityId: "rec_001_manual_escalation" } },
+      content,
+    ).state;
+    const afterCorridor = stepCaseEngine(
+      afterEscalation,
+      { kind: "game_event", event: { type: "record_opened", entityId: "rec_001_corridor_access" } },
+      content,
+    ).state;
+    expect(afterCorridor.completedObjectives).toContain("obj_003_reason_for_north_barrier");
+    // trigger_005_masked_surface fires once Stage 4 is complete.
+    expect(afterCorridor.queuedDialogue).toContain("dialogue_001_stage5_masked");
+    // The masked node's four choices resolve to authored nodes.
+    const node = content.dialogue.find((item) => item.id === "dialogue_001_stage5_masked")!;
+    expect(node.choices).toHaveLength(4);
+    for (const choice of node.choices ?? []) {
+      expect(content.dialogue.some((candidate) => candidate.id === choice.nextNodeId)).toBe(true);
+    }
+  });
+
+  it("ask for proof unlocks the checksum record", () => {
+    const { content, initialState } = loadCase001Session();
+    const preChoice = stage3ReadyState(content, initialState);
+    const afterStage3 = stepCaseEngine(
+      preChoice,
+      { kind: "dialogue_choice_selected", choiceId: "choice_001_stage3_ciab" },
+      content,
+    ).state;
+    const afterSummary = stepCaseEngine(
+      afterStage3,
+      { kind: "game_event", event: { type: "record_opened", entityId: "rec_001_node7_summary" } },
+      content,
+    ).state;
+    const afterEscalation = stepCaseEngine(
+      afterSummary,
+      { kind: "game_event", event: { type: "record_opened", entityId: "rec_001_manual_escalation" } },
+      content,
+    ).state;
+    const afterStage4 = stepCaseEngine(
+      afterEscalation,
+      { kind: "game_event", event: { type: "record_opened", entityId: "rec_001_corridor_access" } },
+      content,
+    ).state;
+    const afterProof = stepCaseEngine(
+      afterStage4,
+      { kind: "dialogue_choice_selected", choiceId: "choice_001_stage5_proof" },
+      content,
+    ).state;
+    expect(afterProof.flags.masked_proof_requested).toBe(true);
+    expect(afterProof.flags.masked_checksum_unlocked).toBe(true);
+    // Flag-gated trigger discovers the anonymized checksum record.
+    expect(afterProof.discoveredEntityIds).toContain("ev_001_checksum_record");
+    // The checksum record availabilityRule is satisfied in the post-choice state.
+    const record = content.records.find((item) => item.id === "rec_001_checksum_record")!;
+    expect(evaluateRule(record.availabilityRule, toRuleEvaluationContext(afterProof))).toBe(true);
+  });
+
+  it("forward sets the compliance flag", () => {
+    const { content, initialState } = loadCase001Session();
+    const preChoice = stage3ReadyState(content, initialState);
+    const afterStage3 = stepCaseEngine(
+      preChoice,
+      { kind: "dialogue_choice_selected", choiceId: "choice_001_stage3_ciab" },
+      content,
+    ).state;
+    const afterSummary = stepCaseEngine(
+      afterStage3,
+      { kind: "game_event", event: { type: "record_opened", entityId: "rec_001_node7_summary" } },
+      content,
+    ).state;
+    const afterEscalation = stepCaseEngine(
+      afterSummary,
+      { kind: "game_event", event: { type: "record_opened", entityId: "rec_001_manual_escalation" } },
+      content,
+    ).state;
+    const afterStage4 = stepCaseEngine(
+      afterEscalation,
+      { kind: "game_event", event: { type: "record_opened", entityId: "rec_001_corridor_access" } },
+      content,
+    ).state;
+    const afterForward = stepCaseEngine(
+      afterStage4,
+      { kind: "dialogue_choice_selected", choiceId: "choice_001_stage5_forward" },
+      content,
+    ).state;
+    expect(afterForward.flags.masked_forwarded).toBe(true);
+  });
+
+  it("all four endings are reachable (parameterized reachability)", () => {
+    const { content } = loadCase001Session();
+    const correctAnswers = [
+      { claimId: "claim_001_location", optionId: "claim_001_location_north_barrier" },
+      { claimId: "claim_001_ferry_record", optionId: "claim_001_ferry_forged" },
+      { claimId: "claim_001_obstruction", optionId: "claim_001_obstruction_reno" },
+      { claimId: "claim_001_return_reason", optionId: "claim_001_reason_evidence" },
+    ];
+    const wrongAnswers = [
+      { claimId: "claim_001_location", optionId: "claim_001_location_ferry" },
+      { claimId: "claim_001_ferry_record", optionId: "claim_001_ferry_authentic" },
+      { claimId: "claim_001_obstruction", optionId: "claim_001_obstruction_nara" },
+      { claimId: "claim_001_return_reason", optionId: "claim_001_reason_sabotage" },
+    ];
+    const evidenceIds = [
+      "ev_001_corridor_access",
+      "ev_001_emergency_call",
+      "ev_001_replay_signature",
+    ];
+    const cases: Array<{ ending: string; disclosureId: string; answers: typeof correctAnswers }> = [
+      // A — Protected truth: all four correct + MIO recipient.
+      { ending: "outcome_001_protected_truth", disclosureId: "disclosure_001_mio_redacted", answers: correctAnswers },
+      // B — Official compliance: Pelaga disclosure (docs/05 §5: "Forward masked
+      // contact" / "Classify archive as stolen data").
+      { ending: "outcome_001_official_compliance", disclosureId: "disclosure_001_pelaga", answers: correctAnswers },
+      // C — Public exposure: leak to Open Signal.
+      { ending: "outcome_001_public_exposure", disclosureId: "disclosure_001_open_signal", answers: correctAnswers },
+      // D — Misidentified culprit: one wrong claim (docs/05 §5: "Accuse Nara or
+      // Sera without valid evidence").
+      { ending: "outcome_001_misidentified", disclosureId: "disclosure_001_mio_redacted", answers: wrongAnswers },
+    ];
+    for (const testCase of cases) {
+      let draft = createEmptyReportDraft();
+      for (const answer of testCase.answers) {
+        draft = selectClaimAnswer(draft, answer.claimId, answer.optionId);
+      }
+      for (const evidenceId of evidenceIds) {
+        draft = attachEvidence(draft, evidenceId);
+      }
+      draft = selectDisclosure(draft, testCase.disclosureId);
+      const prepared = prepareSubmission(draft, content);
+      if ("kind" in prepared) {
+        throw new Error(`expected valid submission: ${prepared.errors.join(", ")}`);
+      }
+      const afterReport = stepCaseEngine(
+        createInitialEngineState(),
+        {
+          kind: "report_submitted",
+          report: {
+            claimAnswers: { ...prepared.report.claimAnswers },
+            evidenceIds: [...prepared.report.evidenceIds],
+            disclosureChoiceId: prepared.report.disclosureChoiceId,
+          },
+          flagEffects: prepared.flagEffects,
+        },
+        content,
+      ).state;
+      const selection = selectOutcome(content.case.outcomes, afterReport);
+      expect(selection.kind).toBe("selected");
+      if (selection.kind === "selected") {
+        expect(selection.outcome.id).toBe(testCase.ending);
+      }
+    }
+  });
+
+  it("no Stage 3 branch dead-ends into the endgame", () => {
+    const { content, initialState } = loadCase001Session();
+    const preChoice = stage3ReadyState(content, initialState);
+    const branches = [
+      { choiceId: "choice_001_stage3_ciab", noteDiscovered: false },
+      { choiceId: "choice_001_stage3_offline", noteDiscovered: true },
+      { choiceId: "choice_001_stage3_pelaga", noteDiscovered: false },
+    ];
+    for (const branch of branches) {
+      const afterChoice = stepCaseEngine(
+        preChoice,
+        { kind: "dialogue_choice_selected", choiceId: branch.choiceId },
+        content,
+      ).state;
+      const afterSummary = stepCaseEngine(
+        afterChoice,
+        { kind: "game_event", event: { type: "record_opened", entityId: "rec_001_node7_summary" } },
+        content,
+      ).state;
+      const afterEscalation = stepCaseEngine(
+        afterSummary,
+        { kind: "game_event", event: { type: "record_opened", entityId: "rec_001_manual_escalation" } },
+        content,
+      ).state;
+      const afterCorridor = stepCaseEngine(
+        afterEscalation,
+        { kind: "game_event", event: { type: "record_opened", entityId: "rec_001_corridor_access" } },
+        content,
+      ).state;
+      expect(afterCorridor.completedObjectives).toContain("obj_003_reason_for_north_barrier");
+      // Stage 6 conclusion unlocks regardless of the Stage 3 branch.
+      expect(afterCorridor.unlockedApplications).toContain("app_conclusion");
+      // A correct report resolves to a primary ending on every branch
+      // (Protected Truth via correct facts + MIO disclosure).
+      let draft = createEmptyReportDraft();
+      draft = selectClaimAnswer(draft, "claim_001_location", "claim_001_location_north_barrier");
+      draft = selectClaimAnswer(draft, "claim_001_ferry_record", "claim_001_ferry_forged");
+      draft = selectClaimAnswer(draft, "claim_001_obstruction", "claim_001_obstruction_reno");
+      draft = selectClaimAnswer(draft, "claim_001_return_reason", "claim_001_reason_evidence");
+      for (const evidenceId of ["ev_001_corridor_access", "ev_001_emergency_call", "ev_001_replay_signature"]) {
+        draft = attachEvidence(draft, evidenceId);
+      }
+      draft = selectDisclosure(draft, "disclosure_001_mio_redacted");
+      const prepared = prepareSubmission(draft, content);
+      if ("kind" in prepared) {
+        throw new Error(`expected valid submission: ${prepared.errors.join(", ")}`);
+      }
+      const afterReport = stepCaseEngine(
+        afterCorridor,
+        {
+          kind: "report_submitted",
+          report: {
+            claimAnswers: { ...prepared.report.claimAnswers },
+            evidenceIds: [...prepared.report.evidenceIds],
+            disclosureChoiceId: prepared.report.disclosureChoiceId,
+          },
+          flagEffects: prepared.flagEffects,
+        },
+        content,
+      ).state;
+      const selection = selectOutcome(content.case.outcomes, afterReport);
+      expect(selection.kind).toBe("selected");
+      if (selection.kind === "selected") {
+        expect(selection.outcome.id).toBe("outcome_001_protected_truth");
       }
     }
   });

@@ -894,6 +894,421 @@ describe("session save runtime controller", () => {
     vi.useRealTimers();
   });
 
+  it("report_submitted commit schedules a save that persists the report", async () => {
+    vi.useFakeTimers();
+    const fixture = createEvidenceBoardTestSession();
+    const persisted: SaveGameV2[] = [];
+    const report = { claimAnswers: { claim_a: "opt_a" }, evidenceIds: ["evidence_test"], disclosureChoiceId: "d_a" };
+    const submittedState = {
+      ...fixture.initialState,
+      submittedReport: report,
+      eventHistory: [...fixture.initialState.eventHistory, { type: "report_submitted" }],
+    };
+    const controller = createSaveRuntimeController({
+      slotId: "slot_test",
+      content: fixture.content,
+      applicationVersion: "0.1.0",
+      caseEngineState: fixture.initialState,
+      evidenceBoard: syncDiscoveredEvidence(createInitialEvidenceBoardState(), fixture.content, fixture.initialState.discoveredEntityIds),
+      gameEvents: [],
+      uiSnapshot: {},
+      settings: {},
+      repository: makeRepository(async (value) => { persisted.push(value); }),
+    });
+
+    controller.onEngineCommit({
+      state: submittedState,
+      inputs: [{ kind: "report_submitted", report, flagEffects: [{ key: "claim_a_correct", value: true }] }],
+      results: [{ state: submittedState, appliedEffects: [{ type: "set_flag", key: "claim_a_correct", value: true }] }],
+    });
+    await vi.advanceTimersByTimeAsync(800);
+    expect(persisted).toHaveLength(1);
+    expect(persisted[0]!.sessionSnapshot.caseEngineState.submittedReport).toEqual(report);
+    expect(persisted[0]!.sessionSnapshot.caseEngineState.eventHistory).toContainEqual({ type: "report_submitted" });
+    await controller.dispose();
+    vi.useRealTimers();
+  });
+
+  it("outcome_selected commit schedules a save persisting the selection", async () => {
+    vi.useFakeTimers();
+    const fixture = createEvidenceBoardTestSession();
+    const persisted: SaveGameV2[] = [];
+    const selectedState = {
+      ...fixture.initialState,
+      selectedOutcomeId: "outcome_test",
+      caseCompleted: true,
+      eventHistory: [...fixture.initialState.eventHistory, { type: "outcome_selected", entityId: "outcome_test" }],
+    };
+    const controller = createSaveRuntimeController({
+      slotId: "slot_test",
+      content: fixture.content,
+      applicationVersion: "0.1.0",
+      caseEngineState: fixture.initialState,
+      evidenceBoard: syncDiscoveredEvidence(createInitialEvidenceBoardState(), fixture.content, fixture.initialState.discoveredEntityIds),
+      gameEvents: [],
+      uiSnapshot: {},
+      settings: {},
+      repository: makeRepository(async (value) => { persisted.push(value); }),
+    });
+
+    controller.onEngineCommit({
+      state: selectedState,
+      inputs: [{ kind: "outcome_selected", outcomeId: "outcome_test" }],
+      results: [{ state: selectedState, appliedEffects: [] }],
+    });
+    await vi.advanceTimersByTimeAsync(800);
+    expect(persisted).toHaveLength(1);
+    expect(persisted[0]!.sessionSnapshot.caseEngineState.selectedOutcomeId).toBe("outcome_test");
+    expect(persisted[0]!.sessionSnapshot.caseEngineState.caseCompleted).toBe(true);
+    await controller.dispose();
+    vi.useRealTimers();
+  });
+
+  it("checkpoint_requested commit captures and persists a checkpoint", async () => {
+    vi.useFakeTimers();
+    const fixture = createEvidenceBoardTestSession();
+    const persisted: SaveGameV2[] = [];
+    const checkpointedState = {
+      ...fixture.initialState,
+      flags: { evidence_seen: true },
+      eventHistory: [...fixture.initialState.eventHistory, { type: "checkpoint_requested" }],
+    };
+    const controller = createSaveRuntimeController({
+      slotId: "slot_test",
+      content: fixture.content,
+      applicationVersion: "0.1.0",
+      caseEngineState: fixture.initialState,
+      evidenceBoard: syncDiscoveredEvidence(createInitialEvidenceBoardState(), fixture.content, fixture.initialState.discoveredEntityIds),
+      gameEvents: [],
+      uiSnapshot: {},
+      settings: {},
+      repository: makeRepository(async (value) => { persisted.push(value); }),
+    });
+
+    controller.onEngineCommit({
+      state: checkpointedState,
+      inputs: [{ kind: "checkpoint_requested" }],
+      results: [{ state: checkpointedState, appliedEffects: [] }],
+    });
+    await controller.flush();
+    expect(persisted).toHaveLength(1);
+    expect(persisted[0]!.sessionSnapshot.checkpoint?.caseEngineState).toEqual(checkpointedState);
+    expect(persisted[0]!.sessionSnapshot.checkpoint?.evidenceBoard).toBeDefined();
+    await controller.dispose();
+    vi.useRealTimers();
+  });
+
+  it("keeps the checkpoint across a later autosave", async () => {
+    vi.useFakeTimers();
+    const fixture = createEvidenceBoardTestSession();
+    const persisted: SaveGameV2[] = [];
+    const checkpointedState = {
+      ...fixture.initialState,
+      eventHistory: [...fixture.initialState.eventHistory, { type: "checkpoint_requested" }],
+    };
+    const controller = createSaveRuntimeController({
+      slotId: "slot_test",
+      content: fixture.content,
+      applicationVersion: "0.1.0",
+      caseEngineState: fixture.initialState,
+      evidenceBoard: syncDiscoveredEvidence(createInitialEvidenceBoardState(), fixture.content, fixture.initialState.discoveredEntityIds),
+      gameEvents: [],
+      uiSnapshot: {},
+      settings: {},
+      repository: makeRepository(async (value) => { persisted.push(value); }),
+    });
+
+    controller.onEngineCommit({
+      state: checkpointedState,
+      inputs: [{ kind: "checkpoint_requested" }],
+      results: [{ state: checkpointedState, appliedEffects: [] }],
+    });
+    await controller.flush();
+    controller.onEngineCommit({
+      state: { ...checkpointedState, submittedReport: { evidenceIds: [] } },
+      inputs: [{ kind: "report_submitted", report: { evidenceIds: [] }, flagEffects: [] }],
+      results: [{ state: checkpointedState, appliedEffects: [] }],
+    });
+    await vi.advanceTimersByTimeAsync(800);
+    await controller.flush();
+    const latest = persisted.at(-1)!;
+    expect(latest.sessionSnapshot.checkpoint?.caseEngineState).toEqual(checkpointedState);
+    await controller.dispose();
+    vi.useRealTimers();
+  });
+
+  it("checkpoint_restore_requested without a checkpoint is a no-op", async () => {
+    vi.useFakeTimers();
+    const fixture = createEvidenceBoardTestSession();
+    const persisted: SaveGameV2[] = [];
+    const controller = createSaveRuntimeController({
+      slotId: "slot_test",
+      content: fixture.content,
+      applicationVersion: "0.1.0",
+      caseEngineState: fixture.initialState,
+      evidenceBoard: syncDiscoveredEvidence(createInitialEvidenceBoardState(), fixture.content, fixture.initialState.discoveredEntityIds),
+      gameEvents: [],
+      uiSnapshot: {},
+      settings: {},
+      repository: makeRepository(async (value) => { persisted.push(value); }),
+    });
+
+    const restoreState = {
+      ...fixture.initialState,
+      eventHistory: [...fixture.initialState.eventHistory, { type: "checkpoint_restore_requested" }],
+    };
+    controller.onEngineCommit({
+      state: restoreState,
+      inputs: [{ kind: "checkpoint_restore_requested" }],
+      results: [{ state: restoreState, appliedEffects: [] }],
+    });
+    expect(controller.restoreCheckpoint()).toBeNull();
+    await vi.advanceTimersByTimeAsync(800);
+    expect(persisted).toEqual([]);
+    await controller.dispose();
+    vi.useRealTimers();
+  });
+
+  it("checkpoint_restore_requested swaps to the captured checkpoint state", async () => {
+    vi.useFakeTimers();
+    const fixture = createEvidenceBoardTestSession();
+    const persisted: SaveGameV2[] = [];
+    const board = syncDiscoveredEvidence(createInitialEvidenceBoardState(), fixture.content, fixture.initialState.discoveredEntityIds);
+    const controller = createSaveRuntimeController({
+      slotId: "slot_test",
+      content: fixture.content,
+      applicationVersion: "0.1.0",
+      caseEngineState: fixture.initialState,
+      evidenceBoard: board,
+      gameEvents: [],
+      uiSnapshot: {},
+      settings: {},
+      repository: makeRepository(async (value) => { persisted.push(value); }),
+    });
+
+    const checkpointState = {
+      ...fixture.initialState,
+      eventHistory: [...fixture.initialState.eventHistory, { type: "checkpoint_requested" }],
+    };
+    controller.onEngineCommit({
+      state: checkpointState,
+      inputs: [{ kind: "checkpoint_requested" }],
+      results: [{ state: checkpointState, appliedEffects: [] }],
+    });
+    await controller.flush();
+
+    const report = { evidenceIds: ["evidence_test"] };
+    const submittedState = {
+      ...checkpointState,
+      submittedReport: report,
+      selectedOutcomeId: "outcome_test",
+      caseCompleted: true,
+      eventHistory: [
+        ...checkpointState.eventHistory,
+        { type: "report_submitted" },
+        { type: "outcome_selected", entityId: "outcome_test" },
+      ],
+    };
+    controller.onEngineCommit({
+      state: submittedState,
+      inputs: [
+        { kind: "report_submitted", report, flagEffects: [] },
+        { kind: "outcome_selected", outcomeId: "outcome_test" },
+      ],
+      results: [{ state: submittedState, appliedEffects: [] }],
+    });
+    await vi.advanceTimersByTimeAsync(800);
+
+    const restoreState = {
+      ...submittedState,
+      eventHistory: [...submittedState.eventHistory, { type: "checkpoint_restore_requested" }],
+    };
+    controller.onEngineCommit({
+      state: restoreState,
+      inputs: [{ kind: "checkpoint_restore_requested" }],
+      results: [{ state: restoreState, appliedEffects: [] }],
+    });
+    const seed = controller.restoreCheckpoint();
+    expect(seed).not.toBeNull();
+    expect(seed!.caseEngineState.selectedOutcomeId).toBeNull();
+    expect(seed!.caseEngineState.caseCompleted).toBe(false);
+    expect(seed!.caseEngineState.submittedReport).toBeNull();
+    expect(seed!.caseEngineState.discoveredEntityIds).toEqual(checkpointState.discoveredEntityIds);
+    expect(seed!.evidenceBoard.evidenceNodes).toEqual(board.evidenceNodes);
+
+    // The restored session becomes current: the next save captures the checkpoint state.
+    controller.requestSave("report_submitted");
+    await vi.advanceTimersByTimeAsync(800);
+    const latest = persisted.at(-1)!;
+    expect(latest.sessionSnapshot.caseEngineState.selectedOutcomeId).toBeNull();
+    expect(latest.sessionSnapshot.caseEngineState.caseCompleted).toBe(false);
+    expect(latest.sessionSnapshot.caseEngineState.submittedReport).toBeNull();
+    expect(latest.sessionSnapshot.caseEngineState.discoveredEntityIds).toEqual(checkpointState.discoveredEntityIds);
+    await controller.dispose();
+    vi.useRealTimers();
+  });
+
+  it("restore after capture survives a later autosave", async () => {
+    vi.useFakeTimers();
+    const fixture = createEvidenceBoardTestSession();
+    const persisted: SaveGameV2[] = [];
+    const board = syncDiscoveredEvidence(createInitialEvidenceBoardState(), fixture.content, fixture.initialState.discoveredEntityIds);
+    const controller = createSaveRuntimeController({
+      slotId: "slot_test",
+      content: fixture.content,
+      applicationVersion: "0.1.0",
+      caseEngineState: fixture.initialState,
+      evidenceBoard: board,
+      gameEvents: [],
+      uiSnapshot: {},
+      settings: {},
+      repository: makeRepository(async (value) => { persisted.push(value); }),
+    });
+
+    const checkpointState = {
+      ...fixture.initialState,
+      eventHistory: [...fixture.initialState.eventHistory, { type: "checkpoint_requested" }],
+    };
+    controller.onEngineCommit({
+      state: checkpointState,
+      inputs: [{ kind: "checkpoint_requested" }],
+      results: [{ state: checkpointState, appliedEffects: [] }],
+    });
+    await controller.flush();
+
+    const choiceState = {
+      ...checkpointState,
+      selectedChoices: [...checkpointState.selectedChoices, "choice_test"],
+      eventHistory: [...checkpointState.eventHistory, { type: "dialogue_choice_selected", entityId: "choice_test" }],
+    };
+    controller.onEngineCommit({
+      state: choiceState,
+      inputs: [{ kind: "dialogue_choice_selected", choiceId: "choice_test" }],
+      results: [{ state: choiceState, appliedEffects: [] }],
+    });
+    await vi.advanceTimersByTimeAsync(800);
+    expect(persisted.at(-1)!.sessionSnapshot.checkpoint?.caseEngineState).toEqual(checkpointState);
+
+    const restoreState = {
+      ...choiceState,
+      eventHistory: [...choiceState.eventHistory, { type: "checkpoint_restore_requested" }],
+    };
+    controller.onEngineCommit({
+      state: restoreState,
+      inputs: [{ kind: "checkpoint_restore_requested" }],
+      results: [{ state: restoreState, appliedEffects: [] }],
+    });
+    const seed = controller.restoreCheckpoint();
+    expect(seed).not.toBeNull();
+    expect(seed!.caseEngineState.selectedChoices).toEqual(checkpointState.selectedChoices);
+    expect(seed!.caseEngineState.eventHistory).toEqual(checkpointState.eventHistory);
+
+    controller.requestSave("report_submitted");
+    await vi.advanceTimersByTimeAsync(800);
+    expect(persisted.at(-1)!.sessionSnapshot.caseEngineState.selectedChoices).toEqual(checkpointState.selectedChoices);
+    await controller.dispose();
+    vi.useRealTimers();
+  });
+
+  it("restore clears outcome state even when the checkpoint captured it", async () => {
+    vi.useFakeTimers();
+    const fixture = createEvidenceBoardTestSession();
+    const board = syncDiscoveredEvidence(createInitialEvidenceBoardState(), fixture.content, fixture.initialState.discoveredEntityIds);
+    const controller = createSaveRuntimeController({
+      slotId: "slot_test",
+      content: fixture.content,
+      applicationVersion: "0.1.0",
+      caseEngineState: fixture.initialState,
+      evidenceBoard: board,
+      gameEvents: [],
+      uiSnapshot: {},
+      settings: {},
+      repository: makeRepository(async () => undefined),
+    });
+
+    const report = { evidenceIds: ["evidence_test"] };
+    const postSubmissionState = {
+      ...fixture.initialState,
+      submittedReport: report,
+      selectedOutcomeId: "outcome_test",
+      caseCompleted: true,
+      eventHistory: [...fixture.initialState.eventHistory, { type: "checkpoint_requested" }],
+    };
+    controller.onEngineCommit({
+      state: postSubmissionState,
+      inputs: [{ kind: "checkpoint_requested" }],
+      results: [{ state: postSubmissionState, appliedEffects: [] }],
+    });
+    await controller.flush();
+
+    const restoreState = {
+      ...postSubmissionState,
+      eventHistory: [...postSubmissionState.eventHistory, { type: "checkpoint_restore_requested" }],
+    };
+    controller.onEngineCommit({
+      state: restoreState,
+      inputs: [{ kind: "checkpoint_restore_requested" }],
+      results: [{ state: restoreState, appliedEffects: [] }],
+    });
+    const seed = controller.restoreCheckpoint();
+    expect(seed).not.toBeNull();
+    expect(seed!.caseEngineState.selectedOutcomeId).toBeNull();
+    expect(seed!.caseEngineState.caseCompleted).toBe(false);
+    expect(seed!.caseEngineState.submittedReport).toBeNull();
+    await controller.dispose();
+    vi.useRealTimers();
+  });
+
+  it("seeds the restore fallback from a checkpoint persisted in the loaded save", async () => {
+    const fixture = createEvidenceBoardTestSession();
+    const checkpointState = {
+      ...fixture.initialState,
+      eventHistory: [...fixture.initialState.eventHistory, { type: "checkpoint_requested" }],
+    };
+    const save = makeRuntimeSave("slot_test", fixture, "note", fixture.initialState);
+    const saveWithCheckpoint: SaveGameV2 = {
+      ...save,
+      sessionSnapshot: {
+        ...save.sessionSnapshot,
+        checkpoint: {
+          version: 1,
+          caseEngineState: checkpointState,
+          evidenceBoard: save.sessionSnapshot.evidenceBoard,
+        },
+      },
+    };
+    const repository: SaveRepository = {
+      ...makeRepository(async () => undefined),
+      load: async () => saveWithCheckpoint,
+    };
+
+    const resolved = await resolveSessionSave({
+      repository,
+      slotId: "slot_test",
+      content: fixture.content,
+      initialState: fixture.initialState,
+    });
+    expect(resolved.restoredCheckpoint?.caseEngineState).toEqual(checkpointState);
+
+    const controller = createSaveRuntimeController({
+      slotId: "slot_test",
+      content: fixture.content,
+      applicationVersion: "0.1.0",
+      caseEngineState: resolved.caseEngineState,
+      evidenceBoard: resolved.evidenceBoard,
+      gameEvents: resolved.gameEvents,
+      uiSnapshot: resolved.uiSnapshot,
+      settings: resolved.settings,
+      repository,
+      restoredCheckpoint: resolved.restoredCheckpoint,
+    });
+    const seed = controller.restoreCheckpoint();
+    expect(seed).not.toBeNull();
+    expect(seed!.caseEngineState.selectedOutcomeId).toBeNull();
+    expect(seed!.caseEngineState.eventHistory).toEqual(checkpointState.eventHistory);
+    await controller.dispose();
+  });
+
   it("blocks all later save reasons until discovery reconciliation and persists the latest pair once", async () => {
     vi.useFakeTimers();
     const fixture = makeDiscoveryControllerFixture();

@@ -1,7 +1,25 @@
 {
   "id": "con_test",
   "caseId": "case_test",
-  "claimSlots": [],
+  "claimSlots": [
+    {
+      "id": "claim_001_location",
+      "prompt": "Where was Maya last located?",
+      "answerOptions": [
+        { "id": "claim_001_location_north_barrier", "label": "North Barrier maintenance corridor", "correct": true },
+        { "id": "claim_001_location_dorms", "label": "Crew dorms" }
+      ],
+      "optional": false,
+      "supportedByEvidenceIds": ["ev_test"]
+    }
+  ],
   "evidenceSlotCount": 3,
-  "disclosureChoices": []
+  "disclosureChoices": [
+    {
+      "id": "disclosure_001_redact_maya",
+      "label": "Submit obstruction evidence but redact Maya's location.",
+      "recipient": "mio",
+      "redactsLocation": true
+    }
+  ]
 }

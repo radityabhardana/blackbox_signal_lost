@@ -10,6 +10,7 @@ import {
 import {
   createInitialEvidenceBoardState,
   hydrateEvidenceBoardSnapshot,
+  serializeEvidenceBoardSnapshot,
   syncDiscoveredEvidence,
 } from "@/domain/evidence-board";
 import type { EvidenceBoardChange } from "@/features/evidence-board/evidence-board-provider";
@@ -20,7 +21,8 @@ import {
   type AutosaveReason,
   type AutosaveScheduler,
 } from "@/domain/saves";
-import type { SaveGameV2, SaveRepository } from "@/domain/saves";
+import type { SaveGameV2, SaveRepository, SessionSaveSnapshotV1 } from "@/domain/saves";
+import { parseSessionSaveSnapshot, parseTrustedSaveGameV2 } from "@/domain/saves";
 import { createIndexedDbSaveRepository, SaveDatabase } from "@/infrastructure/persistence";
 import { composeSaveGameV2 } from "./save-composer";
 import { CaseSessionProvider } from "./case-session";
@@ -60,6 +62,17 @@ export interface SessionSaveBootstrap {
   readonly uiSnapshot: UiSnapshot;
   readonly settings: PlayerSettings;
   readonly restoredFromSave: boolean;
+  /** BBX-082: checkpoint persisted in the loaded save, if any (restore fallback). */
+  readonly restoredCheckpoint: SessionSaveSnapshotV1 | null;
+}
+
+/**
+ * BBX-082: in-memory seed produced by a checkpoint restore (a state swap, not
+ * a page reload). The runtime remounts the session providers from this seed.
+ */
+export interface RestoredSessionSeed {
+  readonly caseEngineState: CaseEngineState;
+  readonly evidenceBoard: EvidenceBoardState;
 }
 
 interface ResolveSessionSaveInput {
@@ -84,6 +97,7 @@ export async function resolveSessionSave(input: ResolveSessionSaveInput): Promis
       uiSnapshot: {},
       settings: {},
       restoredFromSave: false,
+      restoredCheckpoint: null,
     };
   }
 
@@ -112,6 +126,7 @@ export async function resolveSessionSave(input: ResolveSessionSaveInput): Promis
     uiSnapshot: save.uiSnapshot,
     settings: save.settings,
     restoredFromSave: true,
+    restoredCheckpoint: save.sessionSnapshot.checkpoint ?? null,
   };
 }
 
@@ -129,6 +144,8 @@ export interface SaveRuntimeControllerInput {
   readonly scheduler?: AutosaveScheduler;
   readonly closeDatabase?: () => void;
   readonly onPersistenceStatusChange?: (status: PersistenceStatus) => void;
+  /** BBX-082: checkpoint persisted in the loaded save (restore fallback). */
+  readonly restoredCheckpoint?: SessionSaveSnapshotV1 | null;
 }
 
 export interface SaveRuntimeMetadata {
@@ -144,6 +161,13 @@ export interface SaveRuntimeController {
   readonly onBoardChange: (change: EvidenceBoardChange) => void;
   readonly updateMetadata: (metadata: SaveRuntimeMetadataUpdate) => void;
   readonly requestSave: (reason: AutosaveReason) => void;
+  /**
+   * BBX-082: swaps the session back to the captured checkpoint. Returns the
+   * remount seed, or null when no checkpoint exists (defensive no-op). As a
+   * side effect it resets the controller's latest engine/board refs so the
+   * next autosave captures the restored session.
+   */
+  readonly restoreCheckpoint: () => RestoredSessionSeed | null;
   readonly flush: () => Promise<void>;
   readonly dispose: () => Promise<void>;
 }
@@ -220,18 +244,73 @@ export function createSaveRuntimeController(input: SaveRuntimeControllerInput): 
     },
   };
 
-  const getSnapshot = (): SaveGameV2 => composeSaveGameV2({
-    slotId: input.slotId,
-    contentVersion: input.content.case.version,
-    applicationVersion: input.applicationVersion,
-    updatedAt: new Date().toISOString(),
-    currentCaseId: input.content.case.id,
-    gameEvents: latestGameEventsRef.current,
-    caseEngineState: latestCaseEngineState,
-    evidenceBoard: latestEvidenceBoardState,
-    uiSnapshot: latestUiSnapshotRef.current,
-    settings: latestSettingsRef.current,
-  });
+  /**
+   * BBX-082: captured pre-submission checkpoint. Seeded from the persisted
+   * save's sessionSnapshot.checkpoint when one was restored (fallback), then
+   * replaced by the first captureCheckpoint. Once set it is preserved across
+   * later autosaves by getSnapshot.
+   */
+  let checkpointSnapshot: SessionSaveSnapshotV1 | null = input.restoredCheckpoint ?? null;
+
+  const getSnapshot = (): SaveGameV2 => {
+    const base = composeSaveGameV2({
+      slotId: input.slotId,
+      contentVersion: input.content.case.version,
+      applicationVersion: input.applicationVersion,
+      updatedAt: new Date().toISOString(),
+      currentCaseId: input.content.case.id,
+      gameEvents: latestGameEventsRef.current,
+      caseEngineState: latestCaseEngineState,
+      evidenceBoard: latestEvidenceBoardState,
+      uiSnapshot: latestUiSnapshotRef.current,
+      settings: latestSettingsRef.current,
+    });
+    // Preserve a captured checkpoint across later autosaves: once captured it
+    // must survive subsequent writes (composition alone would reset it to null).
+    if (checkpointSnapshot === null) return base;
+    return parseTrustedSaveGameV2({
+      ...base,
+      sessionSnapshot: { ...base.sessionSnapshot, checkpoint: checkpointSnapshot },
+    });
+  };
+
+  /**
+   * BBX-082: captures the current session state as an immutable checkpoint and
+   * persists it in a dedicated flush-ordered write. Invoked by onEngineCommit
+   * when a `checkpoint_requested` input is seen; once captured the checkpoint
+   * is preserved by getSnapshot and served by restoreCheckpoint (state swap).
+   */
+  const captureCheckpoint = async (): Promise<void> => {
+    if (!acceptsRuntimeWork()) return;
+    const checkpoint: SessionSaveSnapshotV1 = parseSessionSaveSnapshot({
+      version: 1,
+      caseEngineState: latestCaseEngineState,
+      evidenceBoard: serializeEvidenceBoardSnapshot(latestEvidenceBoardState),
+    });
+    checkpointSnapshot = checkpoint;
+    await decoratedRepository.save(input.slotId, getSnapshot());
+  };
+
+  /**
+   * BBX-082: restores the captured checkpoint as an in-memory state swap (no
+   * IndexedDB reload). Returns the remount seed, or null when no checkpoint
+   * exists (defensive no-op). Submission state is stripped so a restored
+   * session never begins post-submission, and the controller's latest refs are
+   * reset so the next autosave captures the restored session.
+   */
+  const restoreCheckpoint = (): RestoredSessionSeed | null => {
+    if (checkpointSnapshot === null) return null;
+    const caseEngineState = {
+      ...checkpointSnapshot.caseEngineState,
+      submittedReport: null,
+      selectedOutcomeId: null,
+      caseCompleted: false,
+    };
+    const evidenceBoard = hydrateEvidenceBoardSnapshot(checkpointSnapshot.evidenceBoard);
+    latestCaseEngineState = caseEngineState;
+    latestEvidenceBoardState = evidenceBoard;
+    return { caseEngineState, evidenceBoard };
+  };
 
   const autosaveDeps = {
     slotId: input.slotId,
@@ -317,6 +396,24 @@ export function createSaveRuntimeController(input: SaveRuntimeControllerInput): 
     }
     if (commit.inputs.some((inputValue) => inputValue.kind === "hint_revealed")) {
       scheduleSave("hint_revealed");
+      return;
+    }
+    if (commit.inputs.some((inputValue) => inputValue.kind === "checkpoint_requested")) {
+      // BBX-082: capture is an explicit flush-ordered write, not a debounced
+      // autosave; the checkpoint is preserved by getSnapshot afterwards.
+      void captureCheckpoint().catch(() => undefined);
+      return;
+    }
+    if (commit.inputs.some((inputValue) => inputValue.kind === "report_submitted" || inputValue.kind === "outcome_selected")) {
+      // The report/outcome submission transaction; both inputs share one reason.
+      scheduleSave("report_submitted");
+      return;
+    }
+    if (commit.inputs.some((inputValue) => inputValue.kind === "checkpoint_restore_requested")) {
+      // BBX-082: the engine input is recorded here; the state swap is driven by
+      // the runtime wrapper (restoreCheckpoint + keyed provider remount), which
+      // resets the refs below and schedules one save for the restored session.
+      return;
     }
   };
 
@@ -425,7 +522,7 @@ export function createSaveRuntimeController(input: SaveRuntimeControllerInput): 
     return disposePromise;
   };
 
-  return { onEngineCommit, onBoardChange, updateMetadata, requestSave, flush, dispose };
+  return { onEngineCommit, onBoardChange, updateMetadata, requestSave, restoreCheckpoint, flush, dispose };
 }
 
 export interface SessionSaveRuntimeProps {
@@ -552,6 +649,11 @@ function HydratedSessionRuntime({
   readonly applicationVersion: string;
 }) {
   const [persistenceStatus, setPersistenceStatus] = useState<PersistenceStatus>("idle");
+  // BBX-082: checkpoint restore is a state swap, not a page reload. Bumping
+  // sessionEpoch remounts the session providers from checkpointSeed; the
+  // controller itself is stable (memoized on bootstrap) so its refs persist.
+  const [sessionEpoch, setSessionEpoch] = useState(0);
+  const [checkpointSeed, setCheckpointSeed] = useState<RestoredSessionSeed | null>(null);
   const controller = useMemo(() => createSaveRuntimeController({
     slotId,
     content,
@@ -563,8 +665,23 @@ function HydratedSessionRuntime({
     settings: bootstrap.settings,
     repository: bootstrap.repository,
     ...(bootstrap.closeDatabase === undefined ? {} : { closeDatabase: bootstrap.closeDatabase }),
+    restoredCheckpoint: bootstrap.restoredCheckpoint,
     onPersistenceStatusChange: setPersistenceStatus,
   }), [applicationVersion, bootstrap, content, slotId]);
+
+  const handleEngineCommit = (commit: CaseSessionCommit): void => {
+    controller.onEngineCommit(commit);
+    if (!commit.inputs.some((inputValue) => inputValue.kind === "checkpoint_restore_requested")) return;
+    // A checkpoint-less restore is a defensive no-op.
+    const restored = controller.restoreCheckpoint();
+    if (restored === null) return;
+    setCheckpointSeed(restored);
+    setSessionEpoch((epoch) => epoch + 1);
+    // The restored session becomes current; persist it. "report_submitted" is
+    // reused as a type-constrained signal only — the reason has no behavioral
+    // meaning beyond triggering the write.
+    controller.requestSave("report_submitted");
+  };
 
   useEffect(() => {
     controller.updateMetadata({
@@ -589,15 +706,16 @@ function HydratedSessionRuntime({
     <div data-hydration-status="ready" data-persistence-status={persistenceStatus} className="flex h-dvh flex-col overflow-hidden bg-bbx-bg-0">
       <div role="status" aria-live="polite" className="sr-only">Persistence status: {persistenceStatus}</div>
       <CaseSessionProvider
+        key={sessionEpoch}
         content={content}
         mailChannelId={mailChannelId}
         {...(messengerChannelId === undefined ? {} : { messengerChannelId })}
-        initialState={bootstrap.caseEngineState}
-        onCommittedChange={controller.onEngineCommit}
+        initialState={checkpointSeed?.caseEngineState ?? bootstrap.caseEngineState}
+        onCommittedChange={handleEngineCommit}
       >
         <div className="flex min-h-0 flex-1 flex-col">
           <main id="main-content" tabIndex={-1} className="min-h-0 flex-1 outline-none">
-            <WorkspaceShell initialBoard={bootstrap.evidenceBoard} onBoardChange={controller.onBoardChange} />
+            <WorkspaceShell initialBoard={checkpointSeed?.evidenceBoard ?? bootstrap.evidenceBoard} onBoardChange={controller.onBoardChange} />
           </main>
           <Taskbar />
           <LayoutPersistence />

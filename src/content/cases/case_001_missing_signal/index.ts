@@ -206,14 +206,140 @@ export function loadCase001Session(): Case001Session {
           },
           effects: [{ type: "complete_objective", objectiveId: "obj_003_reason_for_north_barrier" }],
         },
+        // Stage 5 — the masked contact surfaces once Stage 4 is complete
+        // (docs/05 Stage 5). Never gates completion (no Stage 5 objective).
+        {
+          id: "trigger_005_masked_surface",
+          once: true,
+          priority: 5,
+          rule: {
+            all: [
+              { objectiveCompleted: "obj_003_reason_for_north_barrier" },
+              { entityDiscovered: "ev_001_corridor_access" },
+            ],
+          },
+          effects: [{ type: "queue_dialogue", nodeId: "dialogue_001_stage5_masked" }],
+        },
+        // Ask-proof branch: the anonymized checksum record unlocks via a
+        // flag-gated trigger, NOT a dialogue effect (docs/13 §4 matrix).
+        {
+          id: "trigger_005_checksum_discovery",
+          once: true,
+          priority: 5,
+          rule: { flagEquals: { key: "masked_checksum_unlocked", value: true } },
+          effects: [{ type: "discover_evidence", evidenceId: "ev_001_checksum_record" }],
+        },
+        // Stage 6 — the conclusion unlocks once Stage 4 is complete. Stage 5
+        // is NOT a gate: docs/05 "No choice prevents completion" extends to the
+        // masked contact (an optional modifier).
+        {
+          id: "trigger_006_conclusion_unlock",
+          once: true,
+          priority: 5,
+          rule: { objectiveCompleted: "obj_003_reason_for_north_barrier" },
+          effects: [{ type: "unlock_application", applicationId: "app_conclusion" }],
+        },
+        // Hidden meta (docs/05 §5): if the player discovered the isolation
+        // event AND did not forward the masked contact, the BLACKBOX
+        // intervention is noticed after an ending is delivered. Gated on
+        // outcome_selected so the forward decision (Stage 5) is settled before
+        // the flag evaluates — without this gate the rule would fire during
+        // Stage 4 for every isolation discoverer.
+        {
+          id: "trigger_006_meta_flag",
+          once: true,
+          priority: 5,
+          rule: {
+            all: [
+              { entityDiscovered: "ev_001_isolation_event" },
+              { not: { flagEquals: { key: "masked_forwarded", value: true } } },
+              { eventOccurred: { type: "outcome_selected" } },
+            ],
+          },
+          effects: [
+            { type: "set_flag", key: "noticed_blackbox_intervention", value: true },
+            { type: "show_notification", notificationId: "notification_001_blackbox_meta" },
+          ],
+        },
       ],
       outcomes: [
+        // Stage 1 placeholder — kept resolvable with its own ending entry.
         {
           id: "outcome_001_stage1",
           title: "Stage 1 verification complete",
           priority: 1,
           endingContentId: "ending_001_stage1",
           evaluationRule: { objectiveCompleted: "obj_001_verify_location" },
+          effects: [],
+        },
+        // Ending A — Protected truth (docs/05 §5): core facts correct + MIO.
+        // PRIORITY DESIGN: the docs' Ending A condition includes "Redact Maya's
+        // location", but a fully-correct report with MIO-no-redact would match
+        // NO ending (A needs redact; B needs forwarded/pelaga; C needs leak; D
+        // needs a wrong claim). To avoid a no-match dead end, Ending A's rule
+        // drops the redact requirement: all-4-correct + MIO → A. The
+        // disclosure_redacts flag remains authored data (used by UI
+        // presentation, not the rule).
+        {
+          id: "outcome_001_protected_truth",
+          title: "Protected Truth",
+          priority: 40,
+          endingContentId: "ending_001_protected_truth",
+          evaluationRule: {
+            all: [
+              { flagEquals: { key: "claim_claim_001_location_correct", value: true } },
+              { flagEquals: { key: "claim_claim_001_ferry_record_correct", value: true } },
+              { flagEquals: { key: "claim_claim_001_obstruction_correct", value: true } },
+              { flagEquals: { key: "claim_claim_001_return_reason_correct", value: true } },
+              { flagEquals: { key: "disclosure_recipient", value: "mio" } },
+            ],
+          },
+          effects: [
+            { type: "show_notification", notificationId: "notification_001_sera_trust" },
+            { type: "show_notification", notificationId: "notification_001_blackbox_bounds" },
+          ],
+        },
+        // Ending B — Official compliance (docs/05 §5): forwarded OR pelaga
+        // stolen-data classification. Matches even when some facts are wrong
+        // (docs: "Accept Pelaga narrative or submit weak contradiction").
+        {
+          id: "outcome_001_official_compliance",
+          title: "Official Compliance",
+          priority: 30,
+          endingContentId: "ending_001_official_compliance",
+          evaluationRule: {
+            any: [
+              { flagEquals: { key: "masked_forwarded", value: true } },
+              { flagEquals: { key: "disclosure_recipient", value: "pelaga" } },
+            ],
+          },
+          effects: [{ type: "show_notification", notificationId: "notification_001_blackbox_compliance" }],
+        },
+        // Ending C — Public exposure (docs/05 §5): leak to Open Signal.
+        {
+          id: "outcome_001_public_exposure",
+          title: "Public Exposure",
+          priority: 20,
+          endingContentId: "ending_001_public_exposure",
+          evaluationRule: { flagEquals: { key: "disclosure_recipient", value: "open_signal" } },
+          effects: [],
+        },
+        // Ending D — Misidentified culprit (docs/05 §5): any claim answered
+        // wrong. prepareSubmission ALWAYS sets all four claim_*_correct flags
+        // (true or false), so this matches whenever any claim is wrong.
+        {
+          id: "outcome_001_misidentified",
+          title: "Misidentified Culprit",
+          priority: 10,
+          endingContentId: "ending_001_misidentified",
+          evaluationRule: {
+            any: [
+              { not: { flagEquals: { key: "claim_claim_001_location_correct", value: true } } },
+              { not: { flagEquals: { key: "claim_claim_001_ferry_record_correct", value: true } } },
+              { not: { flagEquals: { key: "claim_claim_001_obstruction_correct", value: true } } },
+              { not: { flagEquals: { key: "claim_claim_001_return_reason_correct", value: true } } },
+            ],
+          },
           effects: [],
         },
       ],
@@ -339,6 +465,19 @@ export function loadCase001Session(): Case001Session {
           availabilityRule: { always: true },
           authoredRank: 1,
         },
+        // Stage 5 checksum record — hidden until the player asks for proof
+        // (docs/13 §4: "Ask masked contact for proof | Checksum record unlocks").
+        {
+          entityId: "rec_001_checksum_record",
+          entityType: "record",
+          title: "Anonymized Checksum Record",
+          exactTerms: ["checksum", "proof"],
+          aliases: ["checksum record", "verification record"],
+          partialTerms: ["checksum"],
+          unavailableBehavior: "hidden",
+          availabilityRule: { flagEquals: { key: "masked_checksum_unlocked", value: true } },
+          authoredRank: 1,
+        },
       ],
       assetBundleId: "bundle_001_missing_signal",
     },
@@ -363,6 +502,21 @@ export function loadCase001Session(): Case001Session {
         publicProfile: {},
         portraitAssetId: "asset_sera_portrait",
         searchTerms: ["sera", "sera wibawa", "investigator"],
+        knownEvidenceIds: [],
+      },
+      // char_masked_contact — Stage 5 anonymous sender (docs/05 L182). The
+      // account's identity is NOT authored (SOURCE GAP: keep "Unknown"/"Masked
+      // account"; no fabricated identity). The placeholder portrait reuses an
+      // existing asset and is never rendered as a speaker avatar.
+      {
+        id: "char_masked_contact",
+        displayName: "Masked account",
+        aliases: [],
+        role: "Unknown sender",
+        organizationIds: [],
+        publicProfile: {},
+        portraitAssetId: "asset_maya_portrait",
+        searchTerms: ["masked", "unknown"],
         knownEvidenceIds: [],
       },
     ],
@@ -508,6 +662,25 @@ export function loadCase001Session(): Case001Session {
         aliases: [],
         availabilityRule: { always: true },
         metadata: { mention_manual_escalation: false },
+      },
+      // rec_001_checksum_record — Stage 5 ask-proof branch (docs/05 L193).
+      // SOURCE GAP: the checksum record's contents are not authored; only
+      // fictional internal identifiers/metadata are used (no real crypto, no
+      // realistic secrets). Hidden until the player asks for proof.
+      {
+        id: "rec_001_checksum_record",
+        caseId: "case_001_missing_signal",
+        recordType: "verification_record",
+        title: "Anonymized Checksum Record",
+        body: {},
+        source: { system: "ciab_verification" },
+        createdAt: "2041-11-20T10:00:00+07:00",
+        relatedEntityIds: [],
+        searchTerms: ["checksum", "proof", "anonymized"],
+        aliases: ["checksum record"],
+        availabilityRule: { flagEquals: { key: "masked_checksum_unlocked", value: true } },
+        evidenceId: "ev_001_checksum_record",
+        metadata: { checksum: "bbx-verify-7f3a91c4", note: "Anonymized verification hash for the masked contact's claim." },
       },
     ],
     evidence: [
@@ -663,6 +836,26 @@ export function loadCase001Session(): Case001Session {
         redHerring: false,
         reportClaimsSupported: [],
       },
+      // ev_001_checksum_record — Stage 5 ask-proof branch (docs/05 §7 matrix:
+      // "Ask masked contact for proof | Checksum record unlocks"). OPTIONAL,
+      // flag-gated (NOT search-gated); never required for completion.
+      {
+        id: "ev_001_checksum_record",
+        caseId: "case_001_missing_signal",
+        title: "Anonymized Checksum Record",
+        type: "database_record",
+        summary: "An anonymized verification record supporting the masked contact's claim about the exit record.",
+        source: { system: "ciab_verification" },
+        occurredAt: "2041-11-20T10:00:00+07:00",
+        tags: ["checksum", "masked", "verification"],
+        relatedEntityIds: [],
+        assetIds: [],
+        discoveryRule: { flagEquals: { key: "masked_checksum_unlocked", value: true } },
+        optional: true,
+        contested: false,
+        redHerring: false,
+        reportClaimsSupported: [],
+      },
     ],
     hints: CASE_001_HINTS,
     dialogue: [
@@ -748,14 +941,144 @@ export function loadCase001Session(): Case001Session {
         text: "Alright. Pelaga is responding quickly — Reno is already asking about the tablet. I'll keep the chain aware of what I saw.",
         enterRule: { always: true },
       },
+      // Stage 5 — the masked contact (docs/05 Stage 5). The message text is
+      // authored verbatim from docs/05 L184. The sender is a MASKED account
+      // (identity unspecified — SOURCE GAP: no fabricated identity).
+      {
+        id: "dialogue_001_stage5_masked",
+        channelId: CASE_001_MESSENGER_CHANNEL_ID,
+        speakerId: "char_masked_contact",
+        text: "The system is showing you the exit record because it wants the case closed.",
+        enterRule: { always: true },
+        choices: [
+          {
+            id: "choice_001_stage5_ignore",
+            label: "Ignore",
+            consequences: [{ type: "set_flag", key: "masked_ignored", value: true }],
+            nextNodeId: "dialogue_001_stage5_ignored",
+          },
+          {
+            id: "choice_001_stage5_proof",
+            label: "Ask for proof",
+            consequences: [
+              { type: "set_flag", key: "masked_proof_requested", value: true },
+              { type: "set_flag", key: "masked_checksum_unlocked", value: true },
+              { type: "queue_dialogue", nodeId: "dialogue_001_stage5_proof_reply" },
+            ],
+            nextNodeId: "dialogue_001_stage5_proof_reply",
+          },
+          {
+            id: "choice_001_stage5_identity",
+            label: "Demand identity",
+            consequences: [{ type: "set_flag", key: "masked_identity_demanded", value: true }],
+            nextNodeId: "dialogue_001_stage5_identity_reply",
+          },
+          {
+            id: "choice_001_stage5_forward",
+            label: "Forward the message to CIAB",
+            consequences: [{ type: "set_flag", key: "masked_forwarded", value: true }],
+            nextNodeId: "dialogue_001_stage5_forward_reply",
+          },
+        ],
+      },
+      // Stage 5 reply nodes — text stays within docs/05 Stage 5 consequences.
+      // The checksum record unlock is recorded via trigger_005_checksum_discovery
+      // (flag-gated), NOT a dialogue effect.
+      {
+        id: "dialogue_001_stage5_ignored",
+        channelId: CASE_001_MESSENGER_CHANNEL_ID,
+        speakerId: "char_masked_contact",
+        text: "No reply.",
+        enterRule: { always: true },
+      },
+      {
+        id: "dialogue_001_stage5_proof_reply",
+        channelId: CASE_001_MESSENGER_CHANNEL_ID,
+        speakerId: "char_masked_contact",
+        text: "A checksum record has been made available.",
+        enterRule: { always: true },
+      },
+      {
+        id: "dialogue_001_stage5_identity_reply",
+        channelId: CASE_001_MESSENGER_CHANNEL_ID,
+        speakerId: "char_masked_contact",
+        text: "Identity withheld.",
+        enterRule: { always: true },
+      },
+      {
+        id: "dialogue_001_stage5_forward_reply",
+        channelId: CASE_001_MESSENGER_CHANNEL_ID,
+        speakerId: "char_masked_contact",
+        text: "Acknowledged. Compliance note recorded.",
+        enterRule: { always: true },
+      },
     ],
     conclusions: [
       {
+        // Stage 6 conclusion (docs/05 Stage 6) — four claims + four disclosure
+        // choices. Claim answers authored from docs/05 (Claim A: North Barrier
+        // maintenance corridor; B: Falsified through administrative replay; C:
+        // Reno Adikara best-supported; D: Preserve or retrieve Node 7
+        // diagnostic evidence).
         id: "conclusion_001_missing_signal",
         caseId: "case_001_missing_signal",
-        claimSlots: [],
+        claimSlots: [
+          {
+            id: "claim_001_location",
+            prompt: "Final confirmed location",
+            answerOptions: [
+              { id: "claim_001_location_north_barrier", label: "North Barrier maintenance corridor", correct: true },
+              { id: "claim_001_location_ferry", label: "Ferry to the mainland" },
+              { id: "claim_001_location_unknown", label: "Unknown — left the city" },
+            ],
+            supportedByEvidenceIds: ["ev_001_corridor_access", "ev_001_emergency_call"],
+          },
+          {
+            id: "claim_001_ferry_record",
+            prompt: "Ferry record",
+            answerOptions: [
+              { id: "claim_001_ferry_authentic", label: "Authentic — she departed" },
+              { id: "claim_001_ferry_forged", label: "Falsified through administrative replay", correct: true },
+            ],
+            supportedByEvidenceIds: ["ev_001_replay_signature"],
+          },
+          {
+            id: "claim_001_obstruction",
+            prompt: "Primary human obstruction",
+            answerOptions: [
+              { id: "claim_001_obstruction_reno", label: "Reno Adikara", correct: true },
+              { id: "claim_001_obstruction_nara", label: "Nara Santoso" },
+              { id: "claim_001_obstruction_sera", label: "Sera Wibawa" },
+            ],
+            supportedByEvidenceIds: ["ev_001_replay_signature", "ev_001_manual_escalation"],
+          },
+          {
+            id: "claim_001_return_reason",
+            prompt: "Reason Maya returned",
+            answerOptions: [
+              { id: "claim_001_reason_sabotage", label: "To sabotage Node 7" },
+              { id: "claim_001_reason_evidence", label: "To preserve or retrieve Node 7 diagnostic evidence", correct: true },
+              { id: "claim_001_reason_meeting", label: "To meet a contact" },
+            ],
+            supportedByEvidenceIds: ["ev_001_manual_escalation", "ev_001_diagnostic_note"],
+          },
+        ],
         evidenceSlotCount: 3,
-        disclosureChoices: [],
+        disclosureChoices: [
+          { id: "disclosure_001_mio_full", label: "Submit the full diagnostic archive to MIO", recipient: "mio" },
+          {
+            id: "disclosure_001_mio_redacted",
+            label: "Submit obstruction evidence with Maya's location redacted",
+            recipient: "mio",
+            redactsLocation: true,
+          },
+          {
+            id: "disclosure_001_pelaga",
+            label: "Follow Pelaga's request and classify the archive as stolen data",
+            recipient: "pelaga",
+          },
+          { id: "disclosure_001_open_signal", label: "Leak the archive to Open Signal", recipient: "open_signal" },
+        ],
       },
     ],
     assets: [
@@ -804,7 +1127,81 @@ export function loadCase001Session(): Case001Session {
         preload: "none",
       },
     ],
-    notifications: [],
+    notifications: [
+      { id: "notification_001_sera_trust", text: "Sera: Maya is safe for now. Thank you.", priority: "message" },
+      { id: "notification_001_blackbox_bounds", text: "BLACKBOX: analyst deviation within acceptable bounds.", priority: "system_anomaly" },
+      { id: "notification_001_blackbox_compliance", text: "BLACKBOX: procedural consistency acknowledged.", priority: "system_anomaly" },
+      { id: "notification_001_blackbox_meta", text: "ANALYST MODEL: RESISTS RECOMMENDED CLOSURE", priority: "system_anomaly" },
+    ],
+    endings: [
+      // Stage 1 placeholder — keeps the mid-case checkpoint resolvable.
+      { id: "ending_001_stage1", caseId: "case_001_missing_signal", title: "Stage 1 complete", body: {} },
+      // Ending A — Protected truth (docs/05 §5 outcome text verbatim).
+      {
+        id: "ending_001_protected_truth",
+        caseId: "case_001_missing_signal",
+        title: "Protected Truth",
+        body: {
+          sections: [
+            "MIO opens a limited review.",
+            "Maya remains protected.",
+            "Sera sends a cautious message of trust.",
+            "BLACKBOX records: 'analyst deviation within acceptable bounds.'",
+          ],
+        },
+      },
+      // Ending B — Official compliance (docs/05 §5 outcome text verbatim).
+      {
+        id: "ending_001_official_compliance",
+        caseId: "case_001_missing_signal",
+        title: "Official Compliance",
+        body: {
+          sections: [
+            "The case closes as a voluntary departure.",
+            "Reno Adikara is cleared.",
+            "A flood alert later appears from Node 7.",
+            "BLACKBOX congratulates the analyst for procedural consistency.",
+          ],
+        },
+      },
+      // Ending C — Public exposure (docs/05 §5 outcome text verbatim).
+      {
+        id: "ending_001_public_exposure",
+        caseId: "case_001_missing_signal",
+        title: "Public Exposure",
+        body: {
+          sections: [
+            "The suppression becomes public.",
+            "Maya's shelter is compromised.",
+            "Pelaga faces scrutiny.",
+            "Sera questions whether the exposure protected anyone.",
+          ],
+        },
+      },
+      // Ending D — Misidentified culprit (docs/05 §5 outcome text verbatim).
+      {
+        id: "ending_001_misidentified",
+        caseId: "case_001_missing_signal",
+        title: "Misidentified Culprit",
+        body: {
+          sections: [
+            "The accused person is investigated.",
+            "Reno retains control of the narrative.",
+            "A post-case contradiction demonstrates the error.",
+          ],
+        },
+      },
+      // Hidden meta epilogue (docs/05 §5) — isHiddenMeta, not a fifth primary
+      // ending. Reached via trigger_006_meta_flag (isolation discovered AND
+      // NOT forwarded → hidden system log after credits).
+      {
+        id: "ending_001_blackbox_meta",
+        caseId: "case_001_missing_signal",
+        title: "Analyst Model",
+        body: { sections: ["ANALYST MODEL: RESISTS RECOMMENDED CLOSURE"] },
+        isHiddenMeta: true,
+      },
+    ],
     puzzles: [
       {
         kind: "signal_comparison",
