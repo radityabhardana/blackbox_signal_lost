@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { CaseSessionProvider, useCaseSession } from "@/features/session/case-session";
 import { createRecordsTestSession } from "@/test/fixtures/records-content";
+import { renderWithProviders } from "@/test/helpers/render";
 import { RecordsApp } from "./records-app";
 
 type EngineEvent = { type: string; entityId?: string };
@@ -19,7 +20,7 @@ function Harness() {
 
 function renderRecords() {
   const fixture = createRecordsTestSession();
-  render(
+  renderWithProviders(
     <CaseSessionProvider
       content={fixture.content}
       mailChannelId={fixture.mailChannelId}

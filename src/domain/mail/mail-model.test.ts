@@ -69,12 +69,12 @@ describe("buildMailInbox", () => {
     });
   });
 
-  it("sender falls back to Unknown sender when character missing", () => {
+  it("sender falls back to null when character missing", () => {
     const state = withQueue(["dialogue_test"]);
     const noChar = { ...CONTENT, characters: [] };
     const inbox = buildMailInbox(baseInput({ state, content: noChar }));
     if (inbox.kind !== "ok") throw new Error("expected ok");
-    expect(inbox.rows[0]!.senderLabel).toBe("Unknown sender");
+    expect(inbox.rows[0]!.senderLabel).toBeNull();
   });
 
   it("read set controls isUnread", () => {
@@ -112,10 +112,20 @@ describe("attachment projection", () => {
     expect(plainAsset.hasTranscript).toBe(true);
   });
 
-  it("labels use altText when authored, otherwise type-based fallback", () => {
+  it("altText stays null when unauthored (component localizes the fallback)", () => {
     const inbox = buildMailInbox(input);
     if (inbox.kind !== "ok") throw new Error("expected ok");
-    expect(inbox.detail!.attachments.map((a) => a.label)).toEqual(["Image attachment 1", "Audio attachment 2"]);
+    expect(inbox.detail!.attachments.map((a) => a.altText)).toEqual([null, null]);
+  });
+
+  it("altText passes through verbatim when authored", () => {
+    const tagged = { ...CONTENT, assets: CONTENT.assets.map((a) => (a.id === "asset_test" ? { ...a, altText: "  Raw alt  " } : a)) };
+    const state = withQueue(["dialogue_test"]);
+    const detailInbox = buildMailInbox(
+      baseInput({ content: tagged, state, selectedNodeId: "dialogue_test" }),
+    );
+    if (detailInbox.kind !== "ok") throw new Error("expected ok");
+    expect(detailInbox.detail!.attachments[0]!.altText).toBe("Raw alt");
   });
 
   it("time stays null when unauthored", () => {

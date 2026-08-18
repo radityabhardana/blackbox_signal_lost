@@ -2,6 +2,14 @@
 
 import { useEffect, useRef } from "react";
 import type { RecordDetailViewModel } from "@/domain/records";
+import { useLocale, useT } from "@/lib/locale/provider";
+import {
+  metadataKeyLabel,
+  metadataValueLabel,
+  recordTypeLabel,
+  sourceSystemLabel,
+} from "@/lib/locale/content-labels";
+import { unknownSourceLabel } from "@/lib/locale/domain-labels";
 import { EvidenceVisual } from "@/components/evidence";
 import type { EvidenceVisualId } from "@/components/evidence";
 
@@ -20,6 +28,8 @@ const RECORD_VISUAL: Record<string, EvidenceVisualId> = {
 };
 
 export function RecordDetail({ detail }: { detail: RecordDetailViewModel | null }) {
+  const t = useT();
+  const locale = useLocale();
   const sectionRef = useRef<HTMLElement>(null);
   const openedRecordId = detail?.recordId;
 
@@ -31,8 +41,8 @@ export function RecordDetail({ detail }: { detail: RecordDetailViewModel | null 
 
   if (detail === null) {
     return (
-      <section aria-label="Record" className="border-t border-bbx-surface-2 px-4 py-6">
-        <p className="font-mono text-xs text-bbx-text-2">Select a record to read.</p>
+      <section aria-label={t("ui.records.detailRegion")} className="border-t border-bbx-surface-2 px-4 py-6">
+        <p className="font-mono text-xs text-bbx-text-2">{t("ui.records.selectPrompt")}</p>
       </section>
     );
   }
@@ -43,7 +53,7 @@ export function RecordDetail({ detail }: { detail: RecordDetailViewModel | null 
     <section
       ref={sectionRef}
       tabIndex={-1}
-      aria-label="Record"
+      aria-label={t("ui.records.detailRegion")}
       className="min-h-0 flex-1 overflow-y-auto border-t border-bbx-surface-2 px-4 py-4 focus-visible:outline-1 focus-visible:outline-bbx-accent"
     >
       {visualId !== undefined ? (
@@ -55,26 +65,28 @@ export function RecordDetail({ detail }: { detail: RecordDetailViewModel | null 
       <h3 className="text-base font-semibold text-bbx-text-1">{detail.title}</h3>
       <dl className="mt-3 space-y-3">
         <div>
-          <dt className="font-mono text-[0.625rem] uppercase tracking-widest text-bbx-text-2">Type</dt>
-          <dd className="mt-1 text-sm text-bbx-text-1">{detail.recordType}</dd>
+          <dt className="font-mono text-[0.625rem] uppercase tracking-widest text-bbx-text-2">{t("ui.records.type")}</dt>
+          <dd className="mt-1 text-sm text-bbx-text-1">{recordTypeLabel(locale, detail.recordType)}</dd>
         </div>
         <div>
-          <dt className="font-mono text-[0.625rem] uppercase tracking-widest text-bbx-text-2">Logged</dt>
+          <dt className="font-mono text-[0.625rem] uppercase tracking-widest text-bbx-text-2">{t("ui.records.logged")}</dt>
           <dd className="mt-1 font-mono text-xs text-bbx-text-2">{detail.createdAt}</dd>
         </div>
         {detail.revisedAt ? (
           <div>
-            <dt className="font-mono text-[0.625rem] uppercase tracking-widest text-bbx-text-2">Revised</dt>
+            <dt className="font-mono text-[0.625rem] uppercase tracking-widest text-bbx-text-2">{t("ui.records.revised")}</dt>
             <dd className="mt-1 font-mono text-xs text-bbx-text-2">{detail.revisedAt}</dd>
           </div>
         ) : null}
         <div>
-          <dt className="font-mono text-[0.625rem] uppercase tracking-widest text-bbx-text-2">Source</dt>
-          <dd className="mt-1 font-mono text-xs text-bbx-text-2">{detail.sourceLabel}</dd>
+          <dt className="font-mono text-[0.625rem] uppercase tracking-widest text-bbx-text-2">{t("ui.records.source")}</dt>
+          <dd className="mt-1 font-mono text-xs text-bbx-text-2">
+            {detail.sourceLabel !== null ? sourceSystemLabel(locale, detail.sourceLabel) : unknownSourceLabel(locale)}
+          </dd>
         </div>
         {detail.evidenceLabel ? (
           <div>
-            <dt className="font-mono text-[0.625rem] uppercase tracking-widest text-bbx-text-2">Evidence</dt>
+            <dt className="font-mono text-[0.625rem] uppercase tracking-widest text-bbx-text-2">{t("ui.records.evidence")}</dt>
             <dd className="mt-1 text-sm text-bbx-text-1">{detail.evidenceLabel}</dd>
           </div>
         ) : null}
@@ -82,7 +94,7 @@ export function RecordDetail({ detail }: { detail: RecordDetailViewModel | null 
 
       {detail.relatedLabels.length > 0 ? (
         <div className="mt-4">
-          <h4 className="font-mono text-[0.625rem] uppercase tracking-widest text-bbx-text-2">Related</h4>
+          <h4 className="font-mono text-[0.625rem] uppercase tracking-widest text-bbx-text-2">{t("ui.records.related")}</h4>
           <ul className="mt-2 flex flex-wrap gap-2">
             {detail.relatedLabels.map((related) => (
               <li
@@ -98,13 +110,13 @@ export function RecordDetail({ detail }: { detail: RecordDetailViewModel | null 
 
       {detail.metadata.length > 0 ? (
         <div className="mt-4">
-          <h4 className="font-mono text-[0.625rem] uppercase tracking-widest text-bbx-text-2">Metadata</h4>
+          <h4 className="font-mono text-[0.625rem] uppercase tracking-widest text-bbx-text-2">{t("ui.records.metadata")}</h4>
           <dl className="mt-2 space-y-2">
             {detail.metadata.map((entry) => (
               <div key={entry.key} className="flex justify-between gap-4">
-                <dt className="text-xs text-bbx-text-2">{entry.key}</dt>
+                <dt className="text-xs text-bbx-text-2">{metadataKeyLabel(locale, entry.key)}</dt>
                 <dd className="font-mono text-xs text-bbx-text-1">
-                  {entry.value === null ? "—" : String(entry.value)}
+                  {entry.value === null ? "—" : metadataValueLabel(locale, entry.key, entry.value)}
                 </dd>
               </div>
             ))}

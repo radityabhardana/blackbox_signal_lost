@@ -1,6 +1,8 @@
 "use client";
 
 import type { MailRowViewModel } from "@/domain/mail";
+import { unknownSenderLabel } from "@/lib/locale/domain-labels";
+import { useLocale, useT } from "@/lib/locale/provider";
 
 export function InboxList({
   rows,
@@ -11,8 +13,10 @@ export function InboxList({
   selectedNodeId: string | null;
   onSelect: (nodeId: string) => void;
 }) {
+  const locale = useLocale();
+  const t = useT();
   return (
-    <section aria-label="Inbox" className="min-h-0 flex-1 overflow-y-auto px-3 pb-2">
+    <section aria-label={t("ui.mail.inbox")} className="min-h-0 flex-1 overflow-y-auto px-3 pb-2">
       <ul className="flex flex-col gap-1">
         {rows.map((row, index) => {
           const selected = row.nodeId === selectedNodeId;
@@ -32,8 +36,9 @@ export function InboxList({
                     style={{ background: row.isUnread ? "var(--bbx-accent)" : "transparent" }}
                   />
                   <span className="truncate text-[0.6875rem] font-medium uppercase tracking-wider text-bbx-text-2">
-                    {row.isUnread ? "Unread · " : ""}
-                    {row.senderLabel}
+                    {row.isUnread
+                      ? t("ui.mail.unreadPrefix", { sender: row.senderLabel ?? unknownSenderLabel(locale) })
+                      : (row.senderLabel ?? unknownSenderLabel(locale))}
                   </span>
                 </span>
                 <span className="mt-1 block truncate text-sm text-bbx-text-1">{row.body}</span>

@@ -48,7 +48,7 @@ export function EvidenceBoardProvider({
   const boardRef = useRef(initialState);
   const initialBoardRef = useRef(initialBoard);
   const onBoardChangeRef = useRef(onBoardChange);
-  const sessionIdentityRef = useRef<{ caseId: string; content: NonNullable<typeof session>["content"] } | null>(null);
+  const sessionIdentityRef = useRef<{ caseId: string } | null>(null);
   const caseId = session?.content.case.id ?? null;
 
   useEffect(() => {
@@ -65,11 +65,14 @@ export function EvidenceBoardProvider({
 
   useEffect(() => {
     const previousIdentity = sessionIdentityRef.current;
-    const sessionChanged = session === null
+    // A same-case content-reference change (e.g. a live locale switch) is NOT a
+    // case change: the localized bundle carries identical ids/rules, so the board
+    // is reconciled below and player-authored positions/notes/edges are kept.
+    const caseChanged = session === null
       ? previousIdentity !== null
-      : previousIdentity === null || previousIdentity.caseId !== caseId || previousIdentity.content !== session.content;
-    if (sessionChanged) {
-      sessionIdentityRef.current = session === null ? null : { caseId: session.content.case.id, content: session.content };
+      : previousIdentity === null || previousIdentity.caseId !== caseId;
+    if (caseChanged) {
+      sessionIdentityRef.current = session === null ? null : { caseId: session.content.case.id };
       if (session === null) {
         const next = createInitialEvidenceBoardState();
         boardRef.current = next;

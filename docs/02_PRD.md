@@ -102,7 +102,7 @@ The product should let players:
 - Additional cases
 - Optional PWA installation
 - Case-authoring validation tools
-- Localization pipeline
+- Localization pipeline (delivered — see ADR-034)
 
 ### Explicitly out of scope
 

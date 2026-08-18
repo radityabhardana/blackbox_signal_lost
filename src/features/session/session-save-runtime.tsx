@@ -30,6 +30,8 @@ import type { CaseSessionCommit } from "./case-session";
 import { WorkspaceShell } from "@/components/desktop/workspace-shell";
 import { Taskbar } from "@/components/desktop/taskbar";
 import { LayoutPersistence } from "@/components/desktop/layout-persistence";
+import { useLocale, useT } from "@/lib/locale/provider";
+import { persistenceStatusLabel } from "@/lib/locale/domain-labels";
 
 export type HydrationStatus = "uninitialized" | "loading" | "ready" | "failed";
 export type PersistenceStatus = "idle" | "saving" | "saved" | "error";
@@ -563,6 +565,7 @@ export function SessionSaveRuntime({
   const [bootstrap, setBootstrap] = useState<SessionSaveBootstrap | null>(null);
   const [error, setError] = useState<unknown | null>(null);
   const [hydrationToken, setHydrationToken] = useState<SessionRuntimeToken | null>(null);
+  const t = useT();
 
   useEffect(() => {
     let cancelled = false;
@@ -610,11 +613,11 @@ export function SessionSaveRuntime({
       <div data-hydration-status={displayHydrationStatus} className="grid h-dvh place-items-center bg-bbx-bg-0 p-6">
         {displayHydrationStatus === "failed" ? (
           <p role="alert" className="font-mono text-xs uppercase tracking-widest text-bbx-text-2">
-            Save restore failed: {error instanceof Error ? error.message : "unknown error"}
+            {t("ui.persistence.restoreFailed", { message: error instanceof Error ? error.message : t("ui.persistence.unknownError") })}
           </p>
         ) : (
           <p role="status" aria-live="polite" className="font-mono text-xs uppercase tracking-widest text-bbx-text-2">
-            Loading saved session
+            {t("ui.persistence.loading")}
           </p>
         )}
       </div>
@@ -649,6 +652,8 @@ function HydratedSessionRuntime({
   readonly applicationVersion: string;
 }) {
   const [persistenceStatus, setPersistenceStatus] = useState<PersistenceStatus>("idle");
+  const t = useT();
+  const locale = useLocale();
   // BBX-082: checkpoint restore is a state swap, not a page reload. Bumping
   // sessionEpoch remounts the session providers from checkpointSeed; the
   // controller itself is stable (memoized on bootstrap) so its refs persist.
@@ -704,7 +709,9 @@ function HydratedSessionRuntime({
 
   return (
     <div data-hydration-status="ready" data-persistence-status={persistenceStatus} className="flex h-dvh flex-col overflow-hidden bg-bbx-bg-0">
-      <div role="status" aria-live="polite" className="sr-only">Persistence status: {persistenceStatus}</div>
+      <div role="status" aria-live="polite" className="sr-only">
+        {t("ui.persistence.statusPrefix", { status: persistenceStatusLabel(locale, persistenceStatus) })}
+      </div>
       <CaseSessionProvider
         key={sessionEpoch}
         content={content}

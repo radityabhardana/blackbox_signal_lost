@@ -1,8 +1,9 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
 import { resetWindowStoreForTests, useWindowStore } from "@/stores/window-store";
 import { WindowLayer } from "@/components/windows/window-layer";
+import { renderWithProviders } from "@/test/helpers/render";
 import { WindowSwitcher } from "./window-switcher";
 
 beforeEach(() => {
@@ -11,7 +12,7 @@ beforeEach(() => {
 
 describe("WindowSwitcher", () => {
   it("is disabled when no windows are open", () => {
-    render(<WindowSwitcher />);
+    renderWithProviders(<WindowSwitcher />);
     expect(screen.getByRole("button", { name: "Switch window" })).toBeDisabled();
   });
 
@@ -21,7 +22,7 @@ describe("WindowSwitcher", () => {
     store.open("app_records");
     store.minimize("win_0");
     const user = userEvent.setup();
-    render(<WindowSwitcher />);
+    renderWithProviders(<WindowSwitcher />);
     await user.click(screen.getByRole("button", { name: "Switch window" }));
     const items = screen.getAllByRole("menuitem");
     expect(items.map((item) => item.textContent)).toEqual(["Records"]);
@@ -31,7 +32,7 @@ describe("WindowSwitcher", () => {
   it("shows a glyph on the switch trigger while keeping its accessible name", () => {
     const store = useWindowStore.getState();
     store.open("app_mail");
-    render(<WindowSwitcher />);
+    renderWithProviders(<WindowSwitcher />);
     const trigger = screen.getByRole("button", { name: "Switch window" });
     expect(trigger.querySelector("svg[aria-hidden='true']")).not.toBeNull();
     expect(trigger).toHaveTextContent("Switch window");
@@ -42,7 +43,7 @@ describe("WindowSwitcher", () => {
     store.open("app_mail");
     store.open("app_records");
     const user = userEvent.setup();
-    render(
+    renderWithProviders(
       <div>
         <WindowLayer />
         <WindowSwitcher />
@@ -65,7 +66,7 @@ describe("WindowSwitcher", () => {
     store.open("app_mail");
     store.open("app_records");
     const user = userEvent.setup();
-    render(<WindowSwitcher />);
+    renderWithProviders(<WindowSwitcher />);
     const trigger = screen.getByRole("button", { name: "Switch window" });
     await user.click(trigger);
     await user.keyboard("{Escape}");

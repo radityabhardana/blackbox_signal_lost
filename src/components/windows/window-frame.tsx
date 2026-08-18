@@ -8,11 +8,13 @@ import { getApp } from "@/lib/apps";
 import { AppIcon } from "@/components/icons";
 import { registerWindowRegion, unregisterWindowRegion } from "@/lib/focus-registry";
 import { usePointerDrag } from "@/hooks/use-pointer-drag";
+import { useT } from "@/lib/locale/provider";
 import { WindowContent } from "./window-content";
 import { WindowControls } from "./window-controls";
 import { ResizeHandle } from "./resize-handle";
 
 export function WindowFrame({ window, focused }: { window: ManagedWindow; focused: boolean }) {
+  const t = useT();
   const frameRef = useRef<HTMLElement | null>(null);
   const dragStart = useRef<{ x: number; y: number } | null>(null);
   const focusWindow = useWindowStore((state) => state.focus);
@@ -43,7 +45,7 @@ export function WindowFrame({ window, focused }: { window: ManagedWindow; focuse
   });
 
   const app = getApp(window.appId);
-  const title = app?.title ?? window.appId;
+  const title = app?.titleKey !== undefined ? t(app.titleKey) : (app?.title ?? window.appId);
   const titleId = `win-title-${window.id}`;
 
   const style: CSSProperties = {

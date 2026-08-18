@@ -1,14 +1,15 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
 import { CaseSessionProvider, useCaseSession, useOptionalCaseSession } from "@/features/session/case-session";
 import { createNotificationTestSession } from "@/test/fixtures/notification-content";
+import { renderWithProviders } from "@/test/helpers/render";
 import { NotificationCenter } from "./notification-center";
 
 function renderCenter(initialState = createNotificationTestSession().initialState) {
   const session = createNotificationTestSession();
-  return render(
+  return renderWithProviders(
     <CaseSessionProvider
       content={session.content}
       mailChannelId="channel_test"
@@ -55,7 +56,7 @@ function readSessionState(): { notifications: string[]; eventHistory: unknown[] 
 describe("NotificationCenter without a session", () => {
   it("renders an enabled trigger and honest empty panel", async () => {
     const user = userEvent.setup();
-    render(<NotificationCenter />);
+    renderWithProviders(<NotificationCenter />);
 
     const trigger = screen.getByRole("button", { name: "Notification center" });
     expect(trigger).toBeEnabled();
@@ -102,7 +103,7 @@ describe("NotificationCenter with a session", () => {
   it("does not mutate authoritative notifications or history while reviewing the panel", async () => {
     const user = userEvent.setup();
     const session = createNotificationTestSession();
-    render(
+    renderWithProviders(
       <CaseSessionProvider content={session.content} mailChannelId="channel_test" initialState={session.initialState}>
         <NotificationCenter />
         <SessionStateProbe />
@@ -218,7 +219,7 @@ describe("NotificationCenter with a session", () => {
 
   it("keeps trigger focus when a real engine event adds a notification", async () => {
     const session = createNotificationTestSession();
-    render(
+    renderWithProviders(
       <CaseSessionProvider content={session.content} mailChannelId="channel_test" initialState={session.initialState}>
         <NotificationCenter />
         <NotificationArrivalControl />

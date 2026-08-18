@@ -1,9 +1,10 @@
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
 import { CaseSessionProvider, useOptionalCaseSession } from "@/features/session/case-session";
 import { createMailTestSession } from "@/test/fixtures/mail-content";
+import { renderWithProviders } from "@/test/helpers/render";
 import { createInitialEngineState, stepCaseEngine } from "@/domain/engine";
 import type { CaseEngineState } from "@/domain/engine";
 import type { ContentBundle } from "@/content/validator";
@@ -11,7 +12,7 @@ import { MailApp } from "./mail-app";
 
 function renderMail() {
   const { content, mailChannelId, initialState } = createMailTestSession();
-  return render(
+  return renderWithProviders(
     <CaseSessionProvider content={content} mailChannelId={mailChannelId} initialState={initialState}>
       <MailApp />
     </CaseSessionProvider>,
@@ -46,7 +47,7 @@ function renderTwoEvidenceMail(initialDiscovered: readonly string[]) {
   ).state;
   const initialState: CaseEngineState = { ...bootstrapped, discoveredEntityIds: [...initialDiscovered] };
 
-  return render(
+  return renderWithProviders(
     <CaseSessionProvider content={twoEvidenceContent} mailChannelId={mailChannelId} initialState={initialState}>
       <EngineStateProbe />
       <MailApp />
@@ -66,7 +67,7 @@ function discoveredInputIds(state: CaseEngineState): string[] {
 
 describe("MailApp no-session empty state", () => {
   it("renders No messages without a session", () => {
-    render(<MailApp />);
+    renderWithProviders(<MailApp />);
     expect(screen.getByRole("region", { name: "Secure Mail" })).toHaveTextContent("No messages");
   });
 });

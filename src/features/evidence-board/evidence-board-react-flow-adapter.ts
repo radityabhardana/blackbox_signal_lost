@@ -3,21 +3,36 @@ import { evidenceNodeId } from "@/domain/evidence-board";
 import type { EvidenceBoardState } from "@/domain/evidence-board";
 import type { ContentBundle } from "@/content/validator";
 
-export interface EvidenceFlowNodeData extends Record<string, unknown> {
-  readonly kind: "evidence" | "note";
+/**
+ * Evidence-flow node data carries raw content ids and authored prose only —
+ * display strings are resolved at the React boundary from the locale
+ * dictionary (see evidence-board-canvas.tsx BoardNode).
+ */
+export interface EvidenceFlowEvidenceNodeData extends Record<string, unknown> {
+  readonly kind: "evidence";
   readonly title: string;
-  readonly detail: string;
+  readonly summary: string;
+  /** Raw evidence type enum value for `evidenceTypeLabel` lookup. */
+  readonly evidenceType: string;
+  /** Raw source system/organization id; absent when the evidence has no source. */
   readonly source?: string;
-  readonly tags?: readonly string[];
-  /** Case evidence id — present on evidence nodes; note nodes have none. */
-  readonly evidenceId?: string;
+  readonly tags: readonly string[];
+  readonly evidenceId: string;
 }
+
+export interface EvidenceFlowNoteNodeData extends Record<string, unknown> {
+  readonly kind: "note";
+  readonly text: string;
+}
+
+export type EvidenceFlowNodeData = EvidenceFlowEvidenceNodeData | EvidenceFlowNoteNodeData;
 
 export function projectEvidenceBoardNodes(board: EvidenceBoardState, content: ContentBundle): Node<EvidenceFlowNodeData>[] {
   const evidenceById = new Map(content.evidence.map((evidence) => [evidence.id, evidence]));
   const evidenceNodes: Node<EvidenceFlowNodeData>[] = board.evidenceNodes.flatMap((node) => {
     const evidence = evidenceById.get(node.evidenceId);
     if (evidence === undefined) return [];
+    const source = evidence.source.system ?? evidence.source.organizationId;
     return [{
       id: evidenceNodeId(node.evidenceId),
       type: "evidence",
@@ -25,8 +40,9 @@ export function projectEvidenceBoardNodes(board: EvidenceBoardState, content: Co
       data: {
         kind: "evidence",
         title: evidence.title,
-        detail: `${evidence.type}: ${evidence.summary}`,
-        source: evidence.source.system ?? evidence.source.organizationId ?? "Unknown source",
+        summary: evidence.summary,
+        evidenceType: evidence.type,
+        ...(source !== undefined ? { source } : {}),
         tags: evidence.tags,
         evidenceId: evidence.id,
       },
@@ -36,7 +52,7 @@ export function projectEvidenceBoardNodes(board: EvidenceBoardState, content: Co
     id: node.id,
     type: "note",
     position: node.position,
-    data: { kind: "note", title: "Private note", detail: node.text },
+    data: { kind: "note", text: node.text },
   }));
   return [...evidenceNodes, ...noteNodes];
 }
@@ -46,7 +62,6 @@ export function projectEvidenceBoardEdges(board: EvidenceBoardState): Edge[] {
     id: edge.id,
     source: edge.sourceNodeId,
     target: edge.targetNodeId,
-    label: "Player hypothesis",
     type: "straight",
     deletable: false,
   }));

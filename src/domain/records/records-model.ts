@@ -19,7 +19,8 @@ export interface RecordDetailViewModel {
   readonly recordType: string;
   readonly createdAt: string;
   readonly revisedAt: string | null;
-  readonly sourceLabel: string;
+  /** Raw source system/organization id; null when the record has no source. */
+  readonly sourceLabel: string | null;
   readonly relatedLabels: readonly { entityId: string; label: string }[];
   readonly evidenceLabel: string | null;
   readonly metadata: readonly { key: string; value: string | number | boolean | null }[];
@@ -120,7 +121,7 @@ function buildDetail(
     recordType: record.recordType,
     createdAt: record.createdAt,
     revisedAt: record.revisedAt ?? null,
-    sourceLabel: record.source.system ?? record.source.organizationId ?? "Unknown source",
+    sourceLabel: record.source.system ?? record.source.organizationId ?? null,
     relatedLabels: record.relatedEntityIds.map((entityId) => ({
       entityId,
       // BBX-041 resolves related entities only against records.

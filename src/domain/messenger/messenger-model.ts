@@ -9,7 +9,8 @@ export interface MessengerChoiceViewModel {
 
 export interface MessengerMessageViewModel {
   readonly nodeId: string;
-  readonly senderLabel: string;
+  /** Character displayName; null when the speaker cannot be resolved (the component localizes the fallback). */
+  readonly senderLabel: string | null;
   readonly body: string;
   readonly time: string | null;
   readonly choices: readonly MessengerChoiceViewModel[];
@@ -56,7 +57,7 @@ export function buildMessengerView(input: MessengerViewModelInput): MessengerVie
 
     messages.push({
       nodeId: node.id,
-      senderLabel: characters.get(node.speakerId)?.displayName ?? "Unknown sender",
+      senderLabel: characters.get(node.speakerId)?.displayName ?? null,
       body: node.text,
       time: node.sentAtNarrativeTime ?? null,
       choices: (node.choices ?? []).map((choice: DialogueChoice) => ({

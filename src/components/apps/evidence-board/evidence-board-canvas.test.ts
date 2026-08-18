@@ -8,7 +8,14 @@ const node: Node<EvidenceFlowNodeData> = {
   id: "evidence:evidence_test",
   type: "evidence",
   position: { x: 48, y: 48 },
-  data: { kind: "evidence", title: "Evidence", detail: "Detail" },
+  data: {
+    kind: "evidence",
+    title: "Evidence",
+    summary: "Detail",
+    evidenceType: "document",
+    tags: [],
+    evidenceId: "evidence_test",
+  },
 };
 
 describe("EvidenceBoardCanvas helpers", () => {

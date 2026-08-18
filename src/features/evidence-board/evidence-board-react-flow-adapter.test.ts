@@ -11,4 +11,23 @@ describe("evidence board React Flow adapter", () => {
     expect(projectEvidenceBoardNodes(board, content)).toMatchObject([{ id: "evidence:evidence_test" }, { id: "note_0" }]);
     expect(board.noteNodes).toHaveLength(1);
   });
+
+  it("emits raw ids and authored prose only, never display strings", () => {
+    const content = contentBundleSchema.parse(bundleJson);
+    const board = syncDiscoveredEvidence(createInitialEvidenceBoardState(), content, ["evidence_test"]);
+    const [evidenceNode, noteNode] = projectEvidenceBoardNodes(
+      createEvidenceBoardNote(board, "Note", { x: 1, y: 2 }),
+      content,
+    );
+    expect(evidenceNode?.data).toEqual({
+      kind: "evidence",
+      title: "Test evidence",
+      summary: "Test evidence summary.",
+      evidenceType: "document",
+      source: "test",
+      tags: ["test"],
+      evidenceId: "evidence_test",
+    });
+    expect(noteNode?.data).toEqual({ kind: "note", text: "Note" });
+  });
 });

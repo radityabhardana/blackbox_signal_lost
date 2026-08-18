@@ -110,7 +110,7 @@ describe("EvidenceBoardProvider", () => {
     expect(screen.getByTestId("board-two")).toHaveTextContent('"position":{"x":111,"y":222}');
   });
 
-  it("resets when content identity changes for the same case id", () => {
+  it("preserves player board state when content identity changes for the same case id", () => {
     const fixture = createEvidenceBoardTestSession();
     const replacementContent = contentBundleSchema.parse({
       ...fixture.content,
@@ -121,9 +121,12 @@ describe("EvidenceBoardProvider", () => {
     fireEvent.click(screen.getByRole("button", { name: "Edge one" }));
     fireEvent.click(screen.getByRole("button", { name: "Move one" }));
     view.rerender(<CaseSessionProvider content={replacementContent} mailChannelId="channel_test" initialState={fixture.initialState}><EvidenceBoardProvider><Probe id="one" /></EvidenceBoardProvider></CaseSessionProvider>);
-    expect(screen.getByTestId("board-one")).toHaveTextContent('"noteNodes":[]');
-    expect(screen.getByTestId("board-one")).toHaveTextContent('"edges":[]');
-    expect(screen.getByTestId("board-one")).toHaveTextContent('"position":{"x":48,"y":48}');
+    // A same-case content-reference change (e.g. a live locale switch) carries
+    // identical ids/rules, so the board reconciles and keeps player-authored
+    // notes, edges, and positions instead of resetting.
+    expect(screen.getByTestId("board-one")).toHaveTextContent('"noteNodes":[{"id":"note_0"');
+    expect(screen.getByTestId("board-one")).toHaveTextContent('"edges":[{"id":"edge_0"');
+    expect(screen.getByTestId("board-one")).toHaveTextContent('"position":{"x":111,"y":222}');
   });
 
   it("applies only the last explicit move to a node while preserving unrelated board state", () => {

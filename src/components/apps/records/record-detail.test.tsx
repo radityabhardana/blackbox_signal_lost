@@ -1,6 +1,7 @@
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import type { RecordDetailViewModel } from "@/domain/records";
+import { renderWithProviders } from "@/test/helpers/render";
 import { RecordDetail } from "./record-detail";
 
 function makeDetail(overrides: Partial<RecordDetailViewModel>): RecordDetailViewModel {
@@ -20,7 +21,7 @@ function makeDetail(overrides: Partial<RecordDetailViewModel>): RecordDetailView
 
 describe("RecordDetail", () => {
   it("renders the decorative evidence visual for a mapped record", () => {
-    render(
+    renderWithProviders(
       <RecordDetail
         detail={makeDetail({ recordId: "rec_001_ferry_departure", title: "Ferry Departure Record" })}
       />,
@@ -31,14 +32,14 @@ describe("RecordDetail", () => {
   });
 
   it("renders no visual for an unmapped record", () => {
-    render(<RecordDetail detail={makeDetail({ recordId: "record_test" })} />);
+    renderWithProviders(<RecordDetail detail={makeDetail({ recordId: "record_test" })} />);
     const region = screen.getByRole("region", { name: "Record" });
     expect(region.querySelector("svg[aria-hidden='true']")).toBeNull();
     expect(screen.getByText("Test record")).toBeInTheDocument();
   });
 
   it("renders the empty prompt without a visual when no record is selected", () => {
-    render(<RecordDetail detail={null} />);
+    renderWithProviders(<RecordDetail detail={null} />);
     expect(screen.getByText(/select a record to read/i)).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Record" }).querySelector("svg")).toBeNull();
   });

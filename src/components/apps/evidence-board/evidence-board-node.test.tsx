@@ -1,7 +1,8 @@
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { Node, NodeProps, Position } from "@xyflow/react";
 import type { EvidenceFlowNodeData } from "@/features/evidence-board/evidence-board-react-flow-adapter";
+import { renderWithProviders } from "@/test/helpers/render";
 import { BoardNode } from "./evidence-board-canvas";
 
 vi.mock("@xyflow/react", async () => {
@@ -37,7 +38,8 @@ function boardNodeProps(
 const evidenceData: EvidenceFlowNodeData = {
   kind: "evidence",
   title: "Ferry Departure Record",
-  detail: "database_record: A transit event.",
+  summary: "A transit event.",
+  evidenceType: "database_record",
   source: "ferry_archive",
   tags: ["transit"],
   evidenceId: "ev_001_ferry_departure",
@@ -45,13 +47,13 @@ const evidenceData: EvidenceFlowNodeData = {
 
 describe("BoardNode evidence visual", () => {
   it("renders a thumbnail for an evidence node with a known evidence id", () => {
-    const { container } = render(<BoardNode {...boardNodeProps(evidenceData)} />);
+    const { container } = renderWithProviders(<BoardNode {...boardNodeProps(evidenceData)} />);
     expect(container.querySelector("svg[aria-hidden='true']")).not.toBeNull();
     expect(screen.getByText("Ferry Departure Record")).toBeInTheDocument();
   });
 
   it("renders no thumbnail for an evidence node with an unknown evidence id", () => {
-    const { container } = render(
+    const { container } = renderWithProviders(
       <BoardNode
         {...boardNodeProps({ ...evidenceData, evidenceId: "ev_999_unknown" })}
       />,
@@ -61,16 +63,37 @@ describe("BoardNode evidence visual", () => {
   });
 
   it("renders no thumbnail for a note node", () => {
-    const { container } = render(
+    const { container } = renderWithProviders(
       <BoardNode
         {...boardNodeProps({
           kind: "note",
-          title: "Private note",
-          detail: "A note.",
+          text: "A note.",
         })}
       />,
     );
     expect(container.querySelector("svg")).toBeNull();
     expect(screen.getByText("Private note")).toBeInTheDocument();
+    expect(screen.getByText("A note.")).toBeInTheDocument();
+  });
+});
+
+describe("BoardNode localization", () => {
+  it("localizes the evidence type label and source system", () => {
+    renderWithProviders(<BoardNode {...boardNodeProps(evidenceData)} />);
+    expect(screen.getByText("Database record: A transit event.")).toBeInTheDocument();
+    expect(screen.getByText("Ferry archive")).toBeInTheDocument();
+  });
+
+  it("shows the unknown-source label when the evidence has no source", () => {
+    const withoutSource: EvidenceFlowNodeData = {
+      kind: "evidence",
+      title: "Ferry Departure Record",
+      summary: "A transit event.",
+      evidenceType: "database_record",
+      tags: ["transit"],
+      evidenceId: "ev_001_ferry_departure",
+    };
+    renderWithProviders(<BoardNode {...boardNodeProps(withoutSource)} />);
+    expect(screen.getByText("Unknown source")).toBeInTheDocument();
   });
 });

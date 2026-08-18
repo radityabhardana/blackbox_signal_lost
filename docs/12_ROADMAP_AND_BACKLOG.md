@@ -272,6 +272,18 @@ BBX-100 remains PARTIAL: Stage 1 through Stage 6 production slices are implement
 | BBX-125 | P1 | Content playtest | Completion and comprehension |
 | BBX-130 | P0 | Release hardening | Full release checklist |
 
+### Localization
+
+The localization foundation is DONE (ADR-034): en (default/source of truth) + id locales with a persisted preference (`bbx.locale`), compile-enforced dictionary parity, presentation-only per-case overlays resolved at the session consumption boundary, `pnpm validate:i18n` overlay completeness checks, and live in-game switching without reload.
+
+| ID | Priority | Task | Acceptance summary |
+|---|---:|---|---|
+| BBX-131 | P2 | Mail and messenger fallback labels | Wire `unknownSenderLabel`/`unknownSourceLabel`/`attachmentLabel` into the mail and messenger apps; domain view models currently emit English "Unknown sender" |
+| BBX-132 | P2 | Evidence-board adapter strings | Localize "Unknown source" and `evidence.type` display strings in the evidence-board adapter |
+| BBX-133 | P2 | Persistence sr-only text | Localize the session-save-runtime persistence sr-only status text |
+| BBX-134 | P2 | Case title localization | Overlay support for `case.title` (currently canonical-only) |
+| BBX-135 | P1 | CI localization checks | Run `pnpm validate:i18n` and `pnpm build` in CI |
+
 ## 5. Vertical-slice critical path
 
 ```text

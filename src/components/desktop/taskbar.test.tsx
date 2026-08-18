@@ -1,7 +1,8 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
 import { resetWindowStoreForTests, useWindowStore } from "@/stores/window-store";
+import { renderWithProviders } from "@/test/helpers/render";
 import { Taskbar } from "./taskbar";
 
 beforeEach(() => {
@@ -10,7 +11,7 @@ beforeEach(() => {
 
 describe("Taskbar", () => {
   it("renders the launcher, switcher, notification center, and reset controls", () => {
-    render(<Taskbar />);
+    renderWithProviders(<Taskbar />);
     expect(screen.getByRole("navigation", { name: /application launcher/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Launcher" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Switch window" })).toBeDisabled();
@@ -20,7 +21,7 @@ describe("Taskbar", () => {
   });
 
   it("shows decorative glyphs beside the case label and reset button", () => {
-    render(<Taskbar />);
+    renderWithProviders(<Taskbar />);
     const caseLabel = screen.getByText(/case: none/i);
     expect(caseLabel.closest("span")?.parentElement?.querySelector("svg[aria-hidden='true']")).not.toBeNull();
     const reset = screen.getByRole("button", { name: "Reset workspace" });
@@ -30,7 +31,7 @@ describe("Taskbar", () => {
 
   it("renders an icon beside the title in an open app's taskbar tab", () => {
     useWindowStore.getState().open("app_mail");
-    render(<Taskbar />);
+    renderWithProviders(<Taskbar />);
     const tab = screen.getByRole("button", { name: "Mail window, focused" });
     expect(tab.querySelector("svg[aria-hidden='true']")).not.toBeNull();
     expect(tab).toHaveTextContent("Mail");
@@ -38,7 +39,7 @@ describe("Taskbar", () => {
 
   it("opens an application from the launcher and shows it in the taskbar", async () => {
     const user = userEvent.setup();
-    render(<Taskbar />);
+    renderWithProviders(<Taskbar />);
     await user.click(screen.getByRole("button", { name: "Launcher" }));
     await user.click(await screen.findByRole("menuitem", { name: "Mail" }));
     expect(screen.getByRole("button", { name: "Mail window, focused" })).toBeInTheDocument();
@@ -49,7 +50,7 @@ describe("Taskbar", () => {
     store.open("app_mail");
     store.minimize("win_0");
     const user = userEvent.setup();
-    render(<Taskbar />);
+    renderWithProviders(<Taskbar />);
     await user.click(screen.getByRole("button", { name: "Mail window, minimized" }));
     expect(useWindowStore.getState().manager.openWindows[0]?.display).toBe("normal");
     expect(useWindowStore.getState().manager.focusedWindowId).toBe("win_0");
@@ -60,7 +61,7 @@ describe("Taskbar", () => {
     store.open("app_mail");
     store.open("app_records");
     const user = userEvent.setup();
-    render(<Taskbar />);
+    renderWithProviders(<Taskbar />);
     await user.click(screen.getByRole("button", { name: "Mail window, open" }));
     expect(useWindowStore.getState().manager.focusedWindowId).toBe("win_0");
   });
@@ -69,7 +70,7 @@ describe("Taskbar", () => {
     const store = useWindowStore.getState();
     store.open("app_mail");
     store.toggleMaximize("win_0");
-    render(<Taskbar />);
+    renderWithProviders(<Taskbar />);
     fireEvent.click(screen.getByRole("button", { name: "Reset workspace" }));
     const state = useWindowStore.getState();
     expect(state.manager.openWindows[0]?.display).toBe("normal");

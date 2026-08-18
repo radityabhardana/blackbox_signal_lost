@@ -3,11 +3,13 @@
 import { useMemo, useState } from "react";
 import { useOptionalCaseSession } from "@/features/session/case-session";
 import { buildMailInbox } from "@/domain/mail";
+import { useT } from "@/lib/locale/provider";
 import { InboxList } from "./inbox-list";
 import { MessageDetail } from "./message-detail";
 
 export function MailApp() {
   const session = useOptionalCaseSession();
+  const t = useT();
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [readMessageIds, setReadMessageIds] = useState<ReadonlySet<string>>(() => new Set());
 
@@ -35,8 +37,8 @@ export function MailApp() {
 
   if (inbox.kind === "no-session" || inbox.kind === "empty") {
     return (
-      <div className="p-6" role="region" aria-label="Secure Mail">
-        <p className="font-mono text-xs uppercase tracking-widest text-bbx-text-2">No messages</p>
+      <div className="p-6" role="region" aria-label={t("ui.mail.region")}>
+        <p className="font-mono text-xs uppercase tracking-widest text-bbx-text-2">{t("ui.mail.empty")}</p>
       </div>
     );
   }
@@ -61,7 +63,7 @@ export function MailApp() {
   return (
     <div className="flex h-full min-h-0 flex-col">
       <header className="px-4 pt-3 pb-2">
-        <h2 className="font-mono text-xs uppercase tracking-widest text-bbx-text-1">Secure Mail</h2>
+        <h2 className="font-mono text-xs uppercase tracking-widest text-bbx-text-1">{t("ui.mail.region")}</h2>
       </header>
       <InboxList rows={inbox.rows} selectedNodeId={selectedNodeId} onSelect={selectMessage} />
       <MessageDetail detail={detail} session={session} />

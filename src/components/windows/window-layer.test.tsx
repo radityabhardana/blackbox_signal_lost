@@ -1,6 +1,7 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 import { resetWindowStoreForTests, useWindowStore } from "@/stores/window-store";
+import { renderWithProviders } from "@/test/helpers/render";
 import { WindowLayer } from "./window-layer";
 
 beforeEach(() => {
@@ -12,7 +13,7 @@ describe("WindowLayer", () => {
     const store = useWindowStore.getState();
     store.open("app_mail");
     store.open("app_records");
-    render(<WindowLayer />);
+    renderWithProviders(<WindowLayer />);
     const windows = screen.getAllByTestId(/^window-win_/);
     expect(windows).toHaveLength(2);
     expect(windows[0]).toHaveAttribute("data-testid", "window-win_0");
@@ -24,7 +25,7 @@ describe("WindowLayer", () => {
     store.open("app_mail");
     store.open("app_records");
     store.minimize("win_1");
-    render(<WindowLayer />);
+    renderWithProviders(<WindowLayer />);
     expect(screen.queryByTestId("window-win_1")).not.toBeInTheDocument();
     expect(screen.getByTestId("window-win_0")).toBeInTheDocument();
   });
@@ -33,7 +34,7 @@ describe("WindowLayer", () => {
     const store = useWindowStore.getState();
     store.open("app_mail");
     store.open("app_records");
-    render(<WindowLayer />);
+    renderWithProviders(<WindowLayer />);
     expect(screen.getByTestId("window-win_1")).toHaveClass("bbx-window-focused");
     expect(screen.getByTestId("window-win_0")).not.toHaveClass("bbx-window-focused");
   });
@@ -42,7 +43,7 @@ describe("WindowLayer", () => {
     const store = useWindowStore.getState();
     store.open("app_mail");
     store.open("app_records");
-    render(<WindowLayer />);
+    renderWithProviders(<WindowLayer />);
     fireEvent.pointerDown(screen.getByTestId("window-win_0"), { pointerId: 1, button: 0 });
     const state = useWindowStore.getState();
     expect(state.manager.focusedWindowId).toBe("win_0");

@@ -795,6 +795,44 @@ Decision:
 
 ---
 
+## ADR-034 — Localization foundation: en/id locales, compile-checked dictionaries, and presentation-only case overlays
+
+**Status:** Accepted
+
+**Decision:** The game UI is bilingual (English and Bahasa Indonesia). `en` is the default locale and the single source of truth for all authored strings; `id` is the only additional supported locale.
+
+- **Locale resolution and persistence.** The initial locale prefers the persisted preference (localStorage `bbx.locale`), then the browser languages (first `id*` match in `navigator.languages`), then the default. Storage access is guarded so SSR and privacy modes never throw; the provider mirrors the active locale to `document.documentElement.lang` and `data-locale`.
+- **Dictionaries with compile-enforced parity.** Both dictionaries are typed `Record<TranslationKey, string>` with `en.ts` as the source of truth (~236 keys); a missing entry is a compile error, and the runtime fallback returns the key itself as a dev-visible guard. `{placeholder}` interpolation never throws.
+- **Case content as presentation-only overlays.** Each case ships `i18n/index.ts` exporting `caseOverlays` keyed by canonical entity ids and carrying only presentation fields (titles, text, labels, prompts). `resolveLocalizedBundle` returns the canonical bundle unchanged (same reference) for `en` and a new overlaid bundle otherwise. Ids, rules, effects, priorities, and flags are never overlaid and the input bundle is never mutated, so progression and saves stay locale-independent. Localized search `exactTerms`/`aliases` are APPENDED after the canonical English terms, keeping authored search deterministic and additive.
+- **Resolution at the React consumption boundary.** `CaseSessionProvider` resolves the overlay in a `useMemo` keyed on content and locale; `config.content` remains the canonical English bundle for persistence and engine truth, and a ref mirror keeps the stable dispatch closures stepping against the current locale's bundle.
+- **Chrome localization.** `APP_CATALOG` entries carry a `titleKey` consumed through `useT()`; pure label helpers (`src/lib/locale/domain-labels.ts`, `content-labels.ts`) keep domain-facing labels React-free, and unknown content enum values fall back to the raw value.
+- **Overlay validator.** `pnpm validate:i18n` cross-checks every case overlay against the canonical en bundle: unsupported locales, unknown ids, missing entries or required presentation fields, and blank strings fail with exit code 1.
+- **Live switching.** The Settings app switches locale at runtime without a reload. The evidence-board provider keys case identity on `caseId` only, so a same-case content-reference change (a locale switch) reconciles instead of resetting and preserves player positions, notes, and edges.
+
+**Context:** docs/02 lists "Localization pipeline" as a post-vertical-slice candidate; this ADR records its early delivery as a presentation-only layer with zero engine, rule, or save changes. No backlog item previously tracked the work.
+
+**Options considered:**
+
+- Runtime or machine-generated translation (rejected: all content must be authored and deterministic; runtime generative AI is prohibited).
+- Fully duplicated per-locale content bundles (rejected: doubles the authoring and validation surface and risks progression drift; overlays keep ids and rules single-sourced).
+- Applying overlays at content load or persistence time (rejected: persisted saves must remain canonical English and locale-independent).
+- Locale state in the zustand UI store (rejected: React context is sufficient; no window/layout interaction requires shared store state).
+
+**Rationale:**
+
+- Compile-enforced dictionary parity plus the overlay validator extend the project's validated-content discipline (BBX-020/BBX-024) to localization: missing translations fail the build, not the player.
+- Resolving at the consumption boundary keeps the engine, rules, search semantics (ADR-016), and SaveGame V2 untouched; canonical English stays the persisted value.
+- Pure label helpers preserve the architecture boundary that domain modules must not import React.
+
+**Consequences:**
+
+- Saves, engine state, and progression are fully locale-independent; no SaveGame schema change was required.
+- New cases must ship an `i18n/index.ts` overlay and register an en-bundle loader in `scripts/validate-i18n.ts`.
+- Known remaining gaps are tracked as backlog follow-ups (BBX-131 through BBX-135): mail/messenger fallback labels, evidence-board adapter strings, persistence sr-only text, `case.title` overlay support, and CI wiring.
+- docs/02's post-vertical-slice "Localization pipeline" entry is now partially delivered ahead of schedule; the PRD text remains unreconciled.
+
+---
+
 ## Proposed-decision template
 
 ```text

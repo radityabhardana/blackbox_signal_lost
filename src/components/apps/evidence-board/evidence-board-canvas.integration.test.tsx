@@ -1,4 +1,4 @@
-import { act, render, screen } from "@testing-library/react";
+import { act, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { Node, NodeChange, OnNodeDrag } from "@xyflow/react";
 import type { ReactNode } from "react";
@@ -6,6 +6,7 @@ import { CaseSessionProvider } from "@/features/session/case-session";
 import { EvidenceBoardProvider, useEvidenceBoard } from "@/features/evidence-board/evidence-board-provider";
 import type { EvidenceFlowNodeData } from "@/features/evidence-board/evidence-board-react-flow-adapter";
 import { createEvidenceBoardTestSession } from "@/test/fixtures/evidence-board-content";
+import { renderWithProviders } from "@/test/helpers/render";
 import { EvidenceBoardCanvas } from "./evidence-board-canvas";
 
 interface CapturedFlowProps {
@@ -39,7 +40,7 @@ function BoardState() {
 describe("EvidenceBoardCanvas provider integration", () => {
   it("keeps movement transient until one drag-stop commit and reprojects the committed position", () => {
     const fixture = createEvidenceBoardTestSession();
-    render(<CaseSessionProvider content={fixture.content} mailChannelId="channel_test" initialState={fixture.initialState}><EvidenceBoardProvider><EvidenceBoardCanvas onSelectNode={() => {}} onSelectEdge={() => {}} onReady={() => {}} /><BoardState /></EvidenceBoardProvider></CaseSessionProvider>);
+    renderWithProviders(<CaseSessionProvider content={fixture.content} mailChannelId="channel_test" initialState={fixture.initialState}><EvidenceBoardProvider><EvidenceBoardCanvas onSelectNode={() => {}} onSelectEdge={() => {}} onReady={() => {}} /><BoardState /></EvidenceBoardProvider></CaseSessionProvider>);
     const before = screen.getByTestId("board-state");
     expect(before).toHaveTextContent('"position":{"x":48,"y":48}');
     const initialFlow = captured!;

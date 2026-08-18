@@ -2,12 +2,14 @@
 
 import type { CaseSession } from "@/features/session/case-session";
 import { isEvidenceDiscovered, type AttachmentViewModel } from "@/domain/mail";
+import { unknownSenderLabel } from "@/lib/locale/domain-labels";
+import { useLocale, useT } from "@/lib/locale/provider";
 import { AttachmentRow } from "./attachment-row";
 
 export interface MailDetailProps {
   detail: {
     readonly nodeId: string;
-    readonly senderLabel: string;
+    readonly senderLabel: string | null;
     readonly body: string;
     readonly time: string | null;
     readonly attachments: readonly AttachmentViewModel[];
@@ -17,10 +19,12 @@ export interface MailDetailProps {
 }
 
 export function MessageDetail({ detail, session }: MailDetailProps) {
+  const locale = useLocale();
+  const t = useT();
   if (detail === null || session === null) {
     return (
-      <section aria-label="Message" className="border-t border-bbx-surface-2 px-4 py-6">
-        <p className="font-mono text-xs text-bbx-text-2">Select a message to read.</p>
+      <section aria-label={t("ui.mail.messageRegion")} className="border-t border-bbx-surface-2 px-4 py-6">
+        <p className="font-mono text-xs text-bbx-text-2">{t("ui.mail.selectPrompt")}</p>
       </section>
     );
   }
@@ -40,27 +44,27 @@ export function MessageDetail({ detail, session }: MailDetailProps) {
   };
 
   return (
-    <section aria-label="Message" className="min-h-0 flex-1 overflow-y-auto border-t border-bbx-surface-2 px-4 py-4">
+    <section aria-label={t("ui.mail.messageRegion")} className="min-h-0 flex-1 overflow-y-auto border-t border-bbx-surface-2 px-4 py-4">
       <dl className="space-y-3">
         <div>
-          <dt className="font-mono text-[0.625rem] uppercase tracking-widest text-bbx-text-2">From</dt>
-          <dd className="mt-1 text-sm text-bbx-text-1">{detail.senderLabel}</dd>
+          <dt className="font-mono text-[0.625rem] uppercase tracking-widest text-bbx-text-2">{t("ui.mail.from")}</dt>
+          <dd className="mt-1 text-sm text-bbx-text-1">{detail.senderLabel ?? unknownSenderLabel(locale)}</dd>
         </div>
         {detail.time ? (
           <div>
-            <dt className="font-mono text-[0.625rem] uppercase tracking-widest text-bbx-text-2">Logged</dt>
+            <dt className="font-mono text-[0.625rem] uppercase tracking-widest text-bbx-text-2">{t("ui.mail.logged")}</dt>
             <dd className="mt-1 font-mono text-xs text-bbx-text-2">{detail.time}</dd>
           </div>
         ) : null}
         <div>
-          <dt className="font-mono text-[0.625rem] uppercase tracking-widest text-bbx-text-2">Message</dt>
+          <dt className="font-mono text-[0.625rem] uppercase tracking-widest text-bbx-text-2">{t("ui.mail.message")}</dt>
           <dd className="mt-1 text-sm leading-6 text-bbx-text-1">{detail.body}</dd>
         </div>
       </dl>
 
       {detail.attachments.length > 0 ? (
         <div className="mt-4">
-          <h3 className="font-mono text-[0.625rem] uppercase tracking-widest text-bbx-text-2">Attachments</h3>
+          <h3 className="font-mono text-[0.625rem] uppercase tracking-widest text-bbx-text-2">{t("ui.mail.attachments")}</h3>
           <ul className="mt-2 flex flex-col gap-2">
             {detail.attachments.map((attachment, index) => (
               <AttachmentRow
@@ -78,7 +82,7 @@ export function MessageDetail({ detail, session }: MailDetailProps) {
 
       {detail.choices.length > 0 ? (
         <div className="mt-4">
-          <h3 className="sr-only">Replies</h3>
+          <h3 className="sr-only">{t("ui.mail.replies")}</h3>
           <ul className="flex flex-col gap-2">
             {detail.choices.map((choice) => (
               <li key={choice.choiceId}>

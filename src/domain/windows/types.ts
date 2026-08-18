@@ -1,3 +1,5 @@
+import type { TranslationKey } from "@/lib/locale/keys";
+
 export type AppIconId =
   | "mail"
   | "messenger"
@@ -7,7 +9,8 @@ export type AppIconId =
   | "signal_analyzer"
   | "conclusion"
   | "system_log"
-  | "notifications";
+  | "notifications"
+  | "settings";
 
 export const DEFAULT_WINDOW_WIDTH = 800;
 export const DEFAULT_WINDOW_HEIGHT = 600;
@@ -33,6 +36,8 @@ export type RestorableDisplay = "normal" | "maximized";
 export interface ApplicationDescriptor {
   appId: string;
   title: string;
+  /** Locale key for the player-visible app title; UI renders this when present. */
+  titleKey?: TranslationKey;
   minWidth?: number;
   minHeight?: number;
   /** When true, the launcher hides the app unless the case has unlocked it. */

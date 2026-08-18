@@ -1,6 +1,7 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 import { resetWindowStoreForTests, useWindowStore } from "@/stores/window-store";
+import { renderWithProviders } from "@/test/helpers/render";
 import { WindowFrame } from "./window-frame";
 
 function openWindow() {
@@ -15,7 +16,7 @@ beforeEach(() => {
 describe("WindowFrame", () => {
   it("renders the title and controls", () => {
     const window = openWindow();
-    render(<WindowFrame window={window} focused={true} />);
+    renderWithProviders(<WindowFrame window={window} focused={true} />);
     expect(screen.getByRole("heading", { name: "Mail" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Minimize Mail" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Maximize Mail" })).toBeInTheDocument();
@@ -24,14 +25,14 @@ describe("WindowFrame", () => {
 
   it("renders the app icon beside the window title", () => {
     const window = openWindow();
-    render(<WindowFrame window={window} focused={true} />);
+    renderWithProviders(<WindowFrame window={window} focused={true} />);
     const heading = screen.getByRole("heading", { name: "Mail" });
     expect(heading.parentElement?.querySelector("svg[aria-hidden='true']")).not.toBeNull();
   });
 
   it("renders svg glyphs in the window controls without unicode text", () => {
     const window = openWindow();
-    render(<WindowFrame window={window} focused={true} />);
+    renderWithProviders(<WindowFrame window={window} focused={true} />);
     for (const name of ["Minimize Mail", "Maximize Mail", "Close Mail"]) {
       const button = screen.getByRole("button", { name });
       expect(button.querySelector("svg[aria-hidden='true']")).not.toBeNull();
@@ -41,14 +42,14 @@ describe("WindowFrame", () => {
 
   it("minimizes the window from its control", () => {
     const window = openWindow();
-    render(<WindowFrame window={window} focused={true} />);
+    renderWithProviders(<WindowFrame window={window} focused={true} />);
     fireEvent.click(screen.getByRole("button", { name: "Minimize Mail" }));
     expect(useWindowStore.getState().manager.openWindows[0]?.display).toBe("minimized");
   });
 
   it("maximizes and restores from its control", () => {
     const window = openWindow();
-    const { rerender } = render(<WindowFrame window={window} focused={true} />);
+    const { rerender } = renderWithProviders(<WindowFrame window={window} focused={true} />);
     fireEvent.click(screen.getByRole("button", { name: "Maximize Mail" }));
     expect(useWindowStore.getState().manager.openWindows[0]?.display).toBe("maximized");
     const maximized = useWindowStore.getState().manager.openWindows[0]!;
@@ -59,21 +60,21 @@ describe("WindowFrame", () => {
 
   it("closes the window from its control", () => {
     const window = openWindow();
-    render(<WindowFrame window={window} focused={true} />);
+    renderWithProviders(<WindowFrame window={window} focused={true} />);
     fireEvent.click(screen.getByRole("button", { name: "Close Mail" }));
     expect(useWindowStore.getState().manager.openWindows).toHaveLength(0);
   });
 
   it("toggles maximize on title bar double click", () => {
     const window = openWindow();
-    render(<WindowFrame window={window} focused={true} />);
+    renderWithProviders(<WindowFrame window={window} focused={true} />);
     fireEvent.doubleClick(screen.getByRole("heading", { name: "Mail" }));
     expect(useWindowStore.getState().manager.openWindows[0]?.display).toBe("maximized");
   });
 
   it("moves the window while dragging the title bar", () => {
     const window = openWindow();
-    render(<WindowFrame window={window} focused={true} />);
+    renderWithProviders(<WindowFrame window={window} focused={true} />);
     const titleBar = screen.getByRole("heading", { name: "Mail" }).closest("header")!;
     fireEvent.pointerDown(titleBar, { pointerId: 1, button: 0, clientX: 10, clientY: 10 });
     fireEvent.pointerMove(titleBar, { pointerId: 1, clientX: 110, clientY: 60 });
@@ -84,7 +85,7 @@ describe("WindowFrame", () => {
 
   it("does not move an unchanged drag but raises the window", () => {
     const window = openWindow();
-    render(<WindowFrame window={window} focused={true} />);
+    renderWithProviders(<WindowFrame window={window} focused={true} />);
     const titleBar = screen.getByRole("heading", { name: "Mail" }).closest("header")!;
     const before = useWindowStore.getState().manager;
     fireEvent.pointerDown(titleBar, { pointerId: 1, button: 0, clientX: 10, clientY: 10 });
@@ -95,7 +96,7 @@ describe("WindowFrame", () => {
 
   it("stops moving the window after pointercancel", () => {
     const window = openWindow();
-    render(<WindowFrame window={window} focused={true} />);
+    renderWithProviders(<WindowFrame window={window} focused={true} />);
     const titleBar = screen.getByRole("heading", { name: "Mail" }).closest("header")!;
     fireEvent.pointerDown(titleBar, { pointerId: 1, button: 0, clientX: 10, clientY: 10 });
     fireEvent.pointerMove(titleBar, { pointerId: 1, clientX: 60, clientY: 40 });
@@ -109,7 +110,7 @@ describe("WindowFrame", () => {
 
   it("does not start a title-bar drag when a window control is pressed", () => {
     const window = openWindow();
-    render(<WindowFrame window={window} focused={true} />);
+    renderWithProviders(<WindowFrame window={window} focused={true} />);
     const minimize = screen.getByRole("button", { name: "Minimize Mail" });
     fireEvent.pointerDown(minimize, { pointerId: 1, button: 0, clientX: 5, clientY: 5 });
     fireEvent.pointerMove(minimize, { pointerId: 1, clientX: 55, clientY: 55 });

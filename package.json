@@ -13,7 +13,8 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "validate:content": "tsx scripts/validate-content.ts",
-    "validate:assets": "tsx scripts/validate-assets.ts"
+    "validate:assets": "tsx scripts/validate-assets.ts",
+    "validate:i18n": "tsx scripts/validate-i18n.ts"
   },
   "dependencies": {
     "@xyflow/react": "12.11.3",

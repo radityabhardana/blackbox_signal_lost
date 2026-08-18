@@ -5,6 +5,7 @@ import type { ManagedWindow } from "@/domain/windows";
 import { useWindowStore } from "@/stores/window-store";
 import { getApp } from "@/lib/apps";
 import { SystemGlyph } from "@/components/icons";
+import { useT } from "@/lib/locale/provider";
 import {
   focusLauncherButton,
   focusTaskbarItem,
@@ -12,11 +13,13 @@ import {
 } from "@/lib/focus-registry";
 
 export function WindowControls({ window }: { window: ManagedWindow }) {
+  const t = useT();
   const minimize = useWindowStore((state) => state.minimize);
   const close = useWindowStore((state) => state.close);
   const toggleMaximize = useWindowStore((state) => state.toggleMaximize);
 
-  const title = getApp(window.appId)?.title ?? window.appId;
+  const app = getApp(window.appId);
+  const title = app?.titleKey !== undefined ? t(app.titleKey) : (app?.title ?? window.appId);
   const isMaximized = window.display === "maximized";
 
   const handleMinimize = (): void => {
@@ -47,11 +50,11 @@ export function WindowControls({ window }: { window: ManagedWindow }) {
   };
 
   return (
-    <div role="group" aria-label={`${title} window controls`} className="flex items-center gap-1">
+    <div role="group" aria-label={t("ui.window.controlsGroup", { title })} className="flex items-center gap-1">
       <button
         type="button"
-        aria-label={`Minimize ${title}`}
-        title="Minimize"
+        aria-label={`${t("ui.window.minimize")} ${title}`}
+        title={t("ui.window.minimize")}
         className="bbx-window-control"
         onPointerDown={stopPointer}
         onDoubleClick={stopDoubleClick}
@@ -61,8 +64,8 @@ export function WindowControls({ window }: { window: ManagedWindow }) {
       </button>
       <button
         type="button"
-        aria-label={isMaximized ? `Restore ${title}` : `Maximize ${title}`}
-        title={isMaximized ? "Restore" : "Maximize"}
+        aria-label={`${isMaximized ? t("ui.window.restore") : t("ui.window.maximize")} ${title}`}
+        title={isMaximized ? t("ui.window.restore") : t("ui.window.maximize")}
         className="bbx-window-control"
         onPointerDown={stopPointer}
         onDoubleClick={stopDoubleClick}
@@ -72,8 +75,8 @@ export function WindowControls({ window }: { window: ManagedWindow }) {
       </button>
       <button
         type="button"
-        aria-label={`Close ${title}`}
-        title="Close"
+        aria-label={`${t("ui.window.close")} ${title}`}
+        title={t("ui.window.close")}
         className="bbx-window-control bbx-window-control-close"
         onPointerDown={stopPointer}
         onDoubleClick={stopDoubleClick}

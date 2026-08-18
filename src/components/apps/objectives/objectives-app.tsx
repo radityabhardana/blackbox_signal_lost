@@ -4,13 +4,15 @@ import { useMemo } from "react";
 import { useOptionalCaseSession } from "@/features/session/case-session";
 import { projectObjectives } from "@/domain/objectives/project-objectives";
 import type { ObjectiveProjection, ObjectiveStatus } from "@/domain/objectives/project-objectives";
-import { buildHintLadder, HINT_TIER_LABELS } from "@/domain/hints";
+import { buildHintLadder } from "@/domain/hints";
 import type { HintLadderState } from "@/domain/hints";
+import { useLocale, useT } from "@/lib/locale/provider";
+import { hintTierLabel } from "@/lib/locale/domain-labels";
 
-const STATUS_LABELS: Record<ObjectiveStatus, string> = {
-  active: "Active",
-  completed: "Completed",
-  locked: "Locked",
+const STATUS_LABEL_KEYS: Record<ObjectiveStatus, "ui.objectives.statusActive" | "ui.objectives.statusCompleted" | "ui.objectives.statusLocked"> = {
+  active: "ui.objectives.statusActive",
+  completed: "ui.objectives.statusCompleted",
+  locked: "ui.objectives.statusLocked",
 };
 
 interface HintLadderProps {
@@ -20,6 +22,8 @@ interface HintLadderProps {
 }
 
 function HintLadder({ objective, ladder, onReveal }: HintLadderProps) {
+  const t = useT();
+  const locale = useLocale();
   if (ladder === null || ladder.hasNoHints || objective.status === "locked") return null;
 
   const next = ladder.next;
@@ -32,18 +36,18 @@ function HintLadder({ objective, ladder, onReveal }: HintLadderProps) {
           className="rounded-sm border border-bbx-surface-2 px-2 py-1 font-mono text-[0.625rem] uppercase tracking-widest text-bbx-text-1 hover:bg-bbx-surface-2 focus-visible:outline-1 focus-visible:outline-bbx-accent"
           onClick={() => onReveal(next.id)}
         >
-          Hint ({ladder.nextLabel})
+          {t("ui.objectives.hintButton", { nextLabel: hintTierLabel(locale, next.tier) })}
         </button>
       ) : objective.status === "active" ? (
         <p className="font-mono text-[0.625rem] uppercase tracking-widest text-bbx-text-2">
-          All hints revealed
+          {t("ui.objectives.allRevealed")}
         </p>
       ) : null}
       {ladder.revealed.length > 0 ? (
         <ul className="space-y-1">
           {ladder.revealed.map((hint) => (
             <li key={hint.id} className="font-mono text-[0.625rem] leading-4 text-bbx-text-2">
-              [{HINT_TIER_LABELS[hint.tier]}] {hint.text}
+              [{hintTierLabel(locale, hint.tier)}] {hint.text}
             </li>
           ))}
         </ul>
@@ -53,6 +57,7 @@ function HintLadder({ objective, ladder, onReveal }: HintLadderProps) {
 }
 
 export function ObjectivesApp() {
+  const t = useT();
   const session = useOptionalCaseSession();
 
   const objectives = useMemo(() => {
@@ -85,19 +90,19 @@ export function ObjectivesApp() {
 
   if (objectives === null) {
     return (
-      <div className="p-6" role="region" aria-label="Objectives">
-        <p className="font-mono text-xs uppercase tracking-widest text-bbx-text-2">No objectives</p>
+      <div className="p-6" role="region" aria-label={t("ui.objectives.region")}>
+        <p className="font-mono text-xs uppercase tracking-widest text-bbx-text-2">{t("ui.objectives.empty")}</p>
       </div>
     );
   }
 
   return (
-    <section aria-label="Objectives" className="flex h-full min-h-0 flex-col">
+    <section aria-label={t("ui.objectives.region")} className="flex h-full min-h-0 flex-col">
       <header className="px-4 pt-3 pb-2">
-        <h2 className="font-mono text-xs uppercase tracking-widest text-bbx-text-1">Objectives</h2>
+        <h2 className="font-mono text-xs uppercase tracking-widest text-bbx-text-1">{t("ui.objectives.region")}</h2>
       </header>
       {objectives.length === 0 ? (
-        <p className="px-4 pb-3 font-mono text-xs text-bbx-text-2">No objectives yet.</p>
+        <p className="px-4 pb-3 font-mono text-xs text-bbx-text-2">{t("ui.objectives.emptyYet")}</p>
       ) : (
         <ul className="min-h-0 flex-1 space-y-2 overflow-y-auto px-4 pb-3">
           {objectives.map((objective) => (
@@ -108,8 +113,8 @@ export function ObjectivesApp() {
                 }`}
               >
                 <p className="font-mono text-[0.625rem] uppercase tracking-widest text-bbx-text-2">
-                  {STATUS_LABELS[objective.status]}
-                  {objective.optional ? " · Optional" : ""}
+                  {t(STATUS_LABEL_KEYS[objective.status])}
+                  {objective.optional ? t("ui.objectives.optionalSuffix") : ""}
                 </p>
                 <h3 className="mt-1 text-sm text-bbx-text-1">{objective.title}</h3>
                 <p className="mt-1 text-xs leading-5 text-bbx-text-2">{objective.description}</p>

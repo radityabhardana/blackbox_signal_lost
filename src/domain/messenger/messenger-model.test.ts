@@ -125,7 +125,7 @@ describe("buildMessengerView", () => {
     expect(view).toEqual({ kind: "empty" });
   });
 
-  it("falls back to Unknown sender when the speaker cannot be resolved", () => {
+  it("falls back to null senderLabel when the speaker cannot be resolved", () => {
     const view = buildMessengerView({
       content,
       state: withQueue(["dialogue_messenger_reply"]),
@@ -151,7 +151,7 @@ describe("buildMessengerView", () => {
 
     expect(fallbackView.kind).toBe("ok");
     if (fallbackView.kind !== "ok") return;
-    expect(fallbackView.messages[0]?.senderLabel).toBe("Unknown sender");
+    expect(fallbackView.messages[0]?.senderLabel).toBeNull();
   });
 
   it("marks a message resolved when any of its choices is selected", () => {

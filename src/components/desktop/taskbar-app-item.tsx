@@ -5,6 +5,8 @@ import type { ManagedWindow } from "@/domain/windows";
 import { useWindowStore } from "@/stores/window-store";
 import { getApp } from "@/lib/apps";
 import { AppIcon } from "@/components/icons";
+import { useLocale, useT } from "@/lib/locale/provider";
+import { windowStateLabel } from "@/lib/locale/domain-labels";
 import {
   focusWindowRegion,
   registerTaskbarItem,
@@ -12,6 +14,8 @@ import {
 } from "@/lib/focus-registry";
 
 export function TaskbarAppItem({ window }: { window: ManagedWindow }) {
+  const t = useT();
+  const locale = useLocale();
   const ref = useRef<HTMLButtonElement | null>(null);
   const focused = useWindowStore((state) => state.manager.focusedWindowId === window.id);
   const restore = useWindowStore((state) => state.restore);
@@ -27,10 +31,10 @@ export function TaskbarAppItem({ window }: { window: ManagedWindow }) {
   }, [window.id]);
 
   const app = getApp(window.appId);
-  const title = app?.title ?? window.appId;
+  const title = app?.titleKey !== undefined ? t(app.titleKey) : (app?.title ?? window.appId);
   const icon = app?.icon;
   const isMinimized = window.display === "minimized";
-  const stateLabel = isMinimized ? "minimized" : focused ? "focused" : "open";
+  const stateLabel = windowStateLabel(locale, isMinimized ? "minimized" : focused ? "focused" : "open");
 
   const handleClick = (): void => {
     if (isMinimized) {
@@ -46,7 +50,7 @@ export function TaskbarAppItem({ window }: { window: ManagedWindow }) {
     <button
       ref={ref}
       type="button"
-      aria-label={`${title} window, ${stateLabel}`}
+      aria-label={t("ui.taskbar.windowState", { title, state: stateLabel })}
       className={`bbx-taskbar-item${focused ? " bbx-taskbar-item-focused" : ""}${
         isMinimized ? " bbx-taskbar-item-minimized" : ""
       }`}

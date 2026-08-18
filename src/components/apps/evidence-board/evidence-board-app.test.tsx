@@ -1,10 +1,11 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { contentBundleSchema } from "@/content/validator";
 import { CaseSessionProvider } from "@/features/session/case-session";
 import { EvidenceBoardProvider } from "@/features/evidence-board/evidence-board-provider";
 import { createEvidenceBoardTestSession } from "@/test/fixtures/evidence-board-content";
+import { renderWithProviders } from "@/test/helpers/render";
 import { EvidenceBoardApp } from "./evidence-board-app";
 
 vi.mock("./evidence-board-canvas", () => ({
@@ -13,12 +14,12 @@ vi.mock("./evidence-board-canvas", () => ({
 
 function renderApp() {
   const fixture = createEvidenceBoardTestSession();
-  render(<CaseSessionProvider content={fixture.content} mailChannelId="channel_test" initialState={fixture.initialState}><EvidenceBoardProvider><EvidenceBoardApp /></EvidenceBoardProvider></CaseSessionProvider>);
+  renderWithProviders(<CaseSessionProvider content={fixture.content} mailChannelId="channel_test" initialState={fixture.initialState}><EvidenceBoardProvider><EvidenceBoardApp /></EvidenceBoardProvider></CaseSessionProvider>);
 }
 
 describe("EvidenceBoardApp", () => {
   it("renders the honest no-session state", () => {
-    render(<EvidenceBoardProvider><EvidenceBoardApp /></EvidenceBoardProvider>);
+    renderWithProviders(<EvidenceBoardProvider><EvidenceBoardApp /></EvidenceBoardProvider>);
     expect(screen.getByText("No active case")).toBeVisible();
   });
 
@@ -37,7 +38,7 @@ describe("EvidenceBoardApp", () => {
     const user = userEvent.setup();
     const fixture = createEvidenceBoardTestSession();
     const emptyState = { ...fixture.initialState, discoveredEntityIds: [] };
-    render(<CaseSessionProvider content={fixture.content} mailChannelId="channel_test" initialState={emptyState}><EvidenceBoardProvider><EvidenceBoardApp /></EvidenceBoardProvider></CaseSessionProvider>);
+    renderWithProviders(<CaseSessionProvider content={fixture.content} mailChannelId="channel_test" initialState={emptyState}><EvidenceBoardProvider><EvidenceBoardApp /></EvidenceBoardProvider></CaseSessionProvider>);
     await user.type(screen.getByLabelText("New private note"), "Early note");
     await user.click(screen.getByRole("button", { name: "Add private note" }));
     expect(screen.getByRole("button", { name: "Note: Early note" })).toBeVisible();
@@ -63,7 +64,7 @@ describe("EvidenceBoardApp", () => {
   it("clears a reconciled evidence selection before the same id reappears", async () => {
     const fixture = createEvidenceBoardTestSession();
     const withoutEvidence = contentBundleSchema.parse({ ...fixture.content, evidence: fixture.content.evidence.filter((evidence) => evidence.id !== "evidence_test") });
-    const view = render(<CaseSessionProvider content={fixture.content} mailChannelId="channel_test" initialState={fixture.initialState}><EvidenceBoardProvider><EvidenceBoardApp /></EvidenceBoardProvider></CaseSessionProvider>);
+    const view = renderWithProviders(<CaseSessionProvider content={fixture.content} mailChannelId="channel_test" initialState={fixture.initialState}><EvidenceBoardProvider><EvidenceBoardApp /></EvidenceBoardProvider></CaseSessionProvider>);
     await userEvent.click(screen.getByRole("button", { name: "Evidence: Test evidence" }));
     expect(screen.getByRole("region", { name: "Selected board node" })).toBeVisible();
     view.rerender(<CaseSessionProvider content={withoutEvidence} mailChannelId="channel_test" initialState={fixture.initialState}><EvidenceBoardProvider><EvidenceBoardApp /></EvidenceBoardProvider></CaseSessionProvider>);
@@ -76,7 +77,7 @@ describe("EvidenceBoardApp", () => {
   it("shares board edits while retaining selection independently in mounted app instances", async () => {
     const user = userEvent.setup();
     const fixture = createEvidenceBoardTestSession();
-    render(<CaseSessionProvider content={fixture.content} mailChannelId="channel_test" initialState={fixture.initialState}><EvidenceBoardProvider><EvidenceBoardApp /><EvidenceBoardApp /></EvidenceBoardProvider></CaseSessionProvider>);
+    renderWithProviders(<CaseSessionProvider content={fixture.content} mailChannelId="channel_test" initialState={fixture.initialState}><EvidenceBoardProvider><EvidenceBoardApp /><EvidenceBoardApp /></EvidenceBoardProvider></CaseSessionProvider>);
     const [appA, appB] = screen.getAllByRole("region", { name: "Evidence Board" });
     await user.type(within(appA!).getByLabelText("New private note"), "Shared note");
     await user.click(within(appA!).getByRole("button", { name: "Add private note" }));

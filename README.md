@@ -8,6 +8,7 @@ A browser-based detective game set inside a fictional civic-analysis operating s
 
 - Case 001 "Missing Signal" is playable end to end through stages 1–6: records search, evidence board, objectives, hint ladder, the Signal Analyzer puzzle, mid-case decisions, and a Conclusion Report with deterministic outcome evaluation (multiple endings, plus a pre-report checkpoint with retry).
 - Saves are local-first (IndexedDB, versioned SaveGame V2 schema). No account or cloud sync.
+- The UI is bilingual (English / Bahasa Indonesia) with an in-game language switcher; switching applies live without a reload and never affects progression or saves.
 - The presentation foundation is in production: original in-repo vector brand marks, app icons, system glyphs, evidence document visuals, and a desktop texture.
 - Character portraits, environment stills, and audio are planned and briefed but **not shipped** (see `docs/ART_PRODUCTION_BRIEF_CASE_001.md`).
 
@@ -42,6 +43,7 @@ pnpm typecheck         # tsc --noEmit (strict)
 pnpm test              # Vitest unit/component tests
 pnpm validate:content  # Zod-validate all case content files
 pnpm validate:assets   # Zod-validate the UI asset registry, SVG safety, and file existence
+pnpm validate:i18n     # check localization overlay completeness against the English bundle
 pnpm test:e2e          # Playwright end-to-end suite (builds and serves the app)
 pnpm build             # production build
 ```

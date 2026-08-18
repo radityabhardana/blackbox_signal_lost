@@ -1,5 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { renderWithProviders } from "@/test/helpers/render";
+import { LocaleProvider } from "@/lib/locale/provider";
 import { contentBundleSchema } from "@/content/validator";
 import type { ContentBundle } from "@/content/validator";
 import { createInitialEngineState, type CaseEngineState } from "@/domain/engine";
@@ -234,7 +236,7 @@ describe("session save runtime controller", () => {
     const { loads, repository } = makeLoadingRepository(undefined, (slotId) => {
       if (slotId === "slot_b") launcherVisibleWhenSlotBLoadStarted = screen.queryByRole("button", { name: "Launcher" }) !== null;
     });
-    const view = render(
+    const view = renderWithProviders(
       <SessionSaveRuntime
         content={fixture.content}
         mailChannelId="channel_test"
@@ -274,7 +276,7 @@ describe("session save runtime controller", () => {
     const fixture = createNotificationTestSession();
     const { loads, repository } = makeLoadingRepository();
     const { resources, databaseFactory } = makeDatabaseFactory();
-    const view = render(
+    const view = renderWithProviders(
       <SessionSaveRuntime
         content={fixture.content}
         mailChannelId="channel_test"
@@ -336,7 +338,7 @@ describe("session save runtime controller", () => {
     const fixture = createEvidenceBoardTestSession();
     const { loads, repository } = makeLoadingRepository();
     const { resources, databaseFactory } = makeDatabaseFactory();
-    const view = render(
+    const view = renderWithProviders(
       <SessionSaveRuntime
         content={fixture.content}
         mailChannelId="channel_test"
@@ -379,7 +381,7 @@ describe("session save runtime controller", () => {
     const fixture = createEvidenceBoardTestSession();
     let saveCount = 0;
     const { loads, repository } = makeLoadingRepository(async () => { saveCount += 1; });
-    const view = render(
+    const view = renderWithProviders(
       <SessionSaveRuntime
         content={fixture.content}
         mailChannelId="channel_test"
@@ -1525,5 +1527,45 @@ describe("session save runtime controller", () => {
     expect(savesB[0]!.slotId).toBe("slot_b");
     await controllerB.dispose();
     vi.useRealTimers();
+  });
+});
+
+describe("session save runtime persistence status announcement", () => {
+  it("announces the localized persistence status for screen readers", async () => {
+    const fixture = createEvidenceBoardTestSession();
+    const view = renderWithProviders(
+      <SessionSaveRuntime
+        content={fixture.content}
+        mailChannelId="channel_test"
+        initialState={fixture.initialState}
+        slotId="slot_a"
+        applicationVersion="0.1.0"
+        repository={makeRepository(async () => undefined)}
+      />,
+    );
+
+    await waitFor(() => expect(screen.getByRole("button", { name: "Launcher" })).toBeVisible());
+    expect(screen.getByRole("status")).toHaveTextContent("Persistence status: idle");
+    view.unmount();
+  });
+
+  it("announces the persistence status in Indonesian for the id locale", async () => {
+    const fixture = createEvidenceBoardTestSession();
+    const view = render(
+      <LocaleProvider initialLocale="id">
+        <SessionSaveRuntime
+          content={fixture.content}
+          mailChannelId="channel_test"
+          initialState={fixture.initialState}
+          slotId="slot_a"
+          applicationVersion="0.1.0"
+          repository={makeRepository(async () => undefined)}
+        />
+      </LocaleProvider>,
+    );
+
+    await waitFor(() => expect(screen.getByRole("button", { name: "Peluncur" })).toBeVisible());
+    expect(screen.getByRole("status")).toHaveTextContent("Status penyimpanan: siaga");
+    view.unmount();
   });
 });

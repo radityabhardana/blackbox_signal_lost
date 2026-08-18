@@ -6,10 +6,12 @@ import { useWindowStore } from "@/stores/window-store";
 import { getApp } from "@/lib/apps";
 import { AppIcon, SystemGlyph } from "@/components/icons";
 import { focusWindowRegion } from "@/lib/focus-registry";
+import { useT } from "@/lib/locale/provider";
 
 const PANEL_ID = "window-switcher-panel";
 
 export function WindowSwitcher() {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
@@ -78,14 +80,14 @@ export function WindowSwitcher() {
         onClick={() => setOpen((value) => !value)}
       >
         <SystemGlyph id="window_switcher" size={16} className="shrink-0" />
-        <span>Switch window</span>
+        <span>{t("ui.switcher.button")}</span>
       </button>
       {open ? (
         <div
           id={PANEL_ID}
           ref={panelRef}
           role="menu"
-          aria-label="Open windows"
+          aria-label={t("ui.switcher.menu")}
           className="absolute bottom-12 left-0 z-bbx-modal min-w-40 border border-bbx-surface-2 bg-bbx-surface-2 p-1"
           onKeyDown={handleKeyDown}
         >
@@ -104,7 +106,9 @@ export function WindowSwitcher() {
                 ) : (
                   <SystemGlyph id="discovery" size={16} className="shrink-0" />
                 )}
-                <span>{app?.title ?? window.appId}</span>
+                <span>
+                  {app?.titleKey !== undefined ? t(app.titleKey) : (app?.title ?? window.appId)}
+                </span>
               </button>
             );
           })}

@@ -5,11 +5,15 @@ import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import { buildNotificationHistory } from "@/domain/notifications";
 import { useOptionalCaseSession } from "@/features/session/case-session";
 import { SystemGlyph } from "@/components/icons";
+import { useLocale, useT } from "@/lib/locale/provider";
+import { notificationPriorityLabel } from "@/lib/locale/domain-labels";
 
 const PANEL_ID = "notification-center-panel";
 const HEADING_ID = "notification-center-heading";
 
 export function NotificationCenter() {
+  const t = useT();
+  const locale = useLocale();
   const session = useOptionalCaseSession();
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
@@ -51,7 +55,7 @@ export function NotificationCenter() {
         onClick={() => setOpen((value) => !value)}
       >
         <SystemGlyph id="bell" size={16} className="shrink-0" />
-        <span>Notification center</span>
+        <span>{t("ui.notifications.button")}</span>
       </button>
       {open ? (
         <section
@@ -61,11 +65,11 @@ export function NotificationCenter() {
           className="absolute right-0 bottom-12 z-bbx-modal w-80 border border-bbx-surface-2 bg-bbx-bg-1 p-3 shadow-lg"
         >
           <h2 id={HEADING_ID} className="font-mono text-xs uppercase tracking-widest text-bbx-text-1">
-            Notification center
+            {t("ui.notifications.heading")}
           </h2>
           {view.kind === "empty" ? (
             <p className="mt-3 font-mono text-xs uppercase tracking-widest text-bbx-text-2">
-              No notifications
+              {t("ui.notifications.empty")}
             </p>
           ) : (
             <ul className="mt-3 max-h-80 space-y-2 overflow-y-auto">
@@ -75,7 +79,7 @@ export function NotificationCenter() {
                   className="border-l-2 border-bbx-surface-2 bg-bbx-surface-1 px-3 py-2"
                 >
                   <p className="font-mono text-[0.625rem] uppercase tracking-widest text-bbx-text-2">
-                    {notification.priorityLabel}
+                    {notificationPriorityLabel(locale, notification.priority)}
                   </p>
                   <p className="mt-1 text-sm leading-5 text-bbx-text-1">{notification.text}</p>
                 </li>

@@ -4,10 +4,12 @@ import { useId, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { useOptionalCaseSession } from "@/features/session/case-session";
 import { buildRecordsModel } from "@/domain/records";
+import { useT } from "@/lib/locale/provider";
 import { RecordsList } from "./records-list";
 import { RecordDetail } from "./record-detail";
 
 export function RecordsApp() {
+  const t = useT();
   const session = useOptionalCaseSession();
   const searchInputId = useId();
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -51,14 +53,14 @@ export function RecordsApp() {
   return (
     <div className="flex h-full min-h-0 flex-col">
       <header className="flex items-center justify-between gap-2 px-4 pt-3 pb-2">
-        <h2 className="font-mono text-xs uppercase tracking-widest text-bbx-text-1">Records</h2>
+        <h2 className="font-mono text-xs uppercase tracking-widest text-bbx-text-1">{t("ui.records.heading")}</h2>
         {hasDetail ? (
           <button
             type="button"
             onClick={handleBack}
             className="rounded-sm border border-bbx-surface-2 px-2 py-1 font-mono text-[0.625rem] uppercase tracking-widest text-bbx-text-2 hover:bg-bbx-surface-2 focus-visible:outline-1 focus-visible:outline-bbx-accent"
           >
-            Back
+            {t("ui.records.back")}
           </button>
         ) : null}
       </header>
@@ -67,7 +69,7 @@ export function RecordsApp() {
           htmlFor={searchInputId}
           className="font-mono text-[0.625rem] uppercase tracking-widest text-bbx-text-2"
         >
-          Search records
+          {t("ui.records.searchLabel")}
         </label>
         <div className="mt-1 flex gap-2">
           <input
@@ -76,20 +78,20 @@ export function RecordsApp() {
             type="search"
             value={queryText}
             onChange={(event) => setQueryText(event.target.value)}
-            placeholder="Search records"
+            placeholder={t("ui.records.searchPlaceholder")}
             className="w-full min-w-0 rounded-sm border border-bbx-surface-2 bg-bbx-surface-0 px-3 py-2 text-sm text-bbx-text-1 outline-none focus:border-bbx-accent"
           />
           <button
             type="submit"
             className="shrink-0 rounded-sm border border-bbx-surface-2 px-3 py-2 font-mono text-[0.625rem] uppercase tracking-widest text-bbx-text-1 hover:bg-bbx-surface-2 focus-visible:outline-1 focus-visible:outline-bbx-accent"
           >
-            Search
+            {t("ui.records.search")}
           </button>
         </div>
       </form>
       {view.kind === "search-prompt" ? (
         <p className="px-4 pb-3 font-mono text-xs text-bbx-text-2">
-          Search the archive to find records.
+          {t("ui.records.searchPrompt")}
         </p>
       ) : (
         <>
@@ -100,7 +102,7 @@ export function RecordsApp() {
           />
           {view.rows.length === 0 ? (
             <p className="px-4 pb-3 font-mono text-xs text-bbx-text-2">
-              No records match your search.
+              {t("ui.records.noMatch")}
             </p>
           ) : null}
         </>

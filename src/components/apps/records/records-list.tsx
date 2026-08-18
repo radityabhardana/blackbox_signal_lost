@@ -1,6 +1,8 @@
 "use client";
 
 import type { RecordRowViewModel } from "@/domain/records";
+import { useLocale, useT } from "@/lib/locale/provider";
+import { recordTypeLabel } from "@/lib/locale/content-labels";
 
 export function RecordsList({
   rows,
@@ -11,8 +13,10 @@ export function RecordsList({
   selectedRecordId: string | null;
   onSelect: (recordId: string) => void;
 }) {
+  const t = useT();
+  const locale = useLocale();
   return (
-    <section aria-label="Records list" className="min-h-0 flex-1 overflow-y-auto px-3 pb-2">
+    <section aria-label={t("ui.records.listRegion")} className="min-h-0 flex-1 overflow-y-auto px-3 pb-2">
       <ul className="flex flex-col gap-1">
         {rows.map((row, index) =>
           row.available ? (
@@ -30,10 +34,12 @@ export function RecordsList({
                 ].join(" ")}
               >
                 <span className="block truncate text-sm text-bbx-text-1">
-                  {row.title ?? "Unavailable record"}
+                  {row.title ?? t("ui.records.unavailable")}
                 </span>
                 <span className="mt-1 block font-mono text-[0.625rem] uppercase tracking-wider text-bbx-text-2">
-                  {row.recordType} · {row.createdAt}
+                  {row.recordType !== null && row.createdAt !== null
+                    ? `${recordTypeLabel(locale, row.recordType)} · ${row.createdAt}`
+                    : null}
                 </span>
               </button>
             </li>
@@ -42,9 +48,9 @@ export function RecordsList({
               key={`${row.recordId}:${index}`}
               className="rounded-sm border border-dashed border-bbx-surface-2 px-3 py-2"
             >
-              <span className="block truncate text-sm text-bbx-text-2">Unavailable record</span>
+              <span className="block truncate text-sm text-bbx-text-2">{t("ui.records.unavailable")}</span>
               <span className="mt-1 block font-mono text-[0.625rem] uppercase tracking-wider text-bbx-text-2">
-                classified
+                {t("ui.records.classified")}
               </span>
             </li>
           ),

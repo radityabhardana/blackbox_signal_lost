@@ -3,9 +3,12 @@
 import { useMemo } from "react";
 import { useOptionalCaseSession } from "@/features/session/case-session";
 import { buildMessengerView, type MessengerMessageViewModel } from "@/domain/messenger";
+import { unknownSenderLabel } from "@/lib/locale/domain-labels";
+import { useLocale, useT } from "@/lib/locale/provider";
 
 export function MessengerApp() {
   const session = useOptionalCaseSession();
+  const t = useT();
 
   const view = useMemo(() => {
     if (session === null) return { kind: "no-session" as const };
@@ -18,8 +21,8 @@ export function MessengerApp() {
 
   if (view.kind === "no-session" || view.kind === "empty") {
     return (
-      <div className="p-6" role="region" aria-label="Messenger">
-        <p className="font-mono text-xs uppercase tracking-widest text-bbx-text-2">No messages</p>
+      <div className="p-6" role="region" aria-label={t("ui.messenger.region")}>
+        <p className="font-mono text-xs uppercase tracking-widest text-bbx-text-2">{t("ui.messenger.empty")}</p>
       </div>
     );
   }
@@ -27,7 +30,7 @@ export function MessengerApp() {
   return (
     <div className="flex h-full min-h-0 flex-col">
       <header className="px-4 pt-3 pb-2">
-        <h2 className="font-mono text-xs uppercase tracking-widest text-bbx-text-1">Messenger</h2>
+        <h2 className="font-mono text-xs uppercase tracking-widest text-bbx-text-1">{t("ui.messenger.region")}</h2>
       </header>
       <ul className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 pb-4">
         {view.messages.map((message, occurrence) => (
@@ -44,12 +47,13 @@ interface MessengerMessageProps {
 
 function MessengerMessage({ message }: MessengerMessageProps) {
   const session = useOptionalCaseSession();
+  const locale = useLocale();
 
   return (
     <li className="rounded-sm border border-bbx-surface-2 px-3 py-2">
       <div className="flex items-baseline justify-between gap-2">
         <span className="font-mono text-[0.625rem] uppercase tracking-widest text-bbx-text-2">
-          {message.senderLabel}
+          {message.senderLabel ?? unknownSenderLabel(locale)}
         </span>
         {message.time ? (
           <time className="font-mono text-[0.625rem] text-bbx-text-2">{message.time}</time>

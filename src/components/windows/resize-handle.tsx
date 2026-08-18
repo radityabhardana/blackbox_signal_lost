@@ -5,14 +5,17 @@ import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import type { ManagedWindow } from "@/domain/windows";
 import { useWindowStore } from "@/stores/window-store";
 import { getApp } from "@/lib/apps";
+import { useT } from "@/lib/locale/provider";
 import { usePointerDrag } from "@/hooks/use-pointer-drag";
 
 const RESIZE_KEYBOARD_STEP = 16;
 
 export function ResizeHandle({ window }: { window: ManagedWindow }) {
+  const t = useT();
   const resize = useWindowStore((state) => state.resize);
   const startSize = useRef<{ width: number; height: number } | null>(null);
-  const title = getApp(window.appId)?.title ?? window.appId;
+  const app = getApp(window.appId);
+  const title = app?.titleKey !== undefined ? t(app.titleKey) : (app?.title ?? window.appId);
 
   const drag = usePointerDrag({
     enabled: true,
@@ -47,7 +50,7 @@ export function ResizeHandle({ window }: { window: ManagedWindow }) {
   return (
     <div
       role="button"
-      aria-label={`Resize ${title}`}
+      aria-label={t("ui.window.resize", { title })}
       tabIndex={0}
       className="bbx-resize-handle"
       {...drag}

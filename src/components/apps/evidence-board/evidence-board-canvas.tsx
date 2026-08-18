@@ -7,6 +7,9 @@ import { projectEvidenceBoardEdges, projectEvidenceBoardNodes } from "@/features
 import { useEvidenceBoard } from "@/features/evidence-board/evidence-board-provider";
 import { useOptionalCaseSession } from "@/features/session/case-session";
 import type { EvidenceFlowNodeData } from "@/features/evidence-board/evidence-board-react-flow-adapter";
+import { useLocale, useT } from "@/lib/locale/provider";
+import { evidenceTypeLabel, sourceSystemLabel } from "@/lib/locale/content-labels";
+import { unknownSourceLabel } from "@/lib/locale/domain-labels";
 import { EvidenceVisual, EVIDENCE_VISUAL_IDS } from "@/components/evidence";
 import type { EvidenceVisualId } from "@/components/evidence";
 
@@ -15,18 +18,29 @@ function isEvidenceVisualId(value: string): value is EvidenceVisualId {
 }
 
 export function BoardNode({ data }: NodeProps<Node<EvidenceFlowNodeData>>) {
+  const locale = useLocale();
+  const t = useT();
   return (
     <article className={`bbx-evidence-node bbx-evidence-node-${data.kind}`}>
       <Handle type="target" position={Position.Left} />
-      {data.kind === "evidence" && data.evidenceId !== undefined && isEvidenceVisualId(data.evidenceId) ? (
-        <EvidenceVisual
-          evidenceId={data.evidenceId}
-          className="mb-1 h-6 w-6 text-bbx-text-2"
-        />
-      ) : null}
-      <strong>{data.title}</strong>
-      <p>{data.detail}</p>
-      {data.source ? <small>{data.source}</small> : null}
+      {data.kind === "evidence" ? (
+        <>
+          {isEvidenceVisualId(data.evidenceId) ? (
+            <EvidenceVisual
+              evidenceId={data.evidenceId}
+              className="mb-1 h-6 w-6 text-bbx-text-2"
+            />
+          ) : null}
+          <strong>{data.title}</strong>
+          <p>{`${evidenceTypeLabel(locale, data.evidenceType)}: ${data.summary}`}</p>
+          <small>{data.source !== undefined ? sourceSystemLabel(locale, data.source) : unknownSourceLabel(locale)}</small>
+        </>
+      ) : (
+        <>
+          <strong>{t("ui.board.noteNodeTitle")}</strong>
+          <p>{data.text}</p>
+        </>
+      )}
       <Handle type="source" position={Position.Right} />
     </article>
   );
@@ -78,8 +92,9 @@ export function EvidenceBoardCanvas({ onSelectNode, onSelectEdge, onReady }: Pro
   const { board, createEdge, moveNode } = useEvidenceBoard();
   const wrapperRef = useRef<HTMLDivElement>(null);
   const { screenToFlowPosition, getViewport } = useReactFlow();
+  const t = useT();
   const canonicalNodes = useMemo(() => session === null ? [] : projectEvidenceBoardNodes(board, session.content), [board, session]);
-  const edges = useMemo(() => projectEvidenceBoardEdges(board), [board]);
+  const edges = useMemo(() => projectEvidenceBoardEdges(board).map((edge) => ({ ...edge, label: t("ui.board.edgeLabel") })), [board, t]);
   const [nodes, setNodes] = useState(canonicalNodes);
   const draggingRef = useRef(false);
 

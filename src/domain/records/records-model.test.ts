@@ -227,7 +227,7 @@ describe("buildRecordsModel detail", () => {
       noOrganization,
     );
     if (unknown.kind !== "ok" || unknown.detail === null) throw new Error("expected detail");
-    expect(unknown.detail.sourceLabel).toBe("Unknown source");
+    expect(unknown.detail.sourceLabel).toBeNull();
   });
 });
 

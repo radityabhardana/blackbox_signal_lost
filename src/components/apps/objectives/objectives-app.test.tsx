@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
@@ -9,12 +9,13 @@ import { contentBundleSchema } from "@/content/validator";
 import type { ContentBundle } from "@/content/validator";
 import type { HintDefinition, ObjectiveDefinition } from "@/content/schemas";
 import bundleJson from "@/content/fixtures/bundles/valid/bundle_basic_valid.json";
+import { renderWithProviders } from "@/test/helpers/render";
 import { ObjectivesApp } from "./objectives-app";
 
 function renderWithSession(initialStateOverrides: Partial<CaseEngineState> = {}) {
   const content = contentBundleSchema.parse(bundleJson);
   const initialState = { ...createInitialEngineState(), ...initialStateOverrides };
-  return render(
+  return renderWithProviders(
     <CaseSessionProvider content={content} mailChannelId="channel_test" initialState={initialState}>
       <ObjectivesApp />
     </CaseSessionProvider>,
@@ -28,7 +29,7 @@ function renderWithObjectives(extraObjectives: readonly ObjectiveDefinition[]) {
     case: { ...baseContent.case, objectives: [...baseContent.case.objectives, ...extraObjectives] },
   };
   const initialState = { ...createInitialEngineState(), activeObjectives: ["objective_optional"] };
-  return render(
+  return renderWithProviders(
     <CaseSessionProvider content={content} mailChannelId="channel_test" initialState={initialState}>
       <ObjectivesApp />
     </CaseSessionProvider>,
@@ -37,7 +38,7 @@ function renderWithObjectives(extraObjectives: readonly ObjectiveDefinition[]) {
 
 describe("ObjectivesApp no-session empty state", () => {
   it("renders No objectives without a session", () => {
-    render(<ObjectivesApp />);
+    renderWithProviders(<ObjectivesApp />);
     expect(screen.getByRole("region", { name: "Objectives" })).toHaveTextContent("No objectives");
   });
 });
@@ -136,7 +137,7 @@ function renderHintLadder(options: {
     activeObjectives: [HINT_OBJECTIVE_ID],
     ...options.initialStateOverrides,
   };
-  return render(
+  return renderWithProviders(
     <CaseSessionProvider content={content} mailChannelId="channel_test" initialState={initialState}>
       {options.withProbe ? <EngineStateProbe /> : null}
       <ObjectivesApp />

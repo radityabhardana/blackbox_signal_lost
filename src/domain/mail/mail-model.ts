@@ -15,7 +15,8 @@ type Evidence = EvidenceDefinition;
 export interface AttachmentViewModel {
   readonly assetId: string;
   readonly assetType: Asset["type"];
-  readonly label: string;
+  /** Raw authored alt text; null when unauthored (the component localizes the fallback label). */
+  readonly altText: string | null;
   readonly hasTranscript: boolean;
   readonly evidenceIds: readonly string[];
 }
@@ -27,7 +28,8 @@ export interface ChoiceViewModel {
 
 export interface MailRowViewModel {
   readonly nodeId: string;
-  readonly senderLabel: string;
+  /** Character displayName; null when the speaker cannot be resolved (the component localizes the fallback). */
+  readonly senderLabel: string | null;
   readonly body: string;
   readonly time: string | null;
   readonly isUnread: boolean;
@@ -95,7 +97,7 @@ function toRow(
 ): MailRowViewModel {
   return {
     nodeId: node.id,
-    senderLabel: sender?.displayName ?? "Unknown sender",
+    senderLabel: sender?.displayName ?? null,
     body: node.text,
     time: node.sentAtNarrativeTime ?? null,
     isUnread: !readMessageIds.has(node.id),
@@ -113,10 +115,10 @@ function buildDetail(
   const sender = maps.characters.get(node.speakerId);
 
   const attachments: AttachmentViewModel[] = (node.attachments ?? [])
-    .map((assetId, position) => {
+    .map((assetId) => {
       const asset = maps.assets.get(assetId);
       if (!asset) return null;
-      return attachmentToViewModel(asset, position, content.evidence);
+      return attachmentToViewModel(asset, content.evidence);
     })
     .filter((entry): entry is AttachmentViewModel => entry !== null);
 
@@ -127,7 +129,7 @@ function buildDetail(
 
   return {
     nodeId: node.id,
-    senderLabel: sender?.displayName ?? "Unknown sender",
+    senderLabel: sender?.displayName ?? null,
     body: node.text,
     time: node.sentAtNarrativeTime ?? null,
     attachments,
@@ -135,14 +137,8 @@ function buildDetail(
   };
 }
 
-function attachmentToViewModel(
-  asset: Asset,
-  position: number,
-  evidence: readonly Evidence[],
-): AttachmentViewModel {
+function attachmentToViewModel(asset: Asset, evidence: readonly Evidence[]): AttachmentViewModel {
   const alt = asset.altText?.trim();
-  const typeLabel = asset.type.charAt(0).toUpperCase() + asset.type.slice(1);
-  const label = alt && alt.length > 0 ? alt : `${typeLabel} attachment ${position + 1}`;
 
   const evidenceIds = evidence
     .filter((candidate) => candidate.assetIds.includes(asset.id))
@@ -151,7 +147,7 @@ function attachmentToViewModel(
   return {
     assetId: asset.id,
     assetType: asset.type,
-    label,
+    altText: alt && alt.length > 0 ? alt : null,
     hasTranscript: asset.transcriptPath !== undefined,
     evidenceIds,
   };

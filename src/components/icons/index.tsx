@@ -128,6 +128,15 @@ export function NotificationsIcon({ size = 24, className, ...props }: IconProps)
   );
 }
 
+export function SettingsIcon({ size = 24, className, ...props }: IconProps) {
+  return (
+    <svg width={size} height={size} className={className} {...sharedSvgProps} {...props}>
+      <circle cx="12" cy="12" r="3" />
+      <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.2 2.2M16.9 16.9l2.2 2.2M19.1 4.9l-2.2 2.2M7.1 16.9l-2.2 2.2" />
+    </svg>
+  );
+}
+
 // --- System Glyphs (24x24, simple civic-industrial utility shapes) ---
 
 export function MinimizeGlyph({ size = 24, className, ...props }: IconProps) {
@@ -243,6 +252,7 @@ const APP_ICON_MAP: Record<AppIconId, (props: IconProps) => React.JSX.Element> =
   conclusion: ConclusionIcon,
   system_log: SystemLogIcon,
   notifications: NotificationsIcon,
+  settings: SettingsIcon,
 };
 
 const SYSTEM_GLYPH_MAP: Record<SystemGlyphId, (props: IconProps) => React.JSX.Element> = {

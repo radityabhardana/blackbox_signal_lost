@@ -5,6 +5,7 @@ import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import { APP_CATALOG } from "@/lib/apps";
 import { AppIcon, SystemGlyph } from "@/components/icons";
 import { BlackboxSymbol } from "@/components/brand";
+import { useT } from "@/lib/locale/provider";
 import { useWindowStore } from "@/stores/window-store";
 import { useOptionalCaseSession } from "@/features/session/case-session";
 import { focusWindowRegion, registerLauncherButton, unregisterLauncherButton } from "@/lib/focus-registry";
@@ -12,6 +13,7 @@ import { focusWindowRegion, registerLauncherButton, unregisterLauncherButton } f
 const MENU_ID = "app-launcher-menu";
 
 export function Launcher() {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -89,14 +91,14 @@ export function Launcher() {
         onClick={() => setOpen((value) => !value)}
       >
         <BlackboxSymbol size={16} className="shrink-0" />
-        <span>Launcher</span>
+        <span>{t("ui.launcher.button")}</span>
       </button>
       {open ? (
         <div
           id={MENU_ID}
           ref={menuRef}
           role="menu"
-          aria-label="Applications"
+          aria-label={t("ui.launcher.menu")}
           className="absolute bottom-12 left-0 z-bbx-modal min-w-48 border border-bbx-surface-2 bg-bbx-surface-2 p-1"
           onKeyDown={handleKeyDown}
         >
@@ -113,7 +115,7 @@ export function Launcher() {
               ) : (
                 <SystemGlyph id="discovery" size={16} className="shrink-0" />
               )}
-              <span>{app.title}</span>
+              <span>{app.titleKey !== undefined ? t(app.titleKey) : app.title}</span>
             </button>
           ))}
         </div>

@@ -1,9 +1,10 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
 import { CaseSessionProvider, useOptionalCaseSession } from "@/features/session/case-session";
 import { createMessengerTestSession } from "@/test/fixtures/messenger-content";
+import { renderWithProviders } from "@/test/helpers/render";
 import { contentBundleSchema } from "@/content/validator";
 import type { ContentBundle } from "@/content/validator";
 import type { DialogueNode } from "@/content/schemas";
@@ -25,7 +26,7 @@ function renderMessenger(options?: {
     options?.messengerChannelId === undefined
       ? sessionFixture.messengerChannelId
       : (options.messengerChannelId ?? undefined);
-  return render(
+  return renderWithProviders(
     <CaseSessionProvider
       content={options?.content ?? sessionFixture.content}
       mailChannelId="channel_test"
@@ -90,7 +91,7 @@ function choiceInputIds(state: CaseEngineState): string[] {
 
 describe("MessengerApp no-session empty state", () => {
   it("renders No messages without a session", () => {
-    render(<MessengerApp />);
+    renderWithProviders(<MessengerApp />);
     expect(screen.getByRole("region", { name: "Messenger" })).toHaveTextContent("No messages");
   });
 });

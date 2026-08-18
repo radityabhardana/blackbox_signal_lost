@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import Script from "next/script";
 import { SkipLink } from "@/components/accessibility/skip-link";
+import { LocaleProviderWrapper } from "@/components/providers/locale-provider-wrapper";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -29,8 +30,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         />
       </head>
       <body>
-        <SkipLink />
-        {children}
+        <LocaleProviderWrapper>
+          <SkipLink />
+          {children}
+        </LocaleProviderWrapper>
       </body>
     </html>
   );

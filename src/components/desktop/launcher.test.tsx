@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
 import { resetWindowStoreForTests, useWindowStore } from "@/stores/window-store";
@@ -6,6 +6,7 @@ import { CaseSessionProvider } from "@/features/session/case-session";
 import { createInitialEngineState } from "@/domain/engine";
 import { contentBundleSchema } from "@/content/validator";
 import bundleJson from "@/content/fixtures/bundles/valid/bundle_basic_valid.json";
+import { renderWithProviders } from "@/test/helpers/render";
 import { Launcher } from "./launcher";
 
 beforeEach(() => {
@@ -13,9 +14,9 @@ beforeEach(() => {
 });
 
 describe("Launcher", () => {
-  it("opens a menu listing the six catalog applications", async () => {
+  it("opens a menu listing the seven catalog applications", async () => {
     const user = userEvent.setup();
-    render(<Launcher />);
+    renderWithProviders(<Launcher />);
     const trigger = screen.getByRole("button", { name: "Launcher" });
     await user.click(trigger);
     expect(trigger).toHaveAttribute("aria-expanded", "true");
@@ -28,12 +29,13 @@ describe("Launcher", () => {
       "Evidence Board",
       "Objectives",
       "System Log",
+      "Settings",
     ]);
     expect(items.every((item) => item.querySelector("svg[aria-hidden='true']") !== null)).toBe(true);
   });
 
   it("shows the BlackboxSymbol mark beside the trigger's Launcher label", () => {
-    render(<Launcher />);
+    renderWithProviders(<Launcher />);
     const trigger = screen.getByRole("button", { name: "Launcher" });
     expect(trigger.querySelector("svg[aria-hidden='true']")).not.toBeNull();
     expect(trigger).toHaveTextContent("Launcher");
@@ -41,7 +43,7 @@ describe("Launcher", () => {
 
   it("launches an application on activation", async () => {
     const user = userEvent.setup();
-    render(<Launcher />);
+    renderWithProviders(<Launcher />);
     await user.click(screen.getByRole("button", { name: "Launcher" }));
     await user.click(await screen.findByRole("menuitem", { name: "Mail" }));
     expect(useWindowStore.getState().manager.openWindows[0]?.appId).toBe("app_mail");
@@ -50,7 +52,7 @@ describe("Launcher", () => {
 
   it("supports arrow-key navigation and activation with Enter", async () => {
     const user = userEvent.setup();
-    render(<Launcher />);
+    renderWithProviders(<Launcher />);
     await user.click(screen.getByRole("button", { name: "Launcher" }));
     const mail = await screen.findByRole("menuitem", { name: "Mail" });
     await waitFor(() => expect(mail).toHaveFocus());
@@ -62,7 +64,7 @@ describe("Launcher", () => {
 
   it("closes with Escape and returns focus to the trigger", async () => {
     const user = userEvent.setup();
-    render(<Launcher />);
+    renderWithProviders(<Launcher />);
     const trigger = screen.getByRole("button", { name: "Launcher" });
     await user.click(trigger);
     await user.keyboard("{Escape}");
@@ -76,7 +78,7 @@ describe("Launcher unlock gating", () => {
   function renderWithSession(unlockedApplications: readonly string[]) {
     const content = contentBundleSchema.parse(bundleJson);
     const initialState = { ...createInitialEngineState(), unlockedApplications };
-    return render(
+    return renderWithProviders(
       <CaseSessionProvider content={content} mailChannelId="channel_test" initialState={initialState}>
         <Launcher />
       </CaseSessionProvider>,
