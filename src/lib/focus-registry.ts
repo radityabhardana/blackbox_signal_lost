@@ -48,6 +48,10 @@ export function focusTaskbarItem(id: string): void {
   schedule(() => taskbarItems.get(id)?.focus());
 }
 
+// The launcher button lives in the always-rendered Taskbar, so it is focused
+// synchronously. Deferring via rAF let a stale callback fire after the player
+// had already moved focus (e.g. reopened the launcher), stealing focus back
+// and breaking keyboard operability under load.
 export function focusLauncherButton(): void {
-  schedule(() => launcherButton?.focus());
+  launcherButton?.focus();
 }
