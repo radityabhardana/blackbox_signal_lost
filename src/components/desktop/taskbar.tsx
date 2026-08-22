@@ -15,7 +15,10 @@ export function Taskbar() {
   const t = useT();
   const resetWorkspace = useWindowStore((state) => state.resetWorkspace);
   const session = useOptionalCaseSession();
-  const caseLabel = session === null ? t("ui.taskbar.caseNone") : session.content.case.title;
+  const caseLabel =
+    session === null
+      ? t("ui.taskbar.caseStatus", { title: t("ui.taskbar.caseNone") })
+      : t("ui.taskbar.caseStatus", { title: session.content.case.title });
 
   return (
     <footer
@@ -27,10 +30,10 @@ export function Taskbar() {
       </nav>
       <WindowSwitcher />
       <TaskbarAppItems />
-      <span className="flex items-center gap-1.5 font-mono text-xs uppercase tracking-widest text-bbx-text-2">
-        <BlackboxSymbol size={16} className="shrink-0" />
-        <span>{t("ui.taskbar.casePrefix", { title: caseLabel })}</span>
-      </span>
+        <span className="flex items-center gap-1.5 font-mono text-xs uppercase tracking-widest text-bbx-text-2">
+          <BlackboxSymbol size={16} className="shrink-0" />
+          <span>{caseLabel}</span>
+        </span>
       <div className="ml-auto flex items-center gap-3">
         <button
           type="button"

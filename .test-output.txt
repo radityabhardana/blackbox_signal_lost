@@ -1,0 +1,318 @@
+$ vitest run
+
+ RUN  v3.2.7 /home/hardana/Projects/website/blackbox-signal-lost
+
+(node:87609) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:87641) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:87610) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:87629) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:87608) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:87617) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:87635) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:87644) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:87628) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:87642) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:87611) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ src/components/apps/signal-analyzer/signal-analyzer-app.test.tsx (8 tests) 904ms
+ ✓ src/components/apps/messenger/messenger-app.test.tsx (11 tests) 1022ms
+ ✓ src/components/desktop/taskbar.test.tsx (7 tests) 1050ms
+   ✓ Taskbar > opens an application from the launcher and shows it in the taskbar  430ms
+ ✓ src/components/desktop/launcher.test.tsx (8 tests) 1261ms
+   ✓ Launcher > opens a menu listing every application when all are unlocked  321ms
+ ✓ src/content/cases/case_001_missing_signal/case-001-content.test.ts (31 tests) 1194ms
+ ✓ src/components/apps/records/records-app.test.tsx (4 tests) 1416ms
+   ✓ RecordsApp > emits record_opened when an available record is opened, and nothing else  514ms
+   ✓ RecordsApp > surfaces a record only after record_opened unlocked it  368ms
+ ✓ src/components/apps/mail/mail-app.test.tsx (12 tests) 1693ms
+$ tsx scripts/validate-content.ts
+ ✓ src/content/validator/validate-bundle.test.ts (42 tests) 2155ms
+   ✓ validate:content integration > exits 0 for the repository-valid content state  2021ms
+ ✓ src/components/apps/evidence-board/evidence-board-app.test.tsx (6 tests) 2240ms
+   ✓ EvidenceBoardApp > adds a note and creates an accessible player hypothesis without engine mutation  830ms
+   ✓ EvidenceBoardApp > clears local note and edge selections after explicit deletion  554ms
+   ✓ EvidenceBoardApp > shares board edits while retaining selection independently in mounted app instances  352ms
+(node:87858) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:87877) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ src/features/session/session-save-runtime.test.tsx (36 tests) 1320ms
+   ✓ session save runtime controller > keeps old providers unmounted while a new slot hydrates and ignores stale results  380ms
+(node:87898) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:87896) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:87897) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ src/components/apps/conclusion/conclusion-report-app.test.tsx (14 tests) 3069ms
+   ✓ ConclusionReportApp > selecting a claim answer updates the draft  527ms
+   ✓ ConclusionReportApp > valid draft enables Review Report; incomplete is disabled with a warning  423ms
+   ✓ ConclusionReportApp > review shows the composed report summary  315ms
+   ✓ ConclusionReportApp > back from review returns to form with the draft retained  403ms
+(node:87983) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:87990) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:88026) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ src/components/desktop/notification-center.test.tsx (8 tests) 887ms
+ ✓ src/features/evidence-board/evidence-board-provider.test.tsx (8 tests) 609ms
+ ✓ src/components/desktop/workspace-home.test.tsx (6 tests) 743ms
+   ✓ WorkspaceHome > renders the case dossier with title and active objective  343ms
+ ✓ src/components/apps/objectives/objectives-app.test.tsx (16 tests) 796ms
+(node:88047) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ src/components/windows/window-frame.test.tsx (11 tests) 602ms
+ ✓ src/features/session/case-session.test.tsx (9 tests) 539ms
+(node:88069) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ src/components/desktop/window-switcher.test.tsx (5 tests) 553ms
+ ✓ src/components/apps/help/help-app.test.tsx (4 tests) 371ms
+ ✓ src/features/session/case-session-localization.test.tsx (3 tests) 499ms
+(node:88089) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ src/test/locale/settings-app.test.tsx (3 tests) 313ms
+(node:88111) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:88124) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:88117) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:88150) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:88126) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ src/app/game/page.test.tsx (2 tests) 253ms
+(node:88210) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ src/components/icons/icons.test.tsx (45 tests) 230ms
+ ✓ src/components/evidence/evidence.test.tsx (26 tests) 239ms
+ ✓ src/domain/saves/stage-0-save-compat.test.ts (4 tests) 199ms
+(node:88218) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ src/domain/engine/step-case-engine.test.ts (53 tests) 231ms
+(node:88238) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:88246) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ src/test/locale/locale-provider.test.tsx (4 tests) 176ms
+ ✓ src/components/windows/resize-handle.test.tsx (3 tests) 215ms
+ ✓ src/app/(public)/page.test.tsx (3 tests) 196ms
+(node:88297) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ src/components/apps/records/record-detail.test.tsx (3 tests) 170ms
+ ✓ src/components/desktop/boot-sequence.test.tsx (3 tests) 216ms
+ ✓ src/domain/workspace/project-workspace-home.test.ts (5 tests) 216ms
+(node:88317) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:88331) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:88343) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ src/components/brand/brand.test.tsx (8 tests) 174ms
+(node:88352) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:88372) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:88418) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ src/infrastructure/persistence/save-repository.idb.test.ts (16 tests) 139ms
+(node:88425) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ src/content/cases/case_001_missing_signal/stage-0-progression.test.ts (8 tests) 76ms
+(node:88433) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ src/components/apps/evidence-board/evidence-board-node.test.tsx (5 tests) 103ms
+(node:88466) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ src/components/windows/window-layer.test.tsx (4 tests) 152ms
+ ✓ src/infrastructure/persistence/in-memory-save-repository.test.ts (17 tests) 44ms
+(node:88465) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ src/domain/outcomes/report-submission.test.ts (15 tests) 76ms
+ ✓ src/components/apps/evidence-board/evidence-board-canvas.integration.test.tsx (1 test) 80ms
+ ✓ src/content/assets/validate-assets.test.ts (23 tests) 69ms
+ ✓ src/hooks/use-layout-persistence.test.tsx (6 tests) 67ms
+(node:88519) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ src/domain/saves/autosave-coordinator.test.ts (19 tests) 55ms
+(node:88546) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ src/test/fixtures/messenger-content.test.ts (5 tests) 42ms
+(node:88567) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:88566) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:88580) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ src/domain/notifications/notification-model.test.ts (5 tests) 35ms
+ ✓ src/hooks/use-workspace-size.test.tsx (1 test) 32ms
+(node:88620) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:88613) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:88638) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:88640) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:88660) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ src/domain/search/search-content.test.ts (39 tests) 28ms
+ ✓ src/test/locale/locale-core.test.ts (37 tests) 39ms
+ ✓ src/test/fixtures/notification-content.test.ts (4 tests) 39ms
+ ✓ src/domain/records/records-model.test.ts (18 tests) 36ms
+(node:88711) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ src/domain/saves/session-save-schema.test.ts (16 tests) 26ms
+ ✓ src/infrastructure/persistence/save-codec.test.ts (13 tests) 28ms
+ ✓ src/domain/windows/transitions.test.ts (56 tests) 29ms
+(node:88748) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ src/content/schemas/fixtures.test.ts (26 tests) 29ms
+(node:88768) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ src/features/evidence-board/evidence-board-react-flow-adapter.test.ts (2 tests) 29ms
+(node:88788) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:88794) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ src/domain/evidence-board/evidence-board-schema.test.ts (4 tests) 20ms
+ ✓ src/features/session/save-composer.test.ts (1 test) 23ms
+(node:88828) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:88829) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ src/content/schemas/game-effect.test.ts (3 tests) 9ms
+(node:88842) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:88843) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:88882) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ src/domain/messenger/messenger-model.test.ts (11 tests) 20ms
+ ✓ src/domain/windows/layout-hydration.test.ts (19 tests) 13ms
+ ✓ src/test/fixtures/evidence-board-content.test.ts (1 test) 17ms
+ ✓ src/domain/saves/save-migration.test.ts (11 tests) 16ms
+(node:88890) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:88921) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ src/content/schemas/rule-expression.test.ts (4 tests) 17ms
+(node:88970) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ src/domain/diagnostics/build-debug-report.test.ts (26 tests) 19ms
+ ✓ src/infrastructure/persistence/layout-repository.test.ts (13 tests) 14ms
+(node:88990) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ src/content/schemas/records.test.ts (5 tests) 17ms
+(node:89010) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:89016) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ src/domain/rules/evaluate-rule.test.ts (37 tests) 22ms
+ ✓ src/stores/window-store.test.ts (13 tests) 21ms
+(node:89032) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ src/domain/evidence-board/evidence-board-state.test.ts (8 tests) 15ms
+(node:89071) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:89081) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:89079) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:89078) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ src/content/schemas/evidence.test.ts (4 tests) 13ms
+ ✓ src/domain/mail/mail-model.test.ts (16 tests) 14ms
+ ✓ src/content/schemas/ids.test.ts (10 tests) 7ms
+(node:89104) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ src/content/schemas/conclusion.test.ts (10 tests) 15ms
+ ✓ src/content/schemas/dialogue.test.ts (3 tests) 9ms
+(node:89159) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:89179) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ src/content/schemas/objectives.test.ts (4 tests) 12ms
+ ✓ src/content/schemas/parse.test.ts (2 tests) 18ms
+(node:89212) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ src/content/schemas/search-index.test.ts (3 tests) 12ms
+(node:89234) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:89240) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ src/domain/outcomes/evaluate-outcomes.test.ts (8 tests) 10ms
+ ✓ src/content/schemas/outcomes.test.ts (2 tests) 8ms
+(node:89267) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ src/content/schemas/save.test.ts (4 tests) 9ms
+(node:89288) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:89282) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ src/domain/hints/ladder.test.ts (10 tests) 16ms
+(node:89295) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ src/content/schemas/triggers.test.ts (4 tests) 14ms
+ ✓ src/domain/windows/geometry.test.ts (14 tests) 9ms
+(node:89314) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ src/content/schemas/puzzles.test.ts (6 tests) 10ms
+(node:89328) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ src/content/schemas/characters.test.ts (4 tests) 12ms
+(node:89380) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:89387) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ src/domain/signal-analyzer/evaluate.test.ts (9 tests) 13ms
+ ✓ src/content/schemas/endings.test.ts (4 tests) 8ms
+(node:89434) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ src/domain/outcomes/report-draft.test.ts (7 tests) 8ms
+(node:89456) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:89462) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ src/content/schemas/notifications.test.ts (5 tests) 8ms
+ ✓ src/domain/objectives/project-objectives.test.ts (10 tests) 6ms
+(node:89496) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ src/content/schemas/assets.test.ts (3 tests) 6ms
+(node:89503) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:89520) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ src/content/schemas/case.test.ts (3 tests) 7ms
+(node:89529) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:89543) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ src/domain/engine/rule-context.test.ts (4 tests) 5ms
+ ✓ src/test/fixtures/mail-content.test.ts (3 tests) 5ms
+(node:89582) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ src/components/apps/evidence-board/evidence-board-canvas.test.ts (3 tests) 4ms
+ ✓ src/content/schemas/hints.test.ts (2 tests) 5ms
+(node:89602) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ src/lib/theme.test.ts (3 tests) 3ms
+
+ Test Files  97 passed (97)
+      Tests  1063 passed (1063)
+   Start at  00:53:23
+   Duration  15.60s (transform 4.73s, setup 16.20s, collect 21.19s, tests 27.51s, environment 62.82s, prepare 11.93s)
+
+$ tsc --noEmit
+$ eslint .

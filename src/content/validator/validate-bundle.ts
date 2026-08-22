@@ -283,7 +283,10 @@ function validateObjectives(
     for (const nextId of objective.nextObjectiveIds) {
       resolveRef(nextId, "objective", owner, "nextObjectiveIds", registry, issues);
     }
-    if (objective.hintIds.length === 0) {
+    // Hint ladders are mandatory for investigation objectives. Onboarding
+    // steps without a puzzle (e.g. Stage 0 analyst verification) opt out via
+    // `requiresHints: false`; every other objective must carry authored hints.
+    if (objective.requiresHints !== false && objective.hintIds.length === 0) {
       issues.push(
         makeIssue({
           code: "objective_missing_hints",

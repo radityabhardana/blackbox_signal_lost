@@ -10,7 +10,8 @@ export type AppIconId =
   | "conclusion"
   | "system_log"
   | "notifications"
-  | "settings";
+  | "settings"
+  | "help";
 
 export const DEFAULT_WINDOW_WIDTH = 800;
 export const DEFAULT_WINDOW_HEIGHT = 600;

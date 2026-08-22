@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { completeStage0 } from "./helpers/seed-legacy-save";
 
 // Production endgame E2E for Case 001: Stage 5 + Stage 6 Conclusion Report.
 // Exercises the full fresh-start-to-ending path (Protected Truth), then
@@ -25,6 +26,8 @@ test("production /game: Stage 1 -> Stage 2 -> Stage 3 -> Stage 4 -> Stage 5 -> P
   await page.goto("/game");
   await expect(page.locator('[data-hydration-status="ready"]')).toBeVisible();
   await expect(page.getByText(/case: missing signal/i)).toBeVisible();
+
+  await completeStage0(page);
 
   // ---- Stage 1: Records — ferry departure + emergency call ----
   await page.getByRole("button", { name: "Launcher" }).click();

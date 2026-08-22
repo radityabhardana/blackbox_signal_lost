@@ -352,6 +352,12 @@ A player should learn the following without leaving the fiction:
 - Save is automatic
 - Submit a conclusion
 
+## 18a. Boot and empty-workspace
+
+- Boot is implemented as a presentation-only overlay (2.6s first view), skippable; it auto-skips after first view via localStorage `bbx.bootViewed`.
+- Boot respects reduced-motion preferences and never blocks on audio.
+- The empty desktop (no open windows) is replaced by the WorkspaceHome dossier projection.
+
 ## 19. UX anti-patterns to avoid
 
 - Long unskippable boot sequences

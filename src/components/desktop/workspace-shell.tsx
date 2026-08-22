@@ -3,6 +3,7 @@
 import { useWindowStore } from "@/stores/window-store";
 import { useWorkspaceSize } from "@/hooks/use-workspace-size";
 import { WindowLayer } from "@/components/windows/window-layer";
+import { WorkspaceHome } from "@/components/desktop/workspace-home";
 import { useT } from "@/lib/locale/provider";
 import { EvidenceBoardProvider } from "@/features/evidence-board/evidence-board-provider";
 import type { EvidenceBoardChange } from "@/features/evidence-board/evidence-board-provider";
@@ -26,13 +27,7 @@ export function WorkspaceShell({
       data-testid="workspace-shell"
       className="bbx-grid bbx-desktop relative h-full min-h-0 overflow-hidden"
     >
-      {windowCount === 0 ? (
-        <div className="absolute inset-0 grid place-items-center">
-          <p className="px-4 text-center font-mono text-xs uppercase tracking-widest text-bbx-text-2">
-            {t("ui.workspace.empty")}
-          </p>
-        </div>
-      ) : null}
+      {windowCount === 0 ? <WorkspaceHome /> : null}
       <EvidenceBoardProvider
         {...(initialBoard === undefined ? {} : { initialBoard })}
         {...(onBoardChange === undefined ? {} : { onBoardChange })}

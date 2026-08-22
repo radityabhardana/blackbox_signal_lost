@@ -29,6 +29,8 @@ export const enDictionary = {
   "ui.taskbar.label": "Taskbar",
   "ui.taskbar.launcherNav": "Application launcher",
   "ui.taskbar.casePrefix": "Case: {title}",
+  "ui.taskbar.caseTitle": "{title}",
+  "ui.taskbar.caseStatus": "Case: {title}",
   "ui.taskbar.caseNone": "none",
   "ui.taskbar.resetTitle": "Reset workspace layout",
   "ui.taskbar.reset": "Reset workspace",
@@ -39,6 +41,7 @@ export const enDictionary = {
   "ui.taskbar.windowState": "{title} window, {state}",
   "ui.launcher.button": "Launcher",
   "ui.launcher.menu": "Applications",
+  "ui.launcher.locked": "Locked",
   "ui.switcher.button": "Switch window",
   "ui.switcher.menu": "Open windows",
   "ui.notifications.button": "Notification center",
@@ -55,6 +58,50 @@ export const enDictionary = {
   "ui.window.close": "Close",
   "ui.window.resize": "Resize {title}",
   "ui.window.contentPlaceholder": "Placeholder application. Content arrives with the case build.",
+
+  // Boot sequence
+  "ui.boot.anomaly": "SYSTEM ANOMALY DETECTED — RESTRICTED",
+  "ui.boot.ready": "SESSION READY",
+  "ui.boot.verified": "VERIFIED",
+  "ui.boot.allocated": "ALLOCATED",
+  "ui.boot.status": "BLACKBOX SECURE TERMINAL",
+
+  // Workspace home (no-window projection surface)
+  "ui.home.kicker": "CIVIC INTELLIGENCE WORKSTATION",
+  "ui.home.session": "ANALYST SESSION",
+  "ui.home.case": "ACTIVE CASE",
+  "ui.home.objective": "OBJECTIVE",
+  "ui.home.completed": "CASE CLOSED",
+  "ui.home.noObjective": "No active objective.",
+  "ui.home.briefing": "NEW BRIEFING RECEIVED",
+  "ui.home.briefingHint": "Review your analyst credential.",
+  "ui.home.quickAccess": "QUICK ACCESS",
+  "ui.home.open": "Open {app}",
+  "ui.home.phase.completed": "Investigation concluded",
+  "ui.home.phase.in_progress": "Investigation in progress",
+  "ui.home.phase.no_objective": "Awaiting case assignment",
+
+  // Help app
+  "ui.help.region": "Help",
+  "ui.help.intro": "How to work the BLACKBOX analyst workspace.",
+  "ui.help.section.workspace": "Workspace",
+  "ui.help.workspace.body":
+    "The workspace home shows your active case and current objective. Open applications from the launcher. Closing all windows returns you to the workspace home.",
+  "ui.help.section.windows": "Windows",
+  "ui.help.windows.body":
+    "Drag windows by their title bar, resize from the corner handle, and use the taskbar to focus, minimize, or restore. Double-click the title bar to maximize. Use the window switcher next to the launcher for keyboard access.",
+  "ui.help.section.launcher": "Launcher",
+  "ui.help.launcher.body":
+    "Open the launcher to see every available application. Applications appear only when your case unlocks them. Use arrow keys and Enter to navigate.",
+  "ui.help.section.records": "Records & Search",
+  "ui.help.records.body":
+    "Search the archive to find records relevant to your case. Opening a record can reveal evidence, which is added to your Evidence Board automatically.",
+  "ui.help.section.board": "Evidence Board",
+  "ui.help.board.body":
+    "Discovered evidence appears on the Evidence Board. Add private notes and connect nodes to form hypotheses. Nothing on the board is submitted unless you do it explicitly.",
+  "ui.help.section.a11y": "Accessibility & Keyboard",
+  "ui.help.a11y.body":
+    "Every control is reachable by keyboard. Focus outlines are visible. The game respects reduced-motion preferences: animations are shortened or removed and equivalent information is always shown. Essential information never relies on color alone.",
 
   // Mail app
   "ui.mail.region": "Secure Mail",
@@ -215,6 +262,7 @@ export const enDictionary = {
   "apps.conclusion": "Conclusion Report",
   "apps.system_log": "System Log",
   "apps.settings": "Settings",
+  "apps.help": "Help",
 
   // Domain labels
   "label.unknownSender": "Unknown sender",

@@ -833,6 +833,35 @@ Decision:
 
 ---
 
+## ADR-035 — Interactive analyst workspace + Case 001 Stage 0 onboarding
+
+**Status:** Accepted
+
+**Decision:** The `/game` desktop now opens into an interactive analyst workspace with a production Stage 0 onboarding for Case 001. Stage 0 ships the ids `obj_000_analyst_verification`, `trigger_000_bootstrap` / `trigger_000_credential_inspected` / `trigger_000_confirmation_complete`, `dialogue_000_*`, `choice_000_confirm_identity`, `ev_000_analyst_credential` (plus asset + record), and `notification_000_briefing`. A fresh bootstrap fires `case_000_bootstrap`; content version stays `"1.0.0"` (no SaveGame V3, no CaseEngineState change). `trigger_001_bootstrap` rule changed → `objectiveCompleted obj_000_analyst_verification`, fires once after Stage 0, preserving legacy saves.
+
+App gating: `requiresUnlock` on mail, messenger, records, evidence_board, and objectives. `app_help` is added and always available. `app_settings` and `app_system_log` are always available. Boot is a presentation-only overlay (2.6s), skippable, tracked via localStorage `"bbx.bootViewed"` and never enters engine state. `WorkspaceHome` is a pure `projectWorkspaceHome` projection when `openWindows.length === 0`; `recommendedAppId` is optional objective metadata. No second store. Help app (`app_help`) has 6 localized sections. Motion reuses existing CSS tokens plus a global `prefers-reduced-motion` override.
+
+**Context:** The desktop shell existed with the launcher/taskbar shell polish (BBX-110 slice 1). Stage 0 onboarding, an empty-workspace landing, and a boot treatment remained unshipped.
+
+**Options considered:**
+
+- New store for WorkspaceHome notebook state (rejected: WorkspaceHome is a pure projection, no notebook state).
+- Boot overlay state persisted in engine state (rejected: presentation-only, never enters engine state).
+- Boot sequence without skip (rejected: violates UX anti-pattern "long unskippable boot sequences").
+
+**Rationale:**
+
+- Reusing the existing event/objective/trigger/notification content schema avoids new domain types and keeps progression deterministic.
+- WorkspaceHome as a projection avoids any second store and keeps state separation intact.
+- Boot skippable and persistence-free respects save compatibility and reduced-motion rules.
+
+**Consequences:**
+
+- App gating on Stage 0 pre-mail apps requires unlock; Help/Settings/System Log remain always available.
+- Added `pnpm validate:assets` + registry entry for the credential SVG.
+
+---
+
 ## Proposed-decision template
 
 ```text

@@ -10,6 +10,7 @@ import { ObjectivesApp } from "@/components/apps/objectives/objectives-app";
 import { SignalAnalyzerApp } from "@/components/apps/signal-analyzer/signal-analyzer-app";
 import { ConclusionReportApp } from "@/components/apps/conclusion/conclusion-report-app";
 import { SettingsApp } from "@/components/apps/settings/settings-app";
+import { HelpApp } from "@/components/apps/help/help-app";
 
 export function WindowContent({ appId }: { appId: string }) {
   const t = useT();
@@ -71,6 +72,10 @@ export function WindowContent({ appId }: { appId: string }) {
         <SettingsApp />
       </div>
     );
+  }
+
+  if (appId === "app_help") {
+    return <div className="bbx-window-body"><HelpApp /></div>;
   }
 
   const app = getApp(appId);

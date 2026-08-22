@@ -46,21 +46,41 @@ describe("Case 001 content bundle", () => {
     expect(validateContentBundle(content).success).toBe(true);
   });
 
-  it("bootstrap starts obj_001_verify_location", () => {
+  it("bootstrap starts the Stage 0 onboarding objective", () => {
     const { initialState } = loadCase001Session();
-    expect(initialState.activeObjectives).toContain("obj_001_verify_location");
+    expect(initialState.activeObjectives).toContain("obj_000_analyst_verification");
+    expect(initialState.activeObjectives).not.toContain("obj_001_verify_location");
   });
 
-  it("bootstrap queues Sera intro dialogue", () => {
+  it("bootstrap queues the Stage 0 onboarding briefing", () => {
     const { initialState } = loadCase001Session();
-    expect(initialState.queuedDialogue).toContain("dialogue_001_sera_intro");
+    expect(initialState.queuedDialogue).toContain("dialogue_000_onboarding_briefing");
+    expect(initialState.queuedDialogue).not.toContain("dialogue_001_sera_intro");
   });
 
-  it("bootstrap unlocks expected applications", () => {
+  it("bootstrap unlocks only the mail application", () => {
     const { initialState } = loadCase001Session();
-    for (const appId of ["app_mail", "app_records", "app_evidence_board", "app_objectives"]) {
-      expect(initialState.unlockedApplications).toContain(appId);
+    expect(initialState.unlockedApplications).toEqual(["app_mail"]);
+    for (const appId of ["app_records", "app_evidence_board", "app_objectives"]) {
+      expect(initialState.unlockedApplications).not.toContain(appId);
     }
+  });
+
+  it("Stage 1 activates after Stage 0 completes in one engine step", () => {
+    const { content, initialState } = loadCase001Session();
+    const withCredential = stepCaseEngine(
+      initialState,
+      { kind: "evidence_discovered", evidenceId: "ev_000_analyst_credential" },
+      content,
+    ).state;
+    const afterConfirm = stepCaseEngine(
+      withCredential,
+      { kind: "dialogue_choice_selected", choiceId: "choice_000_confirm_identity" },
+      content,
+    ).state;
+    expect(afterConfirm.completedObjectives).toContain("obj_000_analyst_verification");
+    expect(afterConfirm.activeObjectives).toContain("obj_001_verify_location");
+    expect(afterConfirm.queuedDialogue).toContain("dialogue_001_sera_intro");
   });
 
   it("ferry record_opened discovers ev_001_ferry_departure", () => {
@@ -159,7 +179,8 @@ describe("Case 001 content bundle", () => {
     const { content } = loadCase001Session();
     expect(content.puzzles).toHaveLength(1);
     expect(content.puzzles[0]!.id).toBe("puzzle_001_ferry_authenticity");
-    expect(content.case.objectives).toHaveLength(3);
+    // Four objectives: Stage 0 onboarding plus Stages 1, 2, and 4.
+    expect(content.case.objectives).toHaveLength(4);
     // Stage 6 conclusion is filled: >=4 claim slots, exactly 4 disclosures.
     const conclusion = content.conclusions[0]!;
     expect(conclusion.claimSlots.length).toBeGreaterThanOrEqual(4);
@@ -412,10 +433,16 @@ describe("Case 001 content bundle", () => {
     expect(isolationEvidence.optional).toBe(true);
   });
 
-  it("hint ladders are complete 4-tier per objective", () => {
+  it("investigation objectives carry complete 4-tier hint ladders", () => {
     const { content } = loadCase001Session();
-    expect(content.case.objectives).toHaveLength(3);
+    expect(content.case.objectives).toHaveLength(4);
     for (const objective of content.case.objectives) {
+      // The Stage 0 onboarding objective opts out of the hint ladder.
+      if (objective.id === "obj_000_analyst_verification") {
+        expect(objective.hintIds).toEqual([]);
+        expect(objective.requiresHints).toBe(false);
+        continue;
+      }
       const hints = objective.hintIds.map((hintId) => content.hints.find((hint) => hint.id === hintId));
       expect(hints).toHaveLength(4);
       expect(hints.every((hint) => hint !== undefined)).toBe(true);

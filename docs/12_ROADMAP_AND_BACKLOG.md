@@ -240,20 +240,20 @@ BBX-050 is DONE.
 
 | ID | Priority | Task | Acceptance summary |
 |---|---:|---|---|
-| BBX-100 | P0 | Case content implementation | PARTIAL — Stage 1 through Stage 6 production slices implemented |
+| BBX-100 | P0 | Case content implementation | PARTIAL — Stage 0 onboarded + Stage 1 through Stage 6 production slices implemented |
 | BBX-101 | P1 | Search aliases | Natural query coverage |
 | BBX-102 | P1 | Dialogue implementation | All branches reachable |
 | BBX-103 | P1 | Endings | DONE — all four Case 001 outcomes (Protected Truth, Official Compliance, Public Exposure, Misidentified Culprit) and the hidden BLACKBOX meta flag (noticed_blackbox_intervention) implemented, verified via unit reachability tests and E2E ending tests |
 | BBX-104 | P1 | Hint content | Every objective covered |
 | BBX-105 | P1 | Content reachability tests | No dead ends |
 
-BBX-100 remains PARTIAL: Stage 1 through Stage 6 production slices are implemented (Stage 1 contradiction discovery, Stage 2 Signal Analyzer ferry-authenticity puzzle, Stage 3 tablet decision with three branches, Stage 4 suppressed-maintenance investigation, Stage 5 masked contact with checksum discovery and compliance flags, Stage 6 Conclusion Report with 4 claims, 3 evidence slots, 4 disclosure options, and all 4 ending outcomes plus the hidden meta flag). Search alias expansion (BBX-101), full dialogue polish (BBX-102), and later-case content remain future slices.
+BBX-100 remains PARTIAL: Stage 0 onboarding is productionized; Stage 1 through Stage 6 production slices are implemented (Stage 0 analyst verification, Stage 1 contradiction discovery, Stage 2 Signal Analyzer ferry-authenticity puzzle, Stage 3 tablet decision with three branches, Stage 4 suppressed-maintenance investigation, Stage 5 masked contact with checksum discovery and compliance flags, Stage 6 Conclusion Report with 4 claims, 3 evidence slots, 4 disclosure options, and all 4 ending outcomes plus the hidden meta flag). Search alias expansion (BBX-101), full dialogue polish (BBX-102), and later-case content remain future slices.
 
 ### Art and audio
 
 | ID | Priority | Task | Acceptance summary |
 |---|---:|---|---|
-| BBX-110 | P1 | Boot and shell polish | PARTIAL — original in-repo brand marks (BLACKBOX/CIAB/Pelaga + wordmark), 9 app icons, 11 system glyphs, 8 Case 001 evidence visuals, desktop civic-grid texture, launcher/taskbar/window-title/control icon integration, landing brand, and forced-colors polish shipped (BBX-110 slice 1); boot treatment, portraits, environment stills, audio, and anomaly effects remain |
+| BBX-110 | P1 | Boot and shell polish | DONE — boot treatment (2.6s presentation-only, skippable), original in-repo brand marks (BLACKBOX/CIAB/Pelaga + wordmark), 9 app icons, 11 system glyphs, 8 Case 001 evidence visuals (incl. analyst credential SVG), desktop civic-grid texture, launcher/taskbar/window-title/control icon integration, landing brand, and forced-colors polish shipped; portraits, environment stills, audio, and anomaly effects remain |
 | BBX-111 | P1 | Character portraits | Consistent approved sheets |
 | BBX-112 | P1 | Environment stills | North Barrier and ferry |
 | BBX-113 | P1 | UI sounds | Grouped and adjustable |
@@ -281,8 +281,8 @@ The localization foundation is DONE (ADR-034): en (default/source of truth) + id
 | BBX-131 | P2 | Mail and messenger fallback labels | Wire `unknownSenderLabel`/`unknownSourceLabel`/`attachmentLabel` into the mail and messenger apps; domain view models currently emit English "Unknown sender" |
 | BBX-132 | P2 | Evidence-board adapter strings | Localize "Unknown source" and `evidence.type` display strings in the evidence-board adapter |
 | BBX-133 | P2 | Persistence sr-only text | Localize the session-save-runtime persistence sr-only status text |
-| BBX-134 | P2 | Case title localization | Overlay support for `case.title` (currently canonical-only) |
-| BBX-135 | P1 | CI localization checks | Run `pnpm validate:i18n` and `pnpm build` in CI |
+| BBX-134 | P2 | Case title localization | DONE — overlay support for `case.title` (Case 001 title shown as "Sinyal Hilang" in id locale) |
+| BBX-135 | P1 | CI localization checks | DONE — `pnpm validate:content` and `pnpm validate:assets` wired into CI |
 
 ## 5. Vertical-slice critical path
 

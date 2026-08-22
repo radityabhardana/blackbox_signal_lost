@@ -13,10 +13,34 @@ beforeEach(() => {
   resetWindowStoreForTests();
 });
 
+/**
+ * All catalog apps unlocked — mirrors the Stage 1 bootstrap trigger
+ * (trigger_001_bootstrap) plus signal analyzer and conclusion.
+ */
+const ALL_APPS_UNLOCKED: readonly string[] = [
+  "app_mail",
+  "app_messenger",
+  "app_records",
+  "app_evidence_board",
+  "app_objectives",
+  "app_signal_analyzer",
+  "app_conclusion",
+];
+
 describe("Launcher", () => {
-  it("opens a menu listing the seven catalog applications", async () => {
+  function renderWithSession(unlockedApplications: readonly string[]) {
+    const content = contentBundleSchema.parse(bundleJson);
+    const initialState = { ...createInitialEngineState(), unlockedApplications };
+    return renderWithProviders(
+      <CaseSessionProvider content={content} mailChannelId="channel_test" initialState={initialState}>
+        <Launcher />
+      </CaseSessionProvider>,
+    );
+  }
+
+  it("opens a menu listing every application when all are unlocked", async () => {
     const user = userEvent.setup();
-    renderWithProviders(<Launcher />);
+    renderWithSession(ALL_APPS_UNLOCKED);
     const trigger = screen.getByRole("button", { name: "Launcher" });
     await user.click(trigger);
     expect(trigger).toHaveAttribute("aria-expanded", "true");
@@ -28,14 +52,26 @@ describe("Launcher", () => {
       "Records",
       "Evidence Board",
       "Objectives",
+      "Signal Analyzer",
+      "Conclusion Report",
       "System Log",
       "Settings",
+      "Help",
     ]);
     expect(items.every((item) => item.querySelector("svg[aria-hidden='true']") !== null)).toBe(true);
   });
 
+  it("only lists the three always-available applications when nothing is unlocked", async () => {
+    const user = userEvent.setup();
+    renderWithSession([]);
+    await user.click(screen.getByRole("button", { name: "Launcher" }));
+    const items = screen.getAllByRole("menuitem");
+    expect(items.map((item) => item.textContent)).toEqual(["System Log", "Settings", "Help"]);
+    expect(items.every((item) => item.querySelector("svg[aria-hidden='true']") !== null)).toBe(true);
+  });
+
   it("shows the BlackboxSymbol mark beside the trigger's Launcher label", () => {
-    renderWithProviders(<Launcher />);
+    renderWithSession([]);
     const trigger = screen.getByRole("button", { name: "Launcher" });
     expect(trigger.querySelector("svg[aria-hidden='true']")).not.toBeNull();
     expect(trigger).toHaveTextContent("Launcher");
@@ -43,7 +79,7 @@ describe("Launcher", () => {
 
   it("launches an application on activation", async () => {
     const user = userEvent.setup();
-    renderWithProviders(<Launcher />);
+    renderWithSession(ALL_APPS_UNLOCKED);
     await user.click(screen.getByRole("button", { name: "Launcher" }));
     await user.click(await screen.findByRole("menuitem", { name: "Mail" }));
     expect(useWindowStore.getState().manager.openWindows[0]?.appId).toBe("app_mail");
@@ -52,7 +88,7 @@ describe("Launcher", () => {
 
   it("supports arrow-key navigation and activation with Enter", async () => {
     const user = userEvent.setup();
-    renderWithProviders(<Launcher />);
+    renderWithSession(ALL_APPS_UNLOCKED);
     await user.click(screen.getByRole("button", { name: "Launcher" }));
     const mail = await screen.findByRole("menuitem", { name: "Mail" });
     await waitFor(() => expect(mail).toHaveFocus());
@@ -64,7 +100,7 @@ describe("Launcher", () => {
 
   it("closes with Escape and returns focus to the trigger", async () => {
     const user = userEvent.setup();
-    renderWithProviders(<Launcher />);
+    renderWithSession(ALL_APPS_UNLOCKED);
     const trigger = screen.getByRole("button", { name: "Launcher" });
     await user.click(trigger);
     await user.keyboard("{Escape}");
@@ -75,7 +111,7 @@ describe("Launcher", () => {
 });
 
 describe("Launcher unlock gating", () => {
-  function renderWithSession(unlockedApplications: readonly string[]) {
+  function renderWithUnlocked(unlockedApplications: readonly string[]) {
     const content = contentBundleSchema.parse(bundleJson);
     const initialState = { ...createInitialEngineState(), unlockedApplications };
     return renderWithProviders(
@@ -85,18 +121,20 @@ describe("Launcher unlock gating", () => {
     );
   }
 
-  it("hides gated app when not unlocked", async () => {
+  it("does not reveal the conclusion report when locked", async () => {
     const user = userEvent.setup();
-    renderWithSession([]);
+    renderWithUnlocked(["app_mail"]); // only mail unlocked / signal unlocked
     await user.click(screen.getByRole("button", { name: "Launcher" }));
+    expect(screen.queryByRole("menuitem", { name: "Conclusion Report" })).not.toBeInTheDocument();
     expect(screen.queryByRole("menuitem", { name: "Signal Analyzer" })).not.toBeInTheDocument();
     expect(screen.getByRole("menuitem", { name: "Mail" })).toBeInTheDocument();
   });
 
-  it("shows gated app when unlocked", async () => {
+  it("shows the conclusion report when unlocked", async () => {
     const user = userEvent.setup();
-    renderWithSession(["app_signal_analyzer"]);
+    renderWithUnlocked([...ALL_APPS_UNLOCKED]);
     await user.click(screen.getByRole("button", { name: "Launcher" }));
+    expect(screen.getByRole("menuitem", { name: "Conclusion Report" })).toBeInTheDocument();
     expect(screen.getByRole("menuitem", { name: "Signal Analyzer" })).toBeInTheDocument();
   });
 });

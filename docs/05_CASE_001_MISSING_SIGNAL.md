@@ -383,3 +383,6 @@ Search must support reasonable aliases and minor spelling variations authored in
 - Accessibility transcript complete
 - Save and reload tested at every stage
 - Optional BLACKBOX clue remains optional
+## 12. Stage 0 — productionized
+
+Stage 0 onboarding is productionized. Content ids: `obj_000_analyst_verification`, `trigger_000_bootstrap` / `trigger_000_credential_inspected` / `trigger_000_confirmation_complete`, `dialogue_000_*`, `choice_000_confirm_identity`, `ev_000_analyst_credential` (asset + record), `notification_000_briefing`. A fresh bootstrap fires `case_000_bootstrap`; content version stays `"1.0.0"`. Stage 0 apps: Mail is unlock-gated behind Stage 0; Help and Settings are always available.

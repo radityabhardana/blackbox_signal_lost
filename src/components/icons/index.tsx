@@ -137,6 +137,16 @@ export function SettingsIcon({ size = 24, className, ...props }: IconProps) {
   );
 }
 
+export function HelpIcon({ size = 24, className, ...props }: IconProps) {
+  return (
+    <svg width={size} height={size} className={className} {...sharedSvgProps} {...props}>
+      <circle cx="12" cy="12" r="8" />
+      <path d="M9.5 10a2.5 2.5 0 1 1 3.2 2.4c-.7.3-1.2.9-1.2 1.6" />
+      <circle cx="12" cy="16.5" r="0.5" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
 // --- System Glyphs (24x24, simple civic-industrial utility shapes) ---
 
 export function MinimizeGlyph({ size = 24, className, ...props }: IconProps) {
@@ -253,6 +263,7 @@ const APP_ICON_MAP: Record<AppIconId, (props: IconProps) => React.JSX.Element> =
   system_log: SystemLogIcon,
   notifications: NotificationsIcon,
   settings: SettingsIcon,
+  help: HelpIcon,
 };
 
 const SYSTEM_GLYPH_MAP: Record<SystemGlyphId, (props: IconProps) => React.JSX.Element> = {

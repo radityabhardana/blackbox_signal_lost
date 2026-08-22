@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { completeStage0 } from "./helpers/seed-legacy-save";
 
 test("production /game: Case 001 Stage 1 to Stage 2 signal analyzer flow survives reload", async ({ page }) => {
   const pageErrors: string[] = [];
@@ -9,6 +10,8 @@ test("production /game: Case 001 Stage 1 to Stage 2 signal analyzer flow survive
   await page.goto("/game");
   await expect(page.locator('[data-hydration-status="ready"]')).toBeVisible();
   await expect(page.getByText(/case: missing signal/i)).toBeVisible();
+
+  await completeStage0(page);
 
   // Open Objective Tracker; assert the active Stage 1 objective.
   // The window frame is a section labelled by the app title, so it is also a

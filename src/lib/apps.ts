@@ -6,13 +6,14 @@ import type { ApplicationDescriptor } from "@/domain/windows";
  * surfaces render through `useT()`.
  */
 export const APP_CATALOG: ApplicationDescriptor[] = [
-  { appId: "app_mail", title: "Mail", titleKey: "apps.mail", minWidth: 480, minHeight: 360, icon: "mail" },
+  { appId: "app_mail", title: "Mail", titleKey: "apps.mail", minWidth: 480, minHeight: 360, requiresUnlock: true, icon: "mail" },
   {
     appId: "app_messenger",
     title: "Messenger",
     titleKey: "apps.messenger",
     minWidth: 420,
     minHeight: 360,
+    requiresUnlock: true,
     icon: "messenger",
   },
   {
@@ -21,6 +22,7 @@ export const APP_CATALOG: ApplicationDescriptor[] = [
     titleKey: "apps.records",
     minWidth: 560,
     minHeight: 400,
+    requiresUnlock: true,
     icon: "records",
   },
   {
@@ -29,6 +31,7 @@ export const APP_CATALOG: ApplicationDescriptor[] = [
     titleKey: "apps.evidence_board",
     minWidth: 760,
     minHeight: 520,
+    requiresUnlock: true,
     icon: "evidence_board",
   },
   {
@@ -37,6 +40,7 @@ export const APP_CATALOG: ApplicationDescriptor[] = [
     titleKey: "apps.objectives",
     minWidth: 420,
     minHeight: 360,
+    requiresUnlock: true,
     icon: "objectives",
   },
   {
@@ -72,6 +76,15 @@ export const APP_CATALOG: ApplicationDescriptor[] = [
     minWidth: 420,
     minHeight: 320,
     icon: "settings",
+  },
+  // Help is always available (no requiresUnlock).
+  {
+    appId: "app_help",
+    title: "Help",
+    titleKey: "apps.help",
+    minWidth: 420,
+    minHeight: 360,
+    icon: "help",
   },
 ];
 

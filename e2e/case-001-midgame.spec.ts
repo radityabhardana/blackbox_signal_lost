@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { completeStage0 } from "./helpers/seed-legacy-save";
 
 // Production midgame E2E for the Case 001 Stage 3 + Stage 4 + BBX-061 delivery.
 // Exercises ONE branch end-to-end (Option 2 — "Let Sera inspect it offline
@@ -24,6 +25,8 @@ test("production /game: Stage 2 -> Stage 3 -> Stage 4 midgame loop survives relo
   await page.goto("/game");
   await expect(page.locator('[data-hydration-status="ready"]')).toBeVisible();
   await expect(page.getByText(/case: missing signal/i)).toBeVisible();
+
+  await completeStage0(page);
 
   // ---- Stage 1: Records — ferry departure + emergency call ----
   await page.getByRole("button", { name: "Launcher" }).click();

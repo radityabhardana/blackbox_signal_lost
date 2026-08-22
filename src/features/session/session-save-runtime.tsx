@@ -29,6 +29,7 @@ import { CaseSessionProvider } from "./case-session";
 import type { CaseSessionCommit } from "./case-session";
 import { WorkspaceShell } from "@/components/desktop/workspace-shell";
 import { Taskbar } from "@/components/desktop/taskbar";
+import { BootSequence } from "@/components/desktop/boot-sequence";
 import { LayoutPersistence } from "@/components/desktop/layout-persistence";
 import { useLocale, useT } from "@/lib/locale/provider";
 import { persistenceStatusLabel } from "@/lib/locale/domain-labels";
@@ -720,13 +721,15 @@ function HydratedSessionRuntime({
         initialState={checkpointSeed?.caseEngineState ?? bootstrap.caseEngineState}
         onCommittedChange={handleEngineCommit}
       >
-        <div className="flex min-h-0 flex-1 flex-col">
-          <main id="main-content" tabIndex={-1} className="min-h-0 flex-1 outline-none">
-            <WorkspaceShell initialBoard={checkpointSeed?.evidenceBoard ?? bootstrap.evidenceBoard} onBoardChange={controller.onBoardChange} />
-          </main>
-          <Taskbar />
-          <LayoutPersistence />
-        </div>
+        <BootSequence>
+          <div className="flex min-h-0 flex-1 flex-col">
+            <main id="main-content" tabIndex={-1} className="min-h-0 flex-1 outline-none">
+              <WorkspaceShell initialBoard={checkpointSeed?.evidenceBoard ?? bootstrap.evidenceBoard} onBoardChange={controller.onBoardChange} />
+            </main>
+            <Taskbar />
+            <LayoutPersistence />
+          </div>
+        </BootSequence>
       </CaseSessionProvider>
     </div>
   );

@@ -22,6 +22,8 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm validate:i18n
+      - run: pnpm validate:content
+      - run: pnpm validate:assets
       - run: pnpm build
   e2e:
     runs-on: ubuntu-latest

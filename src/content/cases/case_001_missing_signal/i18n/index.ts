@@ -11,8 +11,13 @@ import type { SupportedLocale } from "@/lib/locale/locales";
 
 export const caseOverlays: Partial<Record<Exclude<SupportedLocale, "en">, LocalizedCaseOverlay>> = {
   id: {
-    caseTitle: "Sinyal yang Hilang",
+    caseTitle: "Sinyal Hilang",
     objectives: {
+      obj_000_analyst_verification: {
+        title: "Selesaikan verifikasi analis",
+        description:
+          "Tinjau surat penugasan Anda, periksa kredensial analis Anda, dan konfirmasi identitas untuk memulai alokasi kasus.",
+      },
       obj_001_verify_location: {
         title: "Verifikasi lokasi terakhir Maya Pranata yang terkonfirmasi",
         description:
@@ -30,6 +35,18 @@ export const caseOverlays: Partial<Record<Exclude<SupportedLocale, "en">, Locali
       },
     },
     dialogue: {
+      dialogue_000_onboarding_briefing: {
+        text: "Selamat datang di BLACKBOX. Sesi analis Anda telah dialokasikan. Periksa kredensial terlampir dan konfirmasi identitas untuk memulai penugasan kasus. Sistem diawasi; jaga terminal ini di lingkungan yang aman.",
+      },
+      dialogue_000_identity_confirmation: {
+        text: "Konfirmasi identitas analis: Anda terikat piagam analis untuk bertindak hanya berdasarkan data kasus. Konfirmasi identitas untuk melanjutkan.",
+        choices: {
+          choice_000_confirm_identity: { label: "Konfirmasi identitas analis" },
+        },
+      },
+      dialogue_000_identity_ack: {
+        text: "Identitas terkonfirmasi. Alokasi kasus sedang berlangsung.",
+      },
       dialogue_001_sera_intro: {
         text: "Insinyur Pelaga Systems, Maya Pranata, tidak hadir dalam tinjauan pemeliharaan darurat yang sudah dijadwalkan. Pelaga mengklaim dia meninggalkan kota secara sukarela setelah keliru menangani data terbatas. Akun transitnya menunjukkan keberangkatan feri pukul 22:14. Saya meminta verifikasi karena catatan keberangkatan itu bertentangan dengan panggilan darurat dari North Barrier yang tercatat pukul 22:31. Tolong verifikasi lokasi terakhir Maya yang terkonfirmasi.",
       },
@@ -77,6 +94,10 @@ export const caseOverlays: Partial<Record<Exclude<SupportedLocale, "en">, Locali
       rec_001_checksum_record: { title: "Catatan Checksum Teranonimkan" },
     },
     evidence: {
+      ev_000_analyst_credential: {
+        title: "Kredensial Analis",
+        summary: "Kredensial sesi analis yang diterbitkan oleh layanan analis BLACKBOX. Mengonfirmasi identitas dan alokasi sesi.",
+      },
       ev_001_ferry_departure: {
         title: "Catatan Keberangkatan Feri",
         summary: "Sebuah peristiwa transit mengeklaim Maya Pranata berangkat dari Nusakara pukul 22:14 pada 2041-11-18.",
@@ -139,6 +160,7 @@ export const caseOverlays: Partial<Record<Exclude<SupportedLocale, "en">, Locali
       },
     },
     notifications: {
+      notification_000_briefing: { text: "Briefing baru diterima. Periksa kredensial analis Anda." },
       notification_001_sera_trust: { text: "Sera: Maya aman untuk saat ini. Terima kasih." },
       notification_001_blackbox_bounds: { text: "BLACKBOX: penyimpangan analis masih dalam batas wajar." },
       notification_001_blackbox_compliance: { text: "BLACKBOX: konsistensi prosedural diakui." },

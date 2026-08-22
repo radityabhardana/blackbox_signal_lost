@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { completeStage0 } from "./helpers/seed-legacy-save";
 
 // Locale switch E2E: the Settings app's language switcher localizes chrome
 // (launcher, taskbar, window titles) and case content (objective titles from
@@ -43,6 +44,8 @@ test("locale switch localizes chrome and case content live, persists across relo
   await expect(page.locator('[data-hydration-status="ready"]')).toBeVisible();
   await expect(page.getByText(/missing signal/i)).toBeVisible();
 
+  await completeStage0(page);
+
   // ---- Objectives: canonical English case content ----
   await page.getByRole("button", { name: "Launcher" }).click();
   await page.getByRole("menuitem", { name: "Objectives" }).click();
@@ -69,7 +72,7 @@ test("locale switch localizes chrome and case content live, persists across relo
   await expect(page.getByRole("button", { name: /Jendela Pengaturan/ })).toBeVisible();
 
   // ...and case content flips (case title + objective title from the id overlay).
-  await expect(page.getByText(/sinyal yang hilang/i)).toBeVisible();
+  await expect(page.getByText(/sinyal hilang/i)).toBeVisible();
   await expect(page.getByText(/missing signal/i)).toHaveCount(0);
   const objectivesId = page.locator('[aria-label="Objektif"]');
   await expect(objectivesId).toBeVisible();
@@ -84,7 +87,7 @@ test("locale switch localizes chrome and case content live, persists across relo
   await page.reload();
   await expect(page.locator('[data-hydration-status="ready"]')).toBeVisible();
   await expect(html).toHaveAttribute("lang", "id");
-  await expect(page.getByText(/sinyal yang hilang/i)).toBeVisible();
+  await expect(page.getByText(/sinyal hilang/i)).toBeVisible();
   await expect(page.getByText(/missing signal/i)).toHaveCount(0);
 
   // Defensive reopen, then raise the Objectives window via its taskbar item.

@@ -26,6 +26,24 @@ export function loadCase001Session(): Case001Session {
       entities: [],
       objectives: [
         {
+          // Stage 0 onboarding objective (docs/05 Stage 0 — analyst
+          // onboarding). No hint ladder: there is no investigation to solve,
+          // so requiresHints opts out of the hint-ladder invariant.
+          id: "obj_000_analyst_verification",
+          title: "Complete analyst verification",
+          description:
+            "Review your assignment mail, inspect your analyst credential, and confirm your identity to begin case allocation.",
+          optional: false,
+          startRule: { always: true },
+          completionRule: {
+            all: [{ entityDiscovered: "ev_000_analyst_credential" }, { choiceSelected: "choice_000_confirm_identity" }],
+          },
+          hintIds: [],
+          requiresHints: false,
+          nextObjectiveIds: [],
+          recommendedAppId: "app_mail",
+        },
+        {
           id: "obj_001_verify_location",
           title: "Verify Maya Pranata's final confirmed location",
           description:
@@ -37,6 +55,7 @@ export function loadCase001Session(): Case001Session {
           },
           hintIds: ["hint_001_verify_location_1", "hint_001_verify_location_2", "hint_001_verify_location_3", "hint_001_verify_location_4"],
           nextObjectiveIds: [],
+          recommendedAppId: "app_records",
         },
         {
           id: "obj_002_determine_authenticity",
@@ -48,6 +67,7 @@ export function loadCase001Session(): Case001Session {
           completionRule: { eventOccurred: { type: "puzzle_completed", entityId: "puzzle_001_ferry_authenticity" } },
           hintIds: ["hint_002_authenticity_1", "hint_002_authenticity_2", "hint_002_authenticity_3", "hint_002_authenticity_4"],
           nextObjectiveIds: [],
+          recommendedAppId: "app_signal_analyzer",
         },
         {
           id: "obj_003_reason_for_north_barrier",
@@ -71,14 +91,55 @@ export function loadCase001Session(): Case001Session {
           },
           hintIds: ["hint_003_north_barrier_1", "hint_003_north_barrier_2", "hint_003_north_barrier_3", "hint_003_north_barrier_4"],
           nextObjectiveIds: [],
+          recommendedAppId: "app_records",
         },
       ],
       triggers: [
         {
-          id: "trigger_001_bootstrap",
+          // Stage 0 bootstrap (docs/05 Stage 0). Fresh sessions fire
+          // case_000_bootstrap; legacy saves restore their own state and never
+          // see Stage 0 (their trigger_001_bootstrap is already fired).
+          id: "trigger_000_bootstrap",
           once: true,
           priority: 100,
-          rule: { eventOccurred: { type: "case_001_bootstrap" } },
+          rule: { eventOccurred: { type: "case_000_bootstrap" } },
+          effects: [
+            { type: "unlock_application", applicationId: "app_mail" },
+            { type: "start_objective", objectiveId: "obj_000_analyst_verification" },
+            { type: "queue_dialogue", nodeId: "dialogue_000_onboarding_briefing" },
+            { type: "show_notification", notificationId: "notification_000_briefing" },
+          ],
+        },
+        {
+          // Credential inspection makes the identity confirmation available —
+          // the confirmation node is queued only AFTER the attachment is
+          // activated (docs/05 Stage 0 task order).
+          id: "trigger_000_credential_inspected",
+          once: true,
+          priority: 95,
+          rule: { entityDiscovered: "ev_000_analyst_credential" },
+          effects: [{ type: "queue_dialogue", nodeId: "dialogue_000_identity_confirmation" }],
+        },
+        {
+          // Stage 0 completion: credential inspected AND identity confirmed.
+          id: "trigger_000_confirmation_complete",
+          once: true,
+          priority: 90,
+          rule: {
+            all: [{ entityDiscovered: "ev_000_analyst_credential" }, { choiceSelected: "choice_000_confirm_identity" }],
+          },
+          effects: [{ type: "complete_objective", objectiveId: "obj_000_analyst_verification" }],
+        },
+        {
+          // Stage 1 bootstrap. Fresh sessions: case_000_bootstrap → Stage 0 →
+          // obj_000 completion fires this once. Legacy saves already have this
+          // trigger in firedTriggerIds, so they are unaffected and never re-enter
+          // Stage 0. Priority 5 (below trigger_000_confirmation_complete at 90)
+          // so it fires in the same engine step as obj_000 completion.
+          id: "trigger_001_bootstrap",
+          once: true,
+          priority: 5,
+          rule: { objectiveCompleted: "obj_000_analyst_verification" },
           effects: [
             { type: "start_objective", objectiveId: "obj_001_verify_location" },
             { type: "unlock_application", applicationId: "app_mail" },
@@ -482,6 +543,20 @@ export function loadCase001Session(): Case001Session {
       assetBundleId: "bundle_001_missing_signal",
     },
     characters: [
+      // char_analyst_services — Stage 0 system sender for onboarding mail
+      // (docs/05 Stage 0). Institutional sender only; the portrait asset is
+      // never rendered as a speaker avatar (mail renders the displayName).
+      {
+        id: "char_analyst_services",
+        displayName: "BLACKBOX Analyst Services",
+        aliases: [],
+        role: "BLACKBOX analyst services",
+        organizationIds: [],
+        publicProfile: {},
+        portraitAssetId: "asset_maya_portrait",
+        searchTerms: ["blackbox", "analyst", "services"],
+        knownEvidenceIds: [],
+      },
       {
         id: "char_maya_pranata",
         displayName: "Maya Pranata",
@@ -685,6 +760,27 @@ export function loadCase001Session(): Case001Session {
     ],
     evidence: [
       {
+        // Stage 0 credential (docs/05 Stage 0). Discovery flows through the
+        // mail attachment activation (message-detail.tsx dispatches
+        // evidence_discovered directly); the discoveryRule documents that
+        // mechanism rather than a record_opened path — no record carries it.
+        id: "ev_000_analyst_credential",
+        caseId: "case_001_missing_signal",
+        title: "Analyst Credential",
+        type: "document",
+        summary: "Analyst session credential issued by BLACKBOX analyst services. Confirms identity and session allocation.",
+        source: { system: "bbx_system" },
+        occurredAt: "2041-11-18T21:30:00+07:00",
+        tags: ["credential", "identity"],
+        relatedEntityIds: [],
+        assetIds: ["asset_000_analyst_credential"],
+        discoveryRule: { eventOccurred: { type: "evidence_discovered", entityId: "ev_000_analyst_credential" } },
+        optional: false,
+        contested: false,
+        redHerring: false,
+        reportClaimsSupported: [],
+      },
+      {
         id: "ev_001_ferry_departure",
         caseId: "case_001_missing_signal",
         title: "Ferry Departure Record",
@@ -859,6 +955,42 @@ export function loadCase001Session(): Case001Session {
     ],
     hints: CASE_001_HINTS,
     dialogue: [
+      // Stage 0 — onboarding mail (docs/05 Stage 0). Neutral institutional
+      // prose only; no case lore. The credential attachment is activated by the
+      // player in Mail (message-detail.tsx dispatches evidence_discovered for
+      // ev_000_analyst_credential via the asset→evidence reverse lookup).
+      {
+        id: "dialogue_000_onboarding_briefing",
+        channelId: CASE_001_MAIL_CHANNEL_ID,
+        speakerId: "char_analyst_services",
+        text: "Welcome to BLACKBOX. Your analyst session has been allocated. Review the attached credential and confirm your identity to begin case assignment. The system is monitored; keep this terminal in a secure environment.",
+        enterRule: { always: true },
+        attachments: ["asset_000_analyst_credential"],
+      },
+      {
+        id: "dialogue_000_identity_confirmation",
+        channelId: CASE_001_MAIL_CHANNEL_ID,
+        speakerId: "char_analyst_services",
+        text: "Analyst identity confirmation: you are bound by the analyst charter to act only on case data. Confirm your identity to proceed.",
+        enterRule: { always: true },
+        choices: [
+          {
+            id: "choice_000_confirm_identity",
+            label: "Confirm analyst identity",
+            // trigger_000_confirmation_complete drives completion via
+            // discovery + choice; the choice needs no consequences.
+            consequences: [],
+            nextNodeId: "dialogue_000_identity_ack",
+          },
+        ],
+      },
+      {
+        id: "dialogue_000_identity_ack",
+        channelId: CASE_001_MAIL_CHANNEL_ID,
+        speakerId: "char_analyst_services",
+        text: "Identity confirmed. Case allocation in progress.",
+        enterRule: { always: true },
+      },
       {
         id: "dialogue_001_sera_intro",
         channelId: CASE_001_MAIL_CHANNEL_ID,
@@ -1083,6 +1215,17 @@ export function loadCase001Session(): Case001Session {
     ],
     assets: [
       {
+        id: "asset_000_analyst_credential",
+        type: "document",
+        sourcePath: "assets/case_001/analyst-credential.svg",
+        optimizedPath: "assets/case_001/analyst-credential.svg",
+        license: "original",
+        creator: "BLACKBOX team",
+        provenanceNote: "Original placeholder credential document for Stage 0 onboarding slice.",
+        caseIds: ["case_001_missing_signal"],
+        preload: "none",
+      },
+      {
         id: "asset_maya_portrait",
         type: "image",
         sourcePath: "assets/case_001/maya-portrait.png",
@@ -1128,6 +1271,7 @@ export function loadCase001Session(): Case001Session {
       },
     ],
     notifications: [
+      { id: "notification_000_briefing", text: "New briefing received. Review your analyst credential.", priority: "informational" },
       { id: "notification_001_sera_trust", text: "Sera: Maya is safe for now. Thank you.", priority: "message" },
       { id: "notification_001_blackbox_bounds", text: "BLACKBOX: analyst deviation within acceptable bounds.", priority: "system_anomaly" },
       { id: "notification_001_blackbox_compliance", text: "BLACKBOX: procedural consistency acknowledged.", priority: "system_anomaly" },
@@ -1254,9 +1398,12 @@ export function loadCase001Session(): Case001Session {
 
   return {
     content: parsed,
+    // Fresh sessions start in Stage 0: case_000_bootstrap fires
+    // trigger_000_bootstrap only. Legacy saves restore their own persisted
+    // state (trigger_001_bootstrap already fired) and never see Stage 0.
     initialState: stepCaseEngine(
       createInitialEngineState(),
-      { kind: "game_event", event: { type: "case_001_bootstrap" } },
+      { kind: "game_event", event: { type: "case_000_bootstrap" } },
       parsed,
     ).state,
   };
